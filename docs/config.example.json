@@ -1,0 +1,52 @@
+{
+  "formatVersion": 3,
+  "scannerEnabled": true,
+  "mockDataMode": true,
+  "animationsEnabled": true,
+  "notificationsEnabled": true,
+  "interfaceScale": 1.0,
+  "filterMode": "ALL_EXCEPT_BLACKLIST",
+  "whitelistedItems": [
+    "minecraft:netherite_ingot"
+  ],
+  "blacklistedItems": [
+    "minecraft:written_book"
+  ],
+  "itemThresholds": {
+    "minecraft:netherite_ingot": {
+      "enabled": true,
+      "minimumProfit": "1000000",
+      "minimumRoi": "20",
+      "minimumConfidence": 70,
+      "maximumPurchasePrice": "25000000",
+      "minimumComparableSales": 8,
+      "minimumStackSize": 1,
+      "maximumStackSize": 64,
+      "includeEnchanted": true,
+      "includeRenamed": true,
+      "includeDamaged": true,
+      "includeContainers": false
+    }
+  },
+  "automation": {
+    "enabled": false,
+    "mode": "DRY_RUN",
+    "allowedServerAddresses": [],
+    "maximumPurchasePrice": "0",
+    "maximumOpenExposure": "0",
+    "maximumPurchasesPerSession": 0,
+    "minimumConfidence": 30,
+    "minimumComparableSales": 8,
+    "minimumNetProfit": "0",
+    "minimumRoi": "0",
+    "maximumListingAgeSeconds": 30,
+    "purchaseCooldownSeconds": 30,
+    "relistPricingStrategy": "CONSERVATIVE_FAIR_VALUE",
+    "targetRoi": "0",
+    "fixedMarkupPercent": "0",
+    "requireInventoryVerification": true,
+    "requireBalanceVerification": true,
+    "requireListingVerification": true,
+    "showExecutionNotifications": true
+  }
+}
