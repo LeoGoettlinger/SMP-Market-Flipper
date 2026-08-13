@@ -1,6 +1,7 @@
 # Donut Algorithm
 
 This algorithm is made for the DONUTSMP auction house. It tracks arbitrage opportunities through previous data. This project was completely made with Ai, specifically GPT SOL 5.6
+
 Credits: https://youtu.be/qK_7ByDtBbM?si=dSBCk3gnvKjUJ4mk 
 Inspired the basis for the algorithm and how machine learning can use previous statistics to find price weakness. 🙏
 
