@@ -15,7 +15,7 @@ Inspired the basis for the algorithm and how machine learning can use previous s
 
 ### Enable live prices
 
-1. In DonutSMP, use `/api` to create a key.
+1. In DonutSMP, use `/api` to create a key. (Only Applicable if you purchase DONUT+) 🥲
 2. Close Minecraft.
 3. Create `.minecraft/config/donut-flip-scanner/api-key.txt` and paste the key only.
    Do not include the word `Bearer`; normal editor-added whitespace is trimmed.
