@@ -86,8 +86,9 @@ public final class DonutFlipScannerClient implements ClientModInitializer {
                 return;
             }
             if (runtime.isEmpty()) {
-                LOGGER.info("No DonutSMP API credential found at {}; mock data remains active.",
+                LOGGER.info("No DonutSMP API credential found at {}; attempting packet interception mode.",
                         liveConfigDirectory.resolve("api-key.txt"));
+                startPacketMode(liveConfigDirectory);
                 return;
             }
             ClientProductionRuntime started = runtime.orElseThrow();
@@ -151,5 +152,31 @@ public final class DonutFlipScannerClient implements ClientModInitializer {
         String message = current.getMessage();
         return message == null || message.isBlank()
                 ? current.getClass().getSimpleName() : message;
+    }
+
+    private static void startPacketMode(Path configDirectory) {
+        String username = net.minecraft.client.MinecraftClient.getInstance().getSession().getUsername();
+        String uuid = Optional.ofNullable(net.minecraft.client.MinecraftClient.getInstance()
+                .getSession().getUuidOrNull()).map(java.util.UUID::toString).orElse("");
+        CompletableFuture<Optional<ClientProductionRuntime>> packetStartup =
+                ClientProductionRuntime.startPacketModeAsync(configDirectory, username, uuid);
+        packetStartup.whenComplete((runtime, error) -> {
+            if (error != null) {
+                LOGGER.warn("Packet interception startup failed; mock data remains active: {}",
+                        sanitized(error));
+                return;
+            }
+            if (runtime.isEmpty()) {
+                LOGGER.info("Packet interception mode could not start; mock data remains active.");
+                return;
+            }
+            ClientProductionRuntime started = runtime.orElseThrow();
+            if (clientStopping.get()) {
+                started.close();
+                return;
+            }
+            productionRuntime = started;
+            LOGGER.info("Packet interception mode active. Open /ah in-game to capture auction data.");
+        });
     }
 }

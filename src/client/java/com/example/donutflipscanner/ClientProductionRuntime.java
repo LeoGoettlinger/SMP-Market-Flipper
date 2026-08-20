@@ -9,11 +9,17 @@ import com.example.donutflipscanner.automation.service.DryRunAuctionInteractionA
 import com.example.donutflipscanner.automation.service.RelistPricingService;
 import com.example.donutflipscanner.automation.service.TradeAutomationCoordinator;
 import com.example.donutflipscanner.automation.MinecraftAuctionInteractionAdapter;
+import com.example.donutflipscanner.automation.model.AuctionInteractionProfile;
 import com.example.donutflipscanner.configuration.AppConfig;
 import com.example.donutflipscanner.configuration.AutomationConfig;
 import com.example.donutflipscanner.configuration.ConfigurationManager;
+import com.example.donutflipscanner.data.ClientUiDataSources;
 import com.example.donutflipscanner.data.LiveClientDataIntegration;
 import com.example.donutflipscanner.data.provider.ClientAutomationSettingsController;
+import com.example.donutflipscanner.data.provider.LiveItemFilterController;
+import com.example.donutflipscanner.data.provider.LiveNotificationSettingsController;
+import com.example.donutflipscanner.data.provider.ApiConnectionStatusProvider;
+import com.example.donutflipscanner.data.provider.ApiConnectionStatus;
 import com.example.donutflipscanner.database.DatabaseManager;
 import com.example.donutflipscanner.database.FingerprintRepository;
 import com.example.donutflipscanner.database.ListingRepository;
@@ -29,6 +35,9 @@ import com.example.donutflipscanner.market.scanner.ApiMarketScanWork;
 import com.example.donutflipscanner.market.scanner.MarketScanner;
 import com.example.donutflipscanner.market.scanner.MarketScannerConfig;
 import com.example.donutflipscanner.market.statistics.RepositoryMarketStatisticsService;
+import com.example.donutflipscanner.packet.AuctionHouseDataCapture;
+import com.example.donutflipscanner.packet.PacketMarketScanWork;
+import com.example.donutflipscanner.mixin.AuctionHousePacketListener;
 import com.example.donutflipscanner.provider.LiveMarketSnapshotService;
 import com.example.donutflipscanner.profit.PersonalProfitTracker;
 import com.example.donutflipscanner.profit.PlayerIdentity;
@@ -131,6 +140,30 @@ public final class ClientProductionRuntime implements AutoCloseable {
         return CompletableFuture.supplyAsync(() -> create(root, username, uuid), bootstrapExecutor)
                 .thenCompose(optional -> optional
                         .map(runtime -> runtime.readyAndAttach().thenApply(ignored -> Optional.of(runtime)))
+                        .orElseGet(() -> CompletableFuture.completedFuture(Optional.empty())))
+                .whenComplete((ignored, error) -> bootstrapExecutor.shutdown());
+    }
+
+    /**
+     * Starts the scanner in packet-interception mode (no API key required).
+     * Auction house data is captured from Minecraft packets when the player opens /ah.
+     */
+    public static CompletableFuture<Optional<ClientProductionRuntime>> startPacketModeAsync(
+            Path configurationDirectory, String minecraftUsername, String minecraftUuid
+    ) {
+        Path root = Objects.requireNonNull(configurationDirectory, "configurationDirectory")
+                .toAbsolutePath().normalize();
+        String username = Objects.requireNonNullElse(minecraftUsername, "").strip();
+        String uuid = Objects.requireNonNullElse(minecraftUuid, "").strip();
+        ExecutorService bootstrapExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "donut-packet-bootstrap");
+            thread.setDaemon(true);
+            return thread;
+        });
+        return CompletableFuture.supplyAsync(() -> createPacketMode(root, username, uuid), bootstrapExecutor)
+                .thenCompose(optional -> optional
+                        .map(runtime -> runtime.readyAndAttachPacketMode()
+                                .thenApply(ignored -> Optional.of(runtime)))
                         .orElseGet(() -> CompletableFuture.completedFuture(Optional.empty())))
                 .whenComplete((ignored, error) -> bootstrapExecutor.shutdown());
     }
@@ -261,6 +294,118 @@ public final class ClientProductionRuntime implements AutoCloseable {
         }
     }
 
+    /**
+     * Creates a runtime using packet interception instead of the external API.
+     * No API key is required — auction house data comes from intercepted Minecraft packets.
+     */
+    private static Optional<ClientProductionRuntime> createPacketMode(
+            Path root, String minecraftUsername, String minecraftUuid
+    ) {
+        ConfigurationManager configurationManager = new ConfigurationManager(root.resolve("config.json"));
+        AppConfig loaded = configurationManager.load().configuration();
+        AppConfig liveConfiguration = withLiveMode(loaded);
+        if (!liveConfiguration.equals(loaded)) {
+            configurationManager.save(liveConfiguration);
+        }
+        AtomicReference<AppConfig> configuration = new AtomicReference<>(liveConfiguration);
+        ExecutorService persistenceExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "donut-config-persistence");
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        DatabaseManager database = null;
+        try {
+            database = new DatabaseManager(root.resolve("market-data.db"));
+            FingerprintRepository fingerprints = new FingerprintRepository(database);
+            ListingRepository listings = new ListingRepository(database);
+            SaleRepository sales = new SaleRepository(database);
+            OpportunityRepository opportunities = new OpportunityRepository(database);
+            Clock clock = Clock.systemUTC();
+            PersonalProfitTracker personalProfitTracker = new PersonalProfitTracker(
+                    new PersonalProfitRepository(database),
+                    new PlayerIdentity(minecraftUsername, Optional.ofNullable(minecraftUuid)
+                            .filter(value -> !value.isBlank())),
+                    clock
+            );
+            OpportunityDetector detector = new OpportunityDetector();
+            RepositoryMarketStatisticsService statistics =
+                    new RepositoryMarketStatisticsService(sales, listings);
+            ItemFilterPolicy filters = filters(liveConfiguration);
+            RepositoryMarketAnalysisService analysis = new RepositoryMarketAnalysisService(
+                    fingerprints, listings, opportunities, sales, statistics, detector,
+                    withFilters(OpportunityEvaluationConfig.relaxedLiveDefaults(), filters)
+            );
+            AtomicReference<AppConfig> configReference = configuration;
+            ConfigurationManager managerReference = configurationManager;
+            ExecutorService executorReference = persistenceExecutor;
+            RepositoryMarketDataIngestionService ingestion = new RepositoryMarketDataIngestionService(
+                    database,
+                    analysis,
+                    () -> CompletableFuture.runAsync(
+                            () -> managerReference.save(configReference.get()), executorReference
+                    ),
+                    MarketRetentionPolicy.defaults(),
+                    new com.example.donutflipscanner.diagnostics.PerformanceMetrics(),
+                    personalProfitTracker
+            );
+
+            AuctionInteractionProfile profile = liveConfiguration.automation().interactionProfile()
+                    .orElse(null);
+            AuctionHouseDataCapture capture = new AuctionHouseDataCapture(
+                    () -> Optional.ofNullable(profile)
+            );
+            AuctionHousePacketListener.setCapture(capture);
+
+            PacketMarketScanWork work = new PacketMarketScanWork(capture, ingestion);
+            MarketScannerConfig scannerConfig = MarketScannerConfig.defaults(true)
+                    .withScannerEnabled(liveConfiguration.scannerEnabled());
+            MarketScanner scanner = new MarketScanner(work, scannerConfig);
+            LiveMarketSnapshotService snapshots = new LiveMarketSnapshotService(
+                    listings, sales, opportunities, Optional.of(detector), personalProfitTracker
+            );
+            TradeExecutionRepository tradeExecutions = new TradeExecutionRepository(database);
+            DatabaseTradeExecutionObserver executionObserver =
+                    new DatabaseTradeExecutionObserver(tradeExecutions);
+            MinecraftAuctionInteractionAdapter authorizedAuctionAdapter =
+                    new MinecraftAuctionInteractionAdapter(
+                            MinecraftClient.getInstance(),
+                            () -> configuration.get().automation().interactionProfile()
+                    );
+            TradeAutomationCoordinator automation = new TradeAutomationCoordinator(
+                    () -> configuration.get().automation(),
+                    new DryRunAuctionInteractionAdapter(),
+                    authorizedAuctionAdapter,
+                    new RelistPricingService(), executionObserver, clock
+            );
+            ClientAutomationSettingsController automationSettings =
+                    new ClientAutomationSettingsController(
+                            () -> configuration.get().automation(),
+                            updated -> updateAutomationConfiguration(
+                                    configuration, configurationManager, persistenceExecutor, updated
+                            ),
+                            DonutFlipScannerClient::currentServerAddress,
+                            automation
+                    );
+            AutomaticOpportunityDispatcher automaticDispatcher = new AutomaticOpportunityDispatcher(
+                    () -> configuration.get().automation(), automation, snapshots::snapshot
+            );
+            Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
+            return Optional.of(new ClientProductionRuntime(
+                    configurationManager, configuration, persistenceExecutor, null,
+                    database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
+                    automaticDispatcher, snapshotSubscription,
+                    scanner, snapshots, analysis, personalProfitTracker
+            ));
+        } catch (RuntimeException failure) {
+            if (database != null) {
+                database.close();
+            }
+            persistenceExecutor.shutdownNow();
+            throw failure;
+        }
+    }
+
     private CompletableFuture<Void> readyAndAttach() {
         // The first snapshot queues behind database initialization. Registry-backed UI providers
         // are then constructed on Minecraft's client executor.
@@ -296,6 +441,66 @@ public final class ClientProductionRuntime implements AutoCloseable {
             close();
             return CompletableFuture.failedFuture(error);
         });
+    }
+
+    /**
+     * Attaches packet-mode data sources on the Minecraft client thread.
+     * Similar to readyAndAttach but uses a packet-aware connection status provider.
+     */
+    private CompletableFuture<Void> readyAndAttachPacketMode() {
+        return tradeExecutions.markInterruptedExecutionsForReview(Instant.now())
+                .thenCompose(recovered -> personalProfitTracker.initialize())
+                .thenCompose(recovered -> snapshots.refresh()).thenCompose(ignored -> {
+            CompletableFuture<Void> attached = new CompletableFuture<>();
+            MinecraftClient.getInstance().execute(() -> {
+                try {
+                    if (!closed.get()) {
+                        LiveItemFilterController itemFilters = new LiveItemFilterController(
+                                filters(configuration.get()), this::applyFiltersAsync
+                        );
+                        snapshots.refresh();
+                        ClientUiDataSources live = new ClientUiDataSources(
+                                new com.example.donutflipscanner.data.provider.MarketOpportunityProvider(snapshots),
+                                new com.example.donutflipscanner.data.provider.LiveScannerStatusProvider(
+                                        scanner, this::setScannerEnabled
+                                ),
+                                new com.example.donutflipscanner.data.provider.LiveMarketStatisticsProvider(snapshots),
+                                new com.example.donutflipscanner.data.provider.DatabaseOpportunityHistoryProvider(snapshots),
+                                new com.example.donutflipscanner.data.provider.RegistryItemSearchProvider(),
+                                new PacketConnectionStatusProvider(),
+                                itemFilters,
+                                com.example.donutflipscanner.data.MarketChartSnapshot::unavailable,
+                                new LiveNotificationSettingsController(
+                                        configuration.get().notificationsEnabled(),
+                                        configuration.get().animationsEnabled(),
+                                        this::setNotificationsEnabled
+                                ),
+                                automationSettings
+                        );
+                        DonutFlipScannerClient.useLiveDataSources(live, scanner);
+                        scanner.start();
+                    }
+                    attached.complete(null);
+                } catch (RuntimeException failure) {
+                    attached.completeExceptionally(failure);
+                }
+            });
+            return attached;
+        }).exceptionallyCompose(error -> {
+            close();
+            return CompletableFuture.failedFuture(error);
+        });
+    }
+
+    /**
+     * Connection status provider for packet mode — always reports connected since
+     * we're reading directly from Minecraft's network layer.
+     */
+    private static final class PacketConnectionStatusProvider implements ApiConnectionStatusProvider {
+        @Override
+        public ApiConnectionStatus getApiConnectionStatus() {
+            return new ApiConnectionStatus("DonutSMP", "Packet interception active", true);
+        }
     }
 
     private CompletableFuture<Void> applyFiltersAsync(ItemFilterPolicy policy) {
