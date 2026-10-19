@@ -13,16 +13,19 @@ public record FishingMarketEvidence(
         int activeListings,
         int distinctActiveSellers,
         Optional<BigDecimal> lowestActiveAsk,
+        Optional<BigDecimal> medianActiveAsk,
         Optional<Instant> mostRecentSaleAt,
         Instant observedAt
 ) {
     public FishingMarketEvidence {
-        if (comparableSales < 0 || activeListings < 0 || distinctActiveSellers < 0) {
-            throw new IllegalArgumentException("market evidence counts must not be negative");
+        if (comparableSales < 0 || activeListings < 0 || distinctActiveSellers < 0
+                || distinctActiveSellers > activeListings) {
+            throw new IllegalArgumentException("market evidence counts must be nonnegative and internally consistent");
         }
         lowerQuartileSalePrice = positive(lowerQuartileSalePrice);
         weightedMedianSalePrice = positive(weightedMedianSalePrice);
         lowestActiveAsk = positive(lowestActiveAsk);
+        medianActiveAsk = positive(medianActiveAsk);
         mostRecentSaleAt = Objects.requireNonNullElse(mostRecentSaleAt, Optional.empty());
         Objects.requireNonNull(observedAt, "observedAt");
     }

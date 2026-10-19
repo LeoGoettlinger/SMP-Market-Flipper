@@ -8,6 +8,7 @@ import com.example.donutflipscanner.market.item.model.NormalizedItem;
 import com.example.donutflipscanner.market.statistics.model.ItemMarketStatistics;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
  * never run on Minecraft's render thread by this service.
  */
 public final class RepositoryMarketStatisticsService implements MarketStatisticsProvider {
+    private static final Duration ACTIVE_ASK_FRESHNESS = Duration.ofMinutes(10);
     private final SaleRepository saleRepository;
     private final ListingRepository listingRepository;
     private final MarketStatisticsCalculator calculator;
@@ -70,9 +72,10 @@ public final class RepositoryMarketStatisticsService implements MarketStatistics
                     snapshotTime,
                     config.maxComparableSales()
             );
-            var asks = listingRepository.findActiveByFingerprint(
+            var asks = listingRepository.findActiveByFingerprintSince(
                     fingerprint,
-                    config.maxActiveListings()
+                    config.maxActiveListings(),
+                    snapshotTime.minus(ACTIVE_ASK_FRESHNESS)
             );
             return sales.thenCombine(asks, (saleSnapshot, askSnapshot) -> calculator.calculate(
                     item, saleSnapshot, askSnapshot, config, snapshotTime

@@ -91,6 +91,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
     private final RepositoryMarketAnalysisService analysis;
     private final RepositoryMarketStatisticsService marketStatistics;
     private final PersonalProfitTracker personalProfitTracker;
+    private final AuctionHouseDataCapture packetCapture;
     private final FishingAutomationController fishingController;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicReference<CompletableFuture<Void>> closeCompletion = new AtomicReference<>();
@@ -110,7 +111,8 @@ public final class ClientProductionRuntime implements AutoCloseable {
             LiveMarketSnapshotService snapshots,
             RepositoryMarketAnalysisService analysis,
             RepositoryMarketStatisticsService marketStatistics,
-            PersonalProfitTracker personalProfitTracker
+            PersonalProfitTracker personalProfitTracker,
+            AuctionHouseDataCapture packetCapture
     ) {
         this.configurationManager = configurationManager;
         this.configuration = configuration;
@@ -127,6 +129,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         this.analysis = analysis;
         this.marketStatistics = marketStatistics;
         this.personalProfitTracker = personalProfitTracker;
+        this.packetCapture = packetCapture;
         this.fishingController = new FishingAutomationController(
                 MinecraftClient.getInstance(), this::fishingAuthorized,
                 () -> configuration.get().automation().interactionProfile(),
@@ -239,7 +242,9 @@ public final class ClientProductionRuntime implements AutoCloseable {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         if (normalized.matchQuality().matchType()
-                == com.example.donutflipscanner.market.item.model.ItemMatchType.UNSUPPORTED) {
+                == com.example.donutflipscanner.market.item.model.ItemMatchType.UNSUPPORTED
+                || normalized.matchQuality().matchType()
+                == com.example.donutflipscanner.market.item.model.ItemMatchType.APPROXIMATE) {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         int minimumSales = Math.max(3, configuration.get().automation().minimumComparableSales());
@@ -249,7 +254,8 @@ public final class ClientProductionRuntime implements AutoCloseable {
             FishingMarketEvidence evidence = new FishingMarketEvidence(
                     stats.comparableSaleCount(), stats.percentile25(), stats.weightedMedian(),
                     stats.activeAsks().listingCount(), stats.activeAsks().uniqueSellerCount(),
-                    stats.activeAsks().lowestAsk(), stats.mostRecentSaleAt(), stats.calculatedAt()
+                    stats.activeAsks().lowestAsk(), stats.activeAsks().medianAsk(),
+                    stats.mostRecentSaleAt(), stats.calculatedAt()
             );
             return new FishingPricePolicy().listingPrice(
                     evidence, minimumSales, Instant.now(), Duration.ofHours(24)
@@ -404,7 +410,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
                     configurationManager, configuration, persistenceExecutor, apiClient,
                     database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
                     automaticDispatcher, snapshotSubscription,
-                    scanner, snapshots, analysis, statistics, personalProfitTracker
+                    scanner, snapshots, analysis, statistics, personalProfitTracker, null
             ));
         } catch (RuntimeException failure) {
             if (apiClient != null) {
@@ -474,10 +480,8 @@ public final class ClientProductionRuntime implements AutoCloseable {
                     personalProfitTracker
             );
 
-            AuctionInteractionProfile profile = liveConfiguration.automation().interactionProfile()
-                    .orElse(null);
             AuctionHouseDataCapture capture = new AuctionHouseDataCapture(
-                    () -> Optional.ofNullable(profile)
+                    () -> configuration.get().automation().interactionProfile()
             );
             AuctionHousePacketListener.setCapture(capture);
 
@@ -521,7 +525,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
                     configurationManager, configuration, persistenceExecutor, null,
                     database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
                     automaticDispatcher, snapshotSubscription,
-                    scanner, snapshots, analysis, statistics, personalProfitTracker
+                    scanner, snapshots, analysis, statistics, personalProfitTracker, capture
             ));
         } catch (RuntimeException failure) {
             if (database != null) {
@@ -593,7 +597,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
                                 new com.example.donutflipscanner.data.provider.LiveMarketStatisticsProvider(snapshots),
                                 new com.example.donutflipscanner.data.provider.DatabaseOpportunityHistoryProvider(snapshots),
                                 new com.example.donutflipscanner.data.provider.RegistryItemSearchProvider(),
-                                new PacketConnectionStatusProvider(),
+                                new PacketConnectionStatusProvider(packetCapture),
                                 itemFilters,
                                 com.example.donutflipscanner.data.MarketChartSnapshot::unavailable,
                                 new LiveNotificationSettingsController(
@@ -618,14 +622,23 @@ public final class ClientProductionRuntime implements AutoCloseable {
         });
     }
 
-    /**
-     * Connection status provider for packet mode — always reports connected since
-     * we're reading directly from Minecraft's network layer.
-     */
+    /** Reports whether the configured auction screen has a complete, stable packet snapshot. */
     private static final class PacketConnectionStatusProvider implements ApiConnectionStatusProvider {
+        private final AuctionHouseDataCapture capture;
+
+        private PacketConnectionStatusProvider(AuctionHouseDataCapture capture) {
+            this.capture = Objects.requireNonNull(capture, "capture");
+        }
+
         @Override
         public ApiConnectionStatus getApiConnectionStatus() {
-            return new ApiConnectionStatus("DonutSMP", "Packet interception active", true);
+            if (!capture.isCapturing()) {
+                return new ApiConnectionStatus("Packet Scan", "Waiting for configured auction screen", false);
+            }
+            if (!capture.hasStableSnapshot()) {
+                return new ApiConnectionStatus("Packet Scan", "Loading auction page", false);
+            }
+            return new ApiConnectionStatus("Packet Scan", "Capturing current auction page", true);
         }
     }
 
@@ -680,6 +693,9 @@ public final class ClientProductionRuntime implements AutoCloseable {
             return completion;
         }
         fishingController.stop();
+        if (packetCapture != null) {
+            AuctionHousePacketListener.setCapture(null);
+        }
         snapshotSubscription.run();
         automaticDispatcher.close();
         scanner.shutdownAsync().whenComplete((ignored, error) -> {

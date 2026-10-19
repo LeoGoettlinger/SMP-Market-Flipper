@@ -31,7 +31,7 @@ The existing analysis workflow scans market evidence and surfaces candidates. Pu
 
 Fishing mode uses the player's selected hotbar fishing rod, detects the server-synchronised bite state, waits for the configured action delay, reels, then checks for inventory changes. It does not infer a bite from bobber motion. It will not cast without an available inventory slot.
 
-Automatic sale is more restrictive than catching. A caught item is eligible only when its exact fingerprint was absent before this fishing session (or is already tracked as loot caught by this session). Existing matching inventory items are never automatically sold. The mod keeps caught items when it cannot establish a sufficiently recent price. A listing price requires the configured minimum number of comparable sales (default: eight), a sale within 24 hours, and—when active asks are used—at least two listings from two sellers with a plausible ask-to-sale ratio. The chosen ask is bounded by the lower-quartile / weighted-median sale evidence and is verified against the private server's listing screen and inventory decrease.
+Automatic sale is more restrictive than catching. A caught item is eligible only when its exact fingerprint was absent before this fishing session (or is already tracked as loot caught by this session). Existing matching inventory items are never automatically sold. With recent sale history, the price is bounded by the lower quartile and weighted median, and credible asks can only lower it. Without sale history (including Packet Scan), an ask-only estimate is allowed only with at least five fresh active listings from at least three sellers; the lowest ask must be at least 70% of the ask median, and the mod lists one currency unit below it. Active asks older than ten minutes are excluded. This ask-only value is explicitly an estimate, not evidence of a completed sale. Sparse, stale, unsupported, or suspicious market evidence means the catch stays in inventory.
 
 To run Fishing automatically, all of the following must be true:
 
@@ -46,9 +46,9 @@ The profile's `listingCommandTemplate` must describe a legitimate sale command f
 ## Market data sources
 
 - **API Detection** uses the official DonutSMP API, including recently listed auctions and completed transactions. It is the recommended source for price evidence when an API credential is available.
-- **Packet Scan** analyzes auction-house data actually observed by the client. It does not open `/ah` itself; visit the configured auction UI so data is captured. Fishing sale decisions still fail closed if the local database lacks recent comparable sales.
+- **Packet Scan** captures the configured auction-house screen from server packets without an API key. Open the exact configured screen and keep it open while the page loads; only a complete inventory snapshot that has been quiet for 300 ms is ingested. To broaden the no-key market sample, manually visit other pages; the scanner does not issue `/ah`, click page controls, or automatically traverse them. It captures visible listing items, configured price/seller lore and supported item metadata—not completed sales. Reconfirmed asks expire from price analysis after ten minutes without a fresh observation. Fishing may use the guarded ask-only estimate described above; it never invents transaction history.
 
-Useful estimates need enough comparable sales and active market evidence to warm up. An API key authenticates API requests only; it is not permission to automate gameplay.
+Useful sale-backed fair values and trend estimates need enough completed sales plus active market evidence; without transactions they may remain unavailable even when Packet Scan has captured asks. An API key authenticates API requests only; it is not permission to automate gameplay.
 
 ## Private-server configuration and safeguards
 
@@ -74,4 +74,4 @@ config/donut-flip-scanner/exports/                   # user exports
 config/donut-flip-scanner/backups/                   # configuration/database backups
 ```
 
-For API credential details see [API integration](docs/API_INTEGRATION.md). For the automation state machine, private profiles, limits and safe testing sequence see [Automation](docs/AUTOMATION.md). For UI/backend wiring see [GUI/backend integration](docs/GUI_BACKEND_INTEGRATION.md).
+For API credential details see [API integration](docs/API_INTEGRATION.md). For exact feature and safety-check behavior, see [Features and safety](docs/FEATURES_AND_SAFETY.md). For the automation state machine, private profiles, limits and safe testing sequence see [Automation](docs/AUTOMATION.md). For UI/backend wiring see [GUI/backend integration](docs/GUI_BACKEND_INTEGRATION.md).

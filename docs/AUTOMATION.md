@@ -120,16 +120,30 @@ compares the inventory before/after. It never guesses a bite from bobber motion.
 items are not eligible for automatic sale: an item fingerprint must have been absent before the
 first catch in the current fishing session, or already be tracked as loot caught by that session.
 
-For a catch to be listed, the local market database must have at least the configured minimum
-number of comparable sales (at least three; eight by default) and a comparable sale no older than
-24 hours. A lower-quartile/weighted-median sale estimate bounds the listing price. If active asks are
-used, at least two listings from two sellers are required and the lowest ask must be within a
-plausible 70%-150% band of the sale anchor. Missing, sparse, stale, or suspicious evidence means
-the catch stays in inventory and is retried later; no fallback price is invented.
+The price policy has two explicit evidence paths:
+
+1. **Completed-sales path:** requires the configured minimum number of comparable sales (at least
+   three; eight by default) and a most-recent sale within 24 hours. The candidate is bounded by the
+   lower quartile and weighted median of sales. When there are at least two fresh active asks from
+   two sellers, the lowest ask must be between 70% and 150% of the sale anchor; otherwise the
+   evidence is considered suspicious and listing is refused. A credible ask can only lower the
+   conservative sale-derived candidate (the policy undercuts it by one currency unit where relevant).
+2. **Ask-only path:** used when there is no adequate recent sale feed, including Packet Scan mode.
+   It requires at least five current active listings, three distinct sellers, both a lowest and median
+   ask, and a lowest-to-median ratio of at least 70%. The proposed price is one currency unit below
+   the lowest ask, rounded down to whole currency. This is a competitive asking-price estimate—not
+   a completed sale, a guaranteed fair value, or proof that the item will sell. Ask observations older
+   than ten minutes are excluded. If either path lacks sufficient, fresh, supported evidence, the catch
+   remains in inventory and is retried later. Unsupported/approximate item matches are not priced.
+
+Packet Scan has no transaction-history feed: it sees only visible listing snapshots. It captures the
+configured exact-title auction screen after a complete inventory snapshot has been quiet for 300 ms.
+It does not open the auction screen or click next-page controls. To build broader evidence without an
+API key, leave that screen open and manually visit pages; listings are retained as observations but
+stop contributing to current ask statistics if not reconfirmed within ten minutes. API Detection can
+provide completed transactions and is preferable for a sale-based estimate.
 
 The listing operation uses the configured `listingCommandTemplate` and `listingCreatedTitle`. It
 selects the exact caught stack, rechecks authorization immediately before the command, then requires
 the exact configured confirmation screen and the exact inventory decrease. If any precondition or
-verification fails, the catch is retained and no further listing command is sent. Packet Scan can
-price only items for which the user has actually captured sufficient recent auction data; API
-Detection is recommended for a warm, broad market history.
+verification fails, the catch is retained and no further listing command is sent.

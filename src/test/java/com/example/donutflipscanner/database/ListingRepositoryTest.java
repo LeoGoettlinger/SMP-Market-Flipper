@@ -84,6 +84,12 @@ class ListingRepositoryTest {
             assertEquals(List.of("active"), listings.findActiveByFingerprint(
                     DatabaseTestFixtures.FINGERPRINT, 10
             ).join().stream().map(ListingEntity::listingKey).toList());
+            assertEquals(List.of("active"), listings.findActiveByFingerprintSince(
+                    DatabaseTestFixtures.FINGERPRINT, 10, DatabaseTestFixtures.BASE_TIME
+            ).join().stream().map(ListingEntity::listingKey).toList());
+            assertTrue(listings.findActiveByFingerprintSince(
+                    DatabaseTestFixtures.FINGERPRINT, 10, DatabaseTestFixtures.BASE_TIME.plusSeconds(1)
+            ).join().isEmpty());
             assertEquals(1, listings.deleteStaleInactiveBefore(
                     DatabaseTestFixtures.BASE_TIME.plusSeconds(1), 10
             ).join());

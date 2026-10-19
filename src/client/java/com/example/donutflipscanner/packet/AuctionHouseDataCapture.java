@@ -29,9 +29,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.TreeMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
@@ -40,14 +37,13 @@ import java.util.function.Supplier;
  */
 public final class AuctionHouseDataCapture {
     private static final Logger LOGGER = LoggerFactory.getLogger("donut_flip_scanner");
-    private static final int MAXIMUM_CONTAINER_DEPTH = 4;
+    private static final long PACKET_QUIET_PERIOD_NANOS = 300_000_000L;
 
-    private final AtomicReference<Integer> activeSyncId = new AtomicReference<>(-1);
-    private final AtomicReference<String> activeScreenTitle = new AtomicReference<>("");
-    private final CopyOnWriteArrayList<ItemStack> capturedSlots = new CopyOnWriteArrayList<>();
-    private final AtomicInteger capturedPageCount = new AtomicInteger();
-    private final AtomicReference<List<ApiAuctionListing>> lastExtractedListings = new AtomicReference<>(List.of());
-    private volatile boolean capturing = false;
+    private int activeSyncId = -1;
+    private final List<ItemStack> capturedSlots = new ArrayList<>();
+    private long lastPacketAtNanos;
+    private boolean hasFullSnapshot;
+    private boolean capturing;
 
     private final Supplier<Optional<AuctionInteractionProfile>> profileSupplier;
 
@@ -59,109 +55,89 @@ public final class AuctionHouseDataCapture {
      * Called by the Mixin when an OpenScreenS2CPacket arrives.
      * Returns true if this screen matches the configured AH profile.
      */
-    public boolean onScreenOpened(int syncId, String screenTitle) {
+    public synchronized boolean onScreenOpened(int syncId, String screenTitle) {
+        resetCapture();
         Optional<AuctionInteractionProfile> optProfile = profileSupplier.get();
-        if (optProfile.isEmpty()) {
+        if (optProfile.isEmpty() || !optProfile.orElseThrow().resultsScreenTitle().equals(screenTitle)) {
             return false;
         }
-        AuctionInteractionProfile p = optProfile.orElseThrow();
-        if (!p.resultsScreenTitle().equals(screenTitle)) {
-            return false;
-        }
-        activeSyncId.set(syncId);
-        activeScreenTitle.set(screenTitle);
-        capturedSlots.clear();
+        activeSyncId = syncId;
         capturing = true;
-        capturedPageCount.set(0);
+        lastPacketAtNanos = System.nanoTime();
         LOGGER.info("Auction house screen detected (syncId={}, title={})", syncId, screenTitle);
         return true;
     }
 
-    /**
-     * Called by the Mixin when an InventoryS2CPacket arrives for the active AH screen.
-     * Replaces all captured slots with the new inventory contents.
-     */
-    public void onInventorySynced(int syncId, List<ItemStack> slots) {
-        if (!capturing || activeSyncId.get() != syncId) {
+    /** Replaces the incomplete slot buffer only after a complete inventory packet arrives. */
+    public synchronized void onInventorySynced(int syncId, List<ItemStack> slots) {
+        if (!capturing || activeSyncId != syncId) {
             return;
         }
+        hasFullSnapshot = false;
         capturedSlots.clear();
-        capturedSlots.addAll(slots);
-        capturedPageCount.incrementAndGet();
-        lastExtractedListings.set(extractListings());
+        slots.stream().map(ItemStack::copy).forEach(capturedSlots::add);
+        lastPacketAtNanos = System.nanoTime();
+        hasFullSnapshot = true;
     }
 
-    /**
-     * Called by the Mixin when a ScreenHandlerSlotUpdateS2CPacket arrives for the active AH screen.
-     */
-    public void onSlotUpdated(int syncId, int slot, ItemStack stack) {
-        if (!capturing || activeSyncId.get() != syncId) {
+    /** Applies incremental server updates; cursor-slot updates are intentionally ignored. */
+    public synchronized void onSlotUpdated(int syncId, int slot, ItemStack stack) {
+        if (!capturing || activeSyncId != syncId || !hasFullSnapshot || slot < 0 || slot > 255) {
             return;
         }
         while (capturedSlots.size() <= slot) {
             capturedSlots.add(ItemStack.EMPTY);
         }
-        capturedSlots.set(slot, stack);
-        lastExtractedListings.set(extractListings());
+        capturedSlots.set(slot, stack.copy());
+        lastPacketAtNanos = System.nanoTime();
     }
 
-    /**
-     * Called by the Mixin when the screen is closed.
-     */
-    public void onScreenClosed(int syncId) {
-        if (activeSyncId.compareAndSet(syncId, -1)) {
-            capturing = false;
-            capturedSlots.clear();
-            activeScreenTitle.set("");
+    public synchronized void onScreenClosed(int syncId) {
+        if (activeSyncId == syncId) {
+            resetCapture();
         }
     }
 
-    /**
-     * Returns true if we are currently capturing an AH screen.
-     */
-    public boolean isCapturing() {
+    public synchronized boolean isCapturing() {
         return capturing;
     }
 
-    /**
-     * Returns the number of pages observed during this capture session.
-     */
-    public int capturedPageCount() {
-        return capturedPageCount.get();
+    public synchronized boolean hasStableSnapshot() {
+        return capturing && hasFullSnapshot
+                && System.nanoTime() - lastPacketAtNanos >= PACKET_QUIET_PERIOD_NANOS;
     }
 
-    /**
-     * Called by PacketMarketScanWork to get the current page as an ApiAuctionPage.
-     */
-    public Optional<ApiAuctionPage> captureCurrentPage() {
-        if (!capturing) {
+    /** Returns only a complete page that has been quiet for a short debounce period. */
+    public synchronized Optional<ApiAuctionPage> captureCurrentPage() {
+        if (!capturing || !hasFullSnapshot
+                || System.nanoTime() - lastPacketAtNanos < PACKET_QUIET_PERIOD_NANOS) {
             return Optional.empty();
         }
-        List<ApiAuctionListing> listings = lastExtractedListings.get();
-        if (listings.isEmpty()) {
-            listings = extractListings();
-            lastExtractedListings.set(listings);
-        }
+        List<ApiAuctionListing> listings = extractListings(List.copyOf(capturedSlots));
         ApiPaginationMetadata pagination = new ApiPaginationMetadata(
                 1, listings.size(), OptionalInt.empty(), OptionalInt.empty()
         );
         return Optional.of(new ApiAuctionPage(200, listings, pagination));
     }
 
-    private List<ApiAuctionListing> extractListings() {
+    private synchronized void resetCapture() {
+        activeSyncId = -1;
+        capturedSlots.clear();
+        hasFullSnapshot = false;
+        lastPacketAtNanos = 0;
+        capturing = false;
+    }
+
+    private List<ApiAuctionListing> extractListings(List<ItemStack> snapshot) {
         Optional<AuctionInteractionProfile> optProfile = profileSupplier.get();
         if (optProfile.isEmpty()) {
             return List.of();
         }
         AuctionInteractionProfile p = optProfile.orElseThrow();
-        List<ItemStack> snapshot = List.copyOf(capturedSlots);
         List<ApiAuctionListing> result = new ArrayList<>();
         int first = Math.max(0, p.firstResultSlot());
         int last = Math.min(snapshot.size() - 1, p.lastResultSlot());
         for (int slotId = first; slotId <= last; slotId++) {
-            if (slotId >= snapshot.size()) {
-                break;
-            }
             ItemStack stack = snapshot.get(slotId);
             if (stack.isEmpty()) {
                 continue;
