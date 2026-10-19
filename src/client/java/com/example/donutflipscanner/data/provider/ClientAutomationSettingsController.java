@@ -1,11 +1,13 @@
 package com.example.donutflipscanner.data.provider;
 
+import com.example.donutflipscanner.DonutFlipScannerClient;
 import com.example.donutflipscanner.automation.model.AutomationMode;
 import com.example.donutflipscanner.automation.model.TradeExecutionRequest;
 import com.example.donutflipscanner.automation.model.TradeExecutionResult;
 import com.example.donutflipscanner.automation.service.TradeAutomationCoordinator;
 import com.example.donutflipscanner.balance.BalanceProvider;
 import com.example.donutflipscanner.configuration.AutomationConfig;
+import com.example.donutflipscanner.configuration.OperatingMode;
 import com.example.donutflipscanner.data.AutomationSettingsSnapshot;
 import com.example.donutflipscanner.data.FlipOpportunity;
 import com.example.donutflipscanner.data.OpportunityActionResult;
@@ -88,6 +90,11 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
 
     @Override
     public CompletableFuture<OpportunityActionResult> executeConfiguredMode(FlipOpportunity opportunity) {
+        if (DonutFlipScannerClient.runtimeSettings().mode() != OperatingMode.FLIPPER) {
+            return CompletableFuture.completedFuture(new OpportunityActionResult(
+                    false, "Manual Flipper execution is unavailable while Fishing mode is selected."
+            ));
+        }
         AutomationMode mode = configuration.get().mode();
         if (mode == AutomationMode.DISABLED) {
             return CompletableFuture.completedFuture(new OpportunityActionResult(
@@ -111,7 +118,8 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
     @Override
     public CompletableFuture<Void> setEnabled(boolean enabled) {
         AutomationConfig current = configuration.get();
-        return updateConfiguration.apply(copy(current, enabled, current.mode(), current.allowedServerAddresses()));
+        return updateConfiguration.apply(copy(current, enabled, current.mode(), current.allowedServerAddresses(),
+                current.actionDelayMillis()));
     }
 
     @Override
@@ -119,7 +127,18 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
         AutomationConfig current = configuration.get();
         coordinator.disarm("Mode changed; session authorization was cleared.");
         return updateConfiguration.apply(copy(current, current.enabled(), Objects.requireNonNull(mode, "mode"),
-                current.allowedServerAddresses()));
+                current.allowedServerAddresses(), current.actionDelayMillis()));
+    }
+
+    @Override
+    public CompletableFuture<Void> setActionDelayMillis(long delayMillis) {
+        if (delayMillis < 0 || delayMillis > 10_000L) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException(
+                    "Action delay must be between 0 and 10000 milliseconds."));
+        }
+        AutomationConfig current = configuration.get();
+        return updateConfiguration.apply(copy(current, current.enabled(), current.mode(),
+                current.allowedServerAddresses(), delayMillis));
     }
 
     @Override
@@ -132,7 +151,8 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
         Set<String> allowed = new HashSet<>(current.allowedServerAddresses());
         allowed.add(server);
         coordinator.disarm("Allowlist changed; session authorization was cleared.");
-        return updateConfiguration.apply(copy(current, current.enabled(), current.mode(), allowed));
+        return updateConfiguration.apply(copy(current, current.enabled(), current.mode(), allowed,
+                current.actionDelayMillis()));
     }
 
     @Override
@@ -188,7 +208,8 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
     }
 
     private static AutomationConfig copy(
-            AutomationConfig value, boolean enabled, AutomationMode mode, Set<String> allowedServers
+            AutomationConfig value, boolean enabled, AutomationMode mode, Set<String> allowedServers,
+            long actionDelayMillis
     ) {
         return new AutomationConfig(
                 enabled, mode, allowedServers, value.maximumPurchasePrice(), value.maximumOpenExposure(),
@@ -197,8 +218,7 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
                 value.purchaseCooldownSeconds(), value.relistPricingStrategy(), value.targetRoi(),
                 value.fixedMarkupPercent(), value.requireInventoryVerification(),
                 value.requireBalanceVerification(), value.requireListingVerification(),
-                value.showExecutionNotifications()
-                , value.interactionProfile()
+                value.showExecutionNotifications(), value.interactionProfile(), actionDelayMillis
         );
     }
 }

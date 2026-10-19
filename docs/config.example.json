@@ -41,6 +41,7 @@
     "minimumRoi": "0",
     "maximumListingAgeSeconds": 30,
     "purchaseCooldownSeconds": 30,
+    "actionDelayMillis": 1000,
     "relistPricingStrategy": "CONSERVATIVE_FAIR_VALUE",
     "targetRoi": "0",
     "fixedMarkupPercent": "0",

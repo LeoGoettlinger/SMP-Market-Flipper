@@ -3,7 +3,8 @@
   "package": "com.example.donutflipscanner.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "AuctionHousePacketListener"
+    "AuctionHousePacketListener",
+    "FishingBobberAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

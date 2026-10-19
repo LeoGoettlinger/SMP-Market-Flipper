@@ -193,6 +193,149 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
         })).exceptionally(error -> new ListingResult(false, rootMessage(error)));
     }
 
+    /**
+     * Lists a newly caught stack from the player's inventory. The call is intentionally separate
+     * from purchase/relist execution: it validates the exact private-server profile and verifies
+     * both the configured listing screen and the precise inventory decrease.
+     */
+    public CompletableFuture<ListingVerificationResult> listFishingCatch(
+            ItemStack caughtStack, BigDecimal price, java.util.function.BooleanSupplier authorization
+    ) {
+        Objects.requireNonNull(caughtStack, "caughtStack");
+        Objects.requireNonNull(price, "price");
+        Objects.requireNonNull(authorization, "authorization");
+        Optional<AuctionInteractionProfile> configured = profileSupplier.get();
+        if (configured.isEmpty()) {
+            return CompletableFuture.completedFuture(new ListingVerificationResult(
+                    false, "No private-server auction profile is configured for fishing sales."
+            ));
+        }
+        AuctionInteractionProfile profile = configured.orElseThrow();
+        if (caughtStack.isEmpty() || price.signum() <= 0) {
+            return CompletableFuture.completedFuture(new ListingVerificationResult(
+                    false, "Caught stack or verified market price is invalid."
+            ));
+        }
+        ItemStack expected = fingerprintFactory.intrinsicCopy(caughtStack, profile);
+        int expectedCount = caughtStack.getCount();
+        java.util.concurrent.atomic.AtomicReference<FishingListingCapture> captureRef =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        CompletableFuture<ListingVerificationResult> operation = onClient(() -> {
+            if (!authorization.getAsBoolean()) {
+                throw new IllegalStateException("Fishing session authorization expired before listing.");
+            }
+            FishingListingCapture capture = prepareFishingListing(expected, expectedCount, profile);
+            captureRef.set(capture);
+            String command = commandRenderer.listing(profile, price);
+            requireConnection();
+            if (!authorization.getAsBoolean()) {
+                throw new IllegalStateException("Fishing session authorization expired before listing command.");
+            }
+            client.getNetworkHandler().sendChatCommand(command);
+            return capture;
+        }).thenCompose(capture -> awaitHandledScreen(profile.listingCreatedTitle())
+                .thenCompose(ignored -> awaitClientValue(() ->
+                                inventoryCount(capture.intrinsicStack(), profile)
+                                        == capture.baselineInventoryCount() - capture.listedCount()
+                                        ? Optional.of(Boolean.TRUE) : Optional.empty(),
+                        SCREEN_TIMEOUT))
+                .thenApply(ignored -> new ListingVerificationResult(true,
+                        "Caught stack was listed; exact listing screen and inventory decrease were verified.")))
+                .exceptionally(error -> new ListingVerificationResult(false, rootMessage(error)));
+        return operation.thenCompose(result -> {
+            FishingListingCapture capture = captureRef.get();
+            if (capture == null) {
+                return CompletableFuture.completedFuture(result);
+            }
+            return onClient(() -> {
+                restoreFishingInventory(capture);
+                return result;
+            }).exceptionally(error -> new ListingVerificationResult(false,
+                    result.message() + " Inventory restoration failed: " + rootMessage(error)));
+        });
+    }
+
+    private FishingListingCapture prepareFishingListing(
+            ItemStack expected, int expectedCount, AuctionInteractionProfile profile
+    ) {
+        requireConnection();
+        if (client.currentScreen != null) {
+            throw new IllegalStateException("Close the current screen before automatic fishing sale.");
+        }
+        int sourceIndex = -1;
+        for (int index = 0; index < client.player.getInventory().size(); index++) {
+            ItemStack current = client.player.getInventory().getStack(index);
+            if (current.getCount() == expectedCount && sameIntrinsicStack(expected, current, profile)) {
+                sourceIndex = index;
+                break;
+            }
+        }
+        if (sourceIndex < 0) {
+            throw new IllegalStateException("The exact caught stack is no longer in the inventory.");
+        }
+        int baseline = inventoryCount(expected, profile);
+        int selectedHotbar = client.player.getInventory().getSelectedSlot();
+        boolean swapped = sourceIndex >= 9;
+        int sourceSlotId = playerHandlerSlotForInventoryIndex(sourceIndex);
+        if (swapped) {
+            client.interactionManager.clickSlot(
+                    client.player.playerScreenHandler.syncId, sourceSlotId, selectedHotbar,
+                    SlotActionType.SWAP, client.player
+            );
+        } else {
+            client.player.getInventory().setSelectedSlot(sourceIndex);
+        }
+        ItemStack held = client.player.getMainHandStack();
+        if (held.getCount() != expectedCount || !sameIntrinsicStack(expected, held, profile)) {
+            if (swapped) {
+                client.interactionManager.clickSlot(
+                        client.player.playerScreenHandler.syncId, sourceSlotId, selectedHotbar,
+                        SlotActionType.SWAP, client.player
+                );
+            } else {
+                client.player.getInventory().setSelectedSlot(selectedHotbar);
+            }
+            throw new IllegalStateException("Could not select the exact caught stack for listing.");
+        }
+        return new FishingListingCapture(profile, expected, sourceIndex, sourceSlotId,
+                selectedHotbar, swapped, expectedCount, baseline);
+    }
+
+    private void restoreFishingInventory(FishingListingCapture capture) {
+        if (client.player == null || client.interactionManager == null) {
+            return;
+        }
+        if (client.currentScreen instanceof HandledScreen<?>) {
+            client.player.closeHandledScreen();
+        }
+        if (capture.swapped()) {
+            client.interactionManager.clickSlot(
+                    client.player.playerScreenHandler.syncId, capture.sourceSlotId(), capture.selectedHotbar(),
+                    SlotActionType.SWAP, client.player
+            );
+        }
+        client.player.getInventory().setSelectedSlot(capture.selectedHotbar());
+    }
+
+    private static int playerHandlerSlotForInventoryIndex(int inventoryIndex) {
+        if (inventoryIndex < 0 || inventoryIndex >= 36) {
+            throw new IllegalArgumentException("player inventory index is outside the main inventory");
+        }
+        return inventoryIndex < 9 ? inventoryIndex + 36 : inventoryIndex;
+    }
+
+    private record FishingListingCapture(
+            AuctionInteractionProfile profile,
+            ItemStack intrinsicStack,
+            int sourceInventoryIndex,
+            int sourceSlotId,
+            int selectedHotbar,
+            boolean swapped,
+            int listedCount,
+            int baselineInventoryCount
+    ) {
+    }
+
     @Override
     public CompletableFuture<ListingVerificationResult> verifyListingCreated(
             TradeExecutionRequest request, RelistPlan relistPlan

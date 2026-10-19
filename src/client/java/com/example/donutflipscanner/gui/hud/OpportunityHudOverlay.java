@@ -32,6 +32,7 @@ public final class OpportunityHudOverlay {
     private final OpportunityClipboardTracker clipboardTracker;
     private volatile boolean notificationsEnabled = true;
     private volatile boolean animationsEnabled = true;
+    private volatile boolean moduleEnabled = true;
     private volatile ExecutionNotice executionNotice;
     private volatile String lastExecutionStatus = "";
 
@@ -49,7 +50,18 @@ public final class OpportunityHudOverlay {
         this.clipboardTracker = new OpportunityClipboardTracker(clipboardWriter);
     }
 
+    public void setModuleEnabled(boolean enabled) {
+        moduleEnabled = enabled;
+        if (!enabled) {
+            alerts.clear();
+            executionNotice = null;
+        }
+    }
+
     public void tick(ClientUiDataSources dataSources) {
+        if (!moduleEnabled) {
+            return;
+        }
         boolean mockData = "Mock Data".equals(
                 dataSources.apiConnectionStatus().getApiConnectionStatus().displayName()
         );
@@ -90,7 +102,7 @@ public final class OpportunityHudOverlay {
 
     public void render(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (!notificationsEnabled || client.currentScreen instanceof ClickGuiScreen) {
+        if (!moduleEnabled || !notificationsEnabled || client.currentScreen instanceof ClickGuiScreen) {
             return;
         }
         Instant now = clock.instant();

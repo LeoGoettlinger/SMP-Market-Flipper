@@ -116,7 +116,8 @@ final class ConfigurationCodec {
                 bool(object, "requireBalanceVerification", defaults.requireBalanceVerification()),
                 bool(object, "requireListingVerification", defaults.requireListingVerification()),
                 bool(object, "showExecutionNotifications", defaults.showExecutionNotifications()),
-                interactionProfile(object)
+                interactionProfile(object),
+                longInteger(object, "actionDelayMillis", defaults.actionDelayMillis())
         );
     }
 
@@ -141,6 +142,7 @@ final class ConfigurationCodec {
         object.addProperty("requireBalanceVerification", config.requireBalanceVerification());
         object.addProperty("requireListingVerification", config.requireListingVerification());
         object.addProperty("showExecutionNotifications", config.showExecutionNotifications());
+        object.addProperty("actionDelayMillis", config.actionDelayMillis());
         config.interactionProfile().ifPresent(profile -> {
             JsonObject value = new JsonObject();
             value.addProperty("profileId", profile.profileId());

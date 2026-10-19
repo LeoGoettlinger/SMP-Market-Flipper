@@ -89,7 +89,8 @@ decrease.
    credential is configured. It is cached read-only profile data rather than transactional proof
    of a purchase debit, so it deliberately does not satisfy `requireBalanceVerification`.
    A future private-server provider must verify the pre/post debit atomically before that gate can
-   be satisfied. Gameplay automation is always denied on `donutsmp.net` and its subdomains.
+   be satisfied. Server addresses are not brand-restricted; execution still requires an exact
+   allowlist entry, a configured private-server interaction profile, and explicit per-session arming.
 3. Connect to the exact server and use **ALLOW CURRENT SERVER**.
 4. Select `CONFIRM EACH` for the first live tests and enable automation.
 5. Select **ARM SESSION** and type exactly `I HAVE AUTHORIZATION`.
@@ -104,3 +105,31 @@ immediately queues new actionable opportunities. `RUN` remains available for exp
 Do not use `AUTOMATIC_AUTHORIZED_SERVER` until the complete profile and failure behavior have been
 tested on disposable server data. The mod does not bypass anti-cheat, CAPTCHAs, rate limits, or
 server restrictions.
+
+## Fishing workflow
+
+Fishing shares the global switch, exact-server allowlist, private interaction profile, and the
+same memory-only per-session authorization. Select the `FISHING` workflow, enable Automation,
+choose `AUTOMATIC_AUTHORIZED_SERVER`, add the exact current server, and arm the session with
+`I HAVE AUTHORIZATION`. Changing workflow or server disarms the session. Flipper's market-opportunity
+dispatcher is disabled while Fishing is selected, so queued buy opportunities cannot run in Fishing.
+
+The client casts only with a fishing rod in the hotbar and at least one free inventory slot. It reads
+the server-synchronised vanilla bobber bite flag, waits the configured action delay, reels, and then
+compares the inventory before/after. It never guesses a bite from bobber motion. Existing matching
+items are not eligible for automatic sale: an item fingerprint must have been absent before the
+first catch in the current fishing session, or already be tracked as loot caught by that session.
+
+For a catch to be listed, the local market database must have at least the configured minimum
+number of comparable sales (at least three; eight by default) and a comparable sale no older than
+24 hours. A lower-quartile/weighted-median sale estimate bounds the listing price. If active asks are
+used, at least two listings from two sellers are required and the lowest ask must be within a
+plausible 70%-150% band of the sale anchor. Missing, sparse, stale, or suspicious evidence means
+the catch stays in inventory and is retried later; no fallback price is invented.
+
+The listing operation uses the configured `listingCommandTemplate` and `listingCreatedTitle`. It
+selects the exact caught stack, rechecks authorization immediately before the command, then requires
+the exact configured confirmation screen and the exact inventory decrease. If any precondition or
+verification fails, the catch is retained and no further listing command is sent. Packet Scan can
+price only items for which the user has actually captured sufficient recent auction data; API
+Detection is recommended for a warm, broad market history.

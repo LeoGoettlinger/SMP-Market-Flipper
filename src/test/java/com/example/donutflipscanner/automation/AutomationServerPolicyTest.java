@@ -8,15 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AutomationServerPolicyTest {
     @Test
-    void blocksOfficialDonutSmpHostsIncludingSubdomainsAndPorts() {
-        assertFalse(AutomationServerPolicy.permitsGameplayAutomation("donutsmp.net"));
-        assertFalse(AutomationServerPolicy.permitsGameplayAutomation("play.donutsmp.net:25565"));
-        assertFalse(AutomationServerPolicy.permitsGameplayAutomation("API.DONUTSMP.NET."));
+    void acceptsDonutAndOtherExplicitlyConfiguredHostsWithoutBrandSpecificRules() {
+        assertTrue(AutomationServerPolicy.permitsGameplayAutomation("donutsmp.net"));
+        assertTrue(AutomationServerPolicy.permitsGameplayAutomation("play.donutsmp.net:25565"));
+        assertTrue(AutomationServerPolicy.permitsGameplayAutomation("private.example:25565"));
+        assertTrue(AutomationServerPolicy.permitsGameplayAutomation("localhost"));
     }
 
     @Test
-    void leavesPrivateServerAuthorizationToTheExistingFailClosedGates() {
-        assertTrue(AutomationServerPolicy.permitsGameplayAutomation("private.example:25565"));
-        assertTrue(AutomationServerPolicy.permitsGameplayAutomation("localhost"));
+    void rejectsBlankAndMalformedServerAddresses() {
+        assertFalse(AutomationServerPolicy.permitsGameplayAutomation(""));
+        assertFalse(AutomationServerPolicy.permitsGameplayAutomation("bad host"));
+        assertFalse(AutomationServerPolicy.permitsGameplayAutomation("host/path"));
     }
 }

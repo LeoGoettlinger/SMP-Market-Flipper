@@ -50,7 +50,7 @@ class ConfigurationManagerTest {
                                  "privateah sell {price}", "Private Listing Created",
                                 "", "Price: ", "Seller: ", 53, 45, 10,
                                 List.of("Click to buy", "Expires: ")
-                         ))
+                         )), 750L
                 )
         );
         manager.save(changed);
