@@ -64,7 +64,7 @@ No live API key or response was used to infer additional fields in this chunk.
 
 ## Production client startup
 
-The Fabric client now checks `config/donut-flip-scanner/api-key.txt` during startup.
+The Fabric client reads `config/donut-flip-scanner/api-key.txt`. The Settings panel can securely save or remove this key; when API Detection is selected, the scanner reconnects live without restarting Minecraft.
 Credential absence is treated as an intentional mock-mode launch. When a key exists,
 `ClientProductionRuntime` asynchronously loads configuration, initializes/migrates the
 SQLite market database, composes ingestion, statistics, fair-value, confidence, risk,

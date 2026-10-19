@@ -1,6 +1,7 @@
 package com.example.donutflipscanner.gui;
 
 import com.example.donutflipscanner.ModConstants;
+import com.example.donutflipscanner.DonutFlipScannerClient;
 import com.example.donutflipscanner.data.ApiConnectionStatus;
 import com.example.donutflipscanner.data.ClientUiDataSources;
 import com.example.donutflipscanner.data.MarketStatistics;
@@ -108,7 +109,6 @@ public final class ClickGuiScreen extends Screen {
     }
 
     private void renderHeader(DrawContext context, int mouseX, int mouseY) {
-        ScannerStatus status = dataSources.scannerStatus().getScannerStatus();
         context.drawTexture(
                 RenderPipelines.GUI_TEXTURED,
                 DONUT_LOGO,
@@ -123,7 +123,8 @@ public final class ClickGuiScreen extends Screen {
                 500,
                 500
         );
-        renderScannerToggle(context, status.enabled(), isInsideScannerToggle(mouseX, mouseY));
+        renderScannerToggle(context, DonutFlipScannerClient.runtimeSettings().enabled(),
+                isInsideScannerToggle(mouseX, mouseY));
     }
 
     private void renderScannerToggle(DrawContext context, boolean enabled, boolean hovered) {
@@ -139,7 +140,7 @@ public final class ClickGuiScreen extends Screen {
                 SCANNER_TOGGLE_HEIGHT / 2,
                 trackColor
         );
-        String label = "Scanner";
+        String label = "Mod";
         GuiTypography.drawCentered(context, textRenderer, label,
                 SCANNER_TOGGLE_X + SCANNER_TOGGLE_WIDTH / 2,
                 SCANNER_TOGGLE_Y + 5,
@@ -201,7 +202,7 @@ public final class ClickGuiScreen extends Screen {
             int logicalX = layout.toLogicalX(click.x());
             int logicalY = layout.toLogicalY(click.y());
             if (isInsideScannerToggle(logicalX, logicalY)) {
-                dataSources.scannerStatus().toggleScanner();
+                DonutFlipScannerClient.setModEnabled(!DonutFlipScannerClient.runtimeSettings().enabled());
                 return true;
             }
             GuiTab clickedTab = navigation.findTabAt(

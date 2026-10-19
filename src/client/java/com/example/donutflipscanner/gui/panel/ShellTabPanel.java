@@ -1,6 +1,9 @@
 package com.example.donutflipscanner.gui.panel;
 
 import com.example.donutflipscanner.command.AuctionSearchCommand;
+import com.example.donutflipscanner.DonutFlipScannerClient;
+import com.example.donutflipscanner.configuration.MarketDetectionMode;
+import com.example.donutflipscanner.configuration.OperatingMode;
 import com.example.donutflipscanner.data.ApiConnectionStatus;
 import com.example.donutflipscanner.data.ClientUiDataSources;
 import com.example.donutflipscanner.data.FlipOpportunity;
@@ -60,6 +63,7 @@ public final class ShellTabPanel implements TabContentPanel {
     private volatile String notice = "";
     private int opportunityOffset;
     private TextFieldWidget authorizationField;
+    private TextFieldWidget apiKeyField;
     private boolean authorizationModalVisible;
     private String pendingPurchaseId;
     private String pendingPurchaseLabel;
@@ -115,6 +119,65 @@ public final class ShellTabPanel implements TabContentPanel {
                     return true;
                 }
             }
+        }
+        if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
+                CONTENT_X + 10, CARD_TOP + 73, SETTINGS_PANEL_WIDTH - 20, 18)) {
+            OperatingMode next = DonutFlipScannerClient.runtimeSettings().mode() == OperatingMode.FLIPPER
+                    ? OperatingMode.FISHING : OperatingMode.FLIPPER;
+            DonutFlipScannerClient.selectOperatingMode(next);
+            notice = next == OperatingMode.FISHING
+                    ? "Fishing selected; requires an allowlisted private server, profile, and armed authorized session."
+                    : "Flipper workflow selected; changes apply immediately.";
+            return true;
+        }
+        if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
+                CONTENT_X + 10, CARD_TOP + 50, SETTINGS_PANEL_WIDTH - 20, 18)) {
+            MarketDetectionMode next = DonutFlipScannerClient.selectedDetectionMode() == MarketDetectionMode.API
+                    ? MarketDetectionMode.PACKET_SCAN : MarketDetectionMode.API;
+            try {
+                DonutFlipScannerClient.selectDetectionMode(next);
+                notice = detectionModeLabel(next) + " selected; the scanner is switching now.";
+            } catch (RuntimeException failure) {
+                notice = "Unable to save detection mode preference.";
+            }
+            return true;
+        }
+        if (tab == GuiTab.SETTINGS && apiKeyField != null && contains(mouseX, mouseY,
+                apiKeyFieldX(), apiKeyFieldY(), apiKeyFieldWidth(), 16)) {
+            apiKeyField.onClick(new Click(mouseX, mouseY,
+                    new MouseInput(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
+            return true;
+        }
+        if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
+                apiKeySaveX(), apiKeyFieldY(), 30, 16)) {
+            char[] key = apiKeyField == null ? new char[0] : apiKeyField.getText().toCharArray();
+            try {
+                DonutFlipScannerClient.saveApiKey(key);
+                notice = "API key saved securely; API mode reconnects now when selected.";
+                if (apiKeyField != null) {
+                    apiKeyField.setText("");
+                    apiKeyField.setFocused(false);
+                }
+            } catch (RuntimeException failure) {
+                notice = "API key could not be saved; check that it is valid and the config folder is writable.";
+            } finally {
+                java.util.Arrays.fill(key, '\0');
+            }
+            return true;
+        }
+        if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
+                apiKeyClearX(), apiKeyFieldY(), 34, 16)) {
+            try {
+                DonutFlipScannerClient.clearApiKey();
+                if (apiKeyField != null) {
+                    apiKeyField.setText("");
+                    apiKeyField.setFocused(false);
+                }
+                notice = "Stored API key removed; API mode switches to its unavailable state.";
+            } catch (RuntimeException failure) {
+                notice = "Unable to remove the stored API key.";
+            }
+            return true;
         }
         if (tab == GuiTab.SETTINGS && contains(
                 mouseX, mouseY, notificationToggleX(), notificationToggleY(),
@@ -549,8 +612,11 @@ public final class ShellTabPanel implements TabContentPanel {
                 "ALLOW CURRENT SERVER",
                 contains(mouseX, mouseY, left + 10, CARD_TOP + 119,
                         AUTOMATION_LEFT_WIDTH - 20, 18));
-        lineAt(context, renderer, left + 10, left + AUTOMATION_LEFT_WIDTH - 10,
-                "Min confidence", value.configuration().minimumConfidence() + "%", CARD_TOP + 150);
+        GuiTypography.draw(context, renderer, "Action delay", left + 10, CARD_TOP + 148,
+                GuiColors.MUTED_TEXT, false);
+        button(context, renderer, left + AUTOMATION_LEFT_WIDTH - 96, CARD_TOP + 143, 86, 18,
+                actionDelayLabel(value.configuration().actionDelayMillis()),
+                contains(mouseX, mouseY, left + AUTOMATION_LEFT_WIDTH - 96, CARD_TOP + 143, 86, 18));
         lineAt(context, renderer, left + 10, left + AUTOMATION_LEFT_WIDTH - 10,
                 "API balance", balanceText(value.balance()), CARD_TOP + 170);
         GuiTypography.draw(context, renderer, fit(renderer, value.balance().message(), AUTOMATION_LEFT_WIDTH - 20),
@@ -669,6 +735,15 @@ public final class ShellTabPanel implements TabContentPanel {
                             : "Unable to allow current server.");
             return true;
         }
+        if (contains(mouseX, mouseY, CONTENT_X + AUTOMATION_LEFT_WIDTH - 96,
+                CARD_TOP + 143, 86, 18)) {
+            long next = nextActionDelay(snapshot.configuration().actionDelayMillis());
+            dataSources.automationSettings().setActionDelayMillis(next)
+                    .whenComplete((ignored, error) -> notice = error == null
+                            ? "Action pacing set to " + actionDelayLabel(next) + "."
+                            : "Unable to save action pacing.");
+            return true;
+        }
         int rightWidth = CONTENT_RIGHT - AUTOMATION_RIGHT_X;
         int half = (rightWidth - 27) / 2;
         if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 10, CARD_TOP + 143, half, 18)) {
@@ -708,21 +783,25 @@ public final class ShellTabPanel implements TabContentPanel {
             notice = "Purchase tracking cancelled.";
             return true;
         }
-        if (!authorizationModalVisible) {
-            return false;
+        if (authorizationModalVisible) {
+            if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+                closeAuthorizationModal();
+                notice = "Session authorization cancelled.";
+                return true;
+            }
+            return authorizationField != null && authorizationField.keyPressed(input);
         }
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
-            closeAuthorizationModal();
-            notice = "Session authorization cancelled.";
-            return true;
-        }
-        return authorizationField != null && authorizationField.keyPressed(input);
+        return tab == GuiTab.SETTINGS && apiKeyField != null && apiKeyField.isFocused()
+                && apiKeyField.keyPressed(input);
     }
 
     @Override
     public boolean charTyped(CharInput input) {
-        return authorizationModalVisible && authorizationField != null
-                && authorizationField.charTyped(input);
+        if (authorizationModalVisible && authorizationField != null) {
+            return authorizationField.charTyped(input);
+        }
+        return tab == GuiTab.SETTINGS && apiKeyField != null && apiKeyField.isFocused()
+                && apiKeyField.charTyped(input);
     }
 
     private void closeAuthorizationModal() {
@@ -751,10 +830,27 @@ public final class ShellTabPanel implements TabContentPanel {
         };
     }
 
+    private static long nextActionDelay(long current) {
+        return switch ((int) current) {
+            case 0 -> 250L;
+            case 250 -> 500L;
+            case 500 -> 1_000L;
+            case 1_000 -> 2_000L;
+            case 2_000 -> 5_000L;
+            case 5_000 -> 10_000L;
+            default -> 0L;
+        };
+    }
+
+    private static String actionDelayLabel(long millis) {
+        return millis == 0L ? "OFF" : millis + " ms";
+    }
+
     private void renderSettings(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
         ScannerStatus scanner = dataSources.scannerStatus().getScannerStatus();
         ApiConnectionStatus api = dataSources.apiConnectionStatus().getApiConnectionStatus();
         boolean notifications = dataSources.notificationSettings().getNotificationSettings().enabled();
+        boolean apiKeyConfigured = DonutFlipScannerClient.apiKeyConfigured();
         int panelWidth = SETTINGS_PANEL_WIDTH;
         panel(context, CONTENT_X, CARD_TOP, panelWidth, 211);
         panel(context, CONTENT_X + panelWidth + 7, CARD_TOP, panelWidth, 211);
@@ -763,10 +859,12 @@ public final class ShellTabPanel implements TabContentPanel {
                 GuiColors.ACCENT_TEXT, false);
         lineAt(context, textRenderer, CONTENT_X + 10, CONTENT_X + panelWidth - 10,
                 "State", scanner.lifecycleState(), CARD_TOP + 34);
-        lineAt(context, textRenderer, CONTENT_X + 10, CONTENT_X + panelWidth - 10,
-                "Data mode", api.displayName().equals("Mock Data") ? "Mock" : "Live", CARD_TOP + 55);
-        lineAt(context, textRenderer, CONTENT_X + 10, CONTENT_X + panelWidth - 10,
-                "Cooldown", api.cooldownSeconds() + " seconds", CARD_TOP + 76);
+        button(context, textRenderer, CONTENT_X + 10, CARD_TOP + 50, panelWidth - 20, 18,
+                detectionModeLabel(DonutFlipScannerClient.selectedDetectionMode()),
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 50, panelWidth - 20, 18));
+        button(context, textRenderer, CONTENT_X + 10, CARD_TOP + 73, panelWidth - 20, 18,
+                operatingModeLabel(DonutFlipScannerClient.runtimeSettings().mode()),
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 73, panelWidth - 20, 18));
         lineAt(context, textRenderer, CONTENT_X + 10, CONTENT_X + panelWidth - 10,
                 "GUI size", "574 x 350", CARD_TOP + 97);
         context.fill(CONTENT_X + 10, CARD_TOP + 115, CONTENT_X + panelWidth - 10,
@@ -780,7 +878,9 @@ public final class ShellTabPanel implements TabContentPanel {
                 CARD_TOP + 152, GuiColors.SECONDARY_BORDER);
         drawWrapped(context, textRenderer,
                 notice.isBlank()
-                        ? "Disable HUD notifications without pausing market scanning."
+                        ? DonutFlipScannerClient.runtimeSettings().mode() == OperatingMode.FISHING
+                                ? DonutFlipScannerClient.fishingStatus()
+                                : "Packet mode uses your private-server interaction profile from config.json."
                         : notice,
                 CONTENT_X + 10, CARD_TOP + 164, panelWidth - 20, GuiColors.MUTED_TEXT, 3);
 
@@ -803,6 +903,59 @@ public final class ShellTabPanel implements TabContentPanel {
         );
         drawWrapped(context, textRenderer, warning, rightX, CARD_TOP + 108,
                 rightEdge - rightX, GuiColors.MUTED_TEXT, 6);
+        GuiTypography.draw(context, textRenderer,
+                apiKeyConfigured ? "API key stored securely" : "API key not configured",
+                rightX, CARD_TOP + 160,
+                apiKeyConfigured ? GuiColors.POSITIVE_TEXT : GuiColors.MUTED_TEXT,
+                false);
+        if (apiKeyField == null) {
+            apiKeyField = new TextFieldWidget(textRenderer, apiKeyFieldX(), apiKeyFieldY(),
+                    apiKeyFieldWidth(), 16, Text.literal("API key"));
+            apiKeyField.setMaxLength(512);
+            apiKeyField.setTextShadow(false);
+            apiKeyField.setPlaceholder(Text.literal("Paste API key"));
+        }
+        apiKeyField.renderWidget(context, mouseX, mouseY, 0.0F);
+        button(context, textRenderer, apiKeySaveX(), apiKeyFieldY(), 30, 16, "SAVE",
+                contains(mouseX, mouseY, apiKeySaveX(), apiKeyFieldY(), 30, 16));
+        button(context, textRenderer, apiKeyClearX(), apiKeyFieldY(), 34, 16, "CLEAR",
+                contains(mouseX, mouseY, apiKeyClearX(), apiKeyFieldY(), 34, 16));
+    }
+
+    private static int apiSettingsX() {
+        return CONTENT_X + SETTINGS_PANEL_WIDTH + 17;
+    }
+
+    private static int apiSettingsRight() {
+        return CONTENT_RIGHT - 10;
+    }
+
+    private static int apiKeyFieldX() {
+        return apiSettingsX();
+    }
+
+    private static int apiKeyFieldY() {
+        return CARD_TOP + 174;
+    }
+
+    private static int apiKeyFieldWidth() {
+        return Math.max(70, apiSettingsRight() - apiSettingsX() - 30 - 34 - 8);
+    }
+
+    private static int apiKeySaveX() {
+        return apiKeyFieldX() + apiKeyFieldWidth() + 3;
+    }
+
+    private static int apiKeyClearX() {
+        return apiKeySaveX() + 32;
+    }
+
+    private static String detectionModeLabel(MarketDetectionMode mode) {
+        return mode == MarketDetectionMode.API ? "API DETECTION  ·  Donut API" : "PACKET SCAN  ·  AH window";
+    }
+
+    private static String operatingModeLabel(OperatingMode mode) {
+        return mode == OperatingMode.FLIPPER ? "WORKFLOW  ·  FLIPPER" : "WORKFLOW  ·  FISHING";
     }
 
     private static int notificationToggleX() {

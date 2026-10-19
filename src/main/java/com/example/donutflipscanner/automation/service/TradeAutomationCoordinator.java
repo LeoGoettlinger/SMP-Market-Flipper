@@ -71,7 +71,7 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
         AutomationConfig config = configuration.get();
         String normalized = normalizeServer(serverAddress);
         if (!AutomationServerPolicy.permitsGameplayAutomation(normalized)) {
-            statusMessage = "Gameplay automation is blocked on DonutSMP by its published server rules.";
+            statusMessage = "The current server address is invalid for authorized automation.";
             return false;
         }
         if (normalized.isEmpty() || !ARM_CONFIRMATION.equals(confirmation) || emergencyStopped || !config.enabled()
@@ -373,7 +373,7 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
             return Optional.of("Real execution mode is disabled or does not match configuration.");
         }
         if (!AutomationServerPolicy.permitsGameplayAutomation(currentServer)) {
-            return Optional.of("Gameplay automation is blocked on DonutSMP by its published server rules.");
+            return Optional.of("The current server address is invalid for authorized automation.");
         }
         if (config.requireBalanceVerification()) {
             return Optional.of("Balance verification requires a transactional private-server provider; "

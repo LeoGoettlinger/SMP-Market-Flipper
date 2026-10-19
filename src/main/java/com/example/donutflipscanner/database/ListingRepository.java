@@ -152,6 +152,32 @@ public final class ListingRepository {
         });
     }
 
+    /** Returns active asks reconfirmed since a cutoff; stale snapshots must not price current markets. */
+    public CompletableFuture<List<ListingEntity>> findActiveByFingerprintSince(
+            String fingerprint, int limit, Instant observedSince
+    ) {
+        Objects.requireNonNull(fingerprint, "fingerprint");
+        Objects.requireNonNull(observedSince, "observedSince");
+        int safeLimit = RepositorySupport.positiveLimit(limit);
+        return database.execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT " + SELECT_COLUMNS + " FROM auction_listings "
+                            + "WHERE item_fingerprint = ? AND state = 'ACTIVE' AND last_seen_at >= ? "
+                            + "ORDER BY last_seen_at DESC LIMIT ?")) {
+                statement.setString(1, fingerprint);
+                statement.setLong(2, observedSince.toEpochMilli());
+                statement.setInt(3, safeLimit);
+                try (ResultSet result = statement.executeQuery()) {
+                    List<ListingEntity> rows = new ArrayList<>();
+                    while (result.next()) {
+                        rows.add(map(result));
+                    }
+                    return List.copyOf(rows);
+                }
+            }
+        });
+    }
+
     /** Returns only listings observed as active, for ask-side supporting evidence. */
     public CompletableFuture<List<ListingEntity>> findActiveByFingerprint(String fingerprint, int limit) {
         Objects.requireNonNull(fingerprint, "fingerprint");

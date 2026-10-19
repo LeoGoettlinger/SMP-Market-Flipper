@@ -20,6 +20,8 @@ public interface AutomationSettingsController {
 
     CompletableFuture<Void> setMode(AutomationMode mode);
 
+    CompletableFuture<Void> setActionDelayMillis(long delayMillis);
+
     CompletableFuture<Void> allowCurrentServer();
 
     boolean armCurrentServer(String exactConfirmation);

@@ -3,15 +3,26 @@ package com.example.donutflipscanner;
 import com.example.donutflipscanner.api.DonutApiClient;
 import com.example.donutflipscanner.api.FileApiCredentialsStore;
 import com.example.donutflipscanner.balance.ApiPlayerBalanceProvider;
+import com.example.donutflipscanner.automation.service.ActionPacingAuctionInteractionAdapter;
 import com.example.donutflipscanner.automation.service.DatabaseTradeExecutionObserver;
 import com.example.donutflipscanner.automation.service.AutomaticOpportunityDispatcher;
 import com.example.donutflipscanner.automation.service.DryRunAuctionInteractionAdapter;
 import com.example.donutflipscanner.automation.service.RelistPricingService;
 import com.example.donutflipscanner.automation.service.TradeAutomationCoordinator;
 import com.example.donutflipscanner.automation.MinecraftAuctionInteractionAdapter;
+import com.example.donutflipscanner.automation.FishingAutomationController;
+import com.example.donutflipscanner.automation.MinecraftStackFingerprintFactory;
 import com.example.donutflipscanner.automation.model.AuctionInteractionProfile;
+import com.example.donutflipscanner.automation.model.FishingMarketEvidence;
+import com.example.donutflipscanner.automation.model.TradeExecutionSnapshot;
+import com.example.donutflipscanner.automation.service.FishingPricePolicy;
+import com.example.donutflipscanner.market.item.model.NormalizedItem;
+import com.example.donutflipscanner.market.statistics.MarketStatisticsConfig;
+import com.example.donutflipscanner.market.statistics.model.ItemMarketStatistics;
 import com.example.donutflipscanner.configuration.AppConfig;
 import com.example.donutflipscanner.configuration.AutomationConfig;
+import com.example.donutflipscanner.configuration.ModRuntimeSettings;
+import com.example.donutflipscanner.configuration.OperatingMode;
 import com.example.donutflipscanner.configuration.ConfigurationManager;
 import com.example.donutflipscanner.data.ClientUiDataSources;
 import com.example.donutflipscanner.data.LiveClientDataIntegration;
@@ -47,6 +58,8 @@ import com.example.donutflipscanner.service.RepositoryMarketDataIngestionService
 import net.minecraft.client.MinecraftClient;
 
 import java.nio.file.Path;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -76,8 +89,12 @@ public final class ClientProductionRuntime implements AutoCloseable {
     private final MarketScanner scanner;
     private final LiveMarketSnapshotService snapshots;
     private final RepositoryMarketAnalysisService analysis;
+    private final RepositoryMarketStatisticsService marketStatistics;
     private final PersonalProfitTracker personalProfitTracker;
+    private final AuctionHouseDataCapture packetCapture;
+    private final FishingAutomationController fishingController;
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicReference<CompletableFuture<Void>> closeCompletion = new AtomicReference<>();
 
     private ClientProductionRuntime(
             ConfigurationManager configurationManager,
@@ -93,7 +110,9 @@ public final class ClientProductionRuntime implements AutoCloseable {
             MarketScanner scanner,
             LiveMarketSnapshotService snapshots,
             RepositoryMarketAnalysisService analysis,
-            PersonalProfitTracker personalProfitTracker
+            RepositoryMarketStatisticsService marketStatistics,
+            PersonalProfitTracker personalProfitTracker,
+            AuctionHouseDataCapture packetCapture
     ) {
         this.configurationManager = configurationManager;
         this.configuration = configuration;
@@ -108,7 +127,15 @@ public final class ClientProductionRuntime implements AutoCloseable {
         this.scanner = scanner;
         this.snapshots = snapshots;
         this.analysis = analysis;
+        this.marketStatistics = marketStatistics;
         this.personalProfitTracker = personalProfitTracker;
+        this.packetCapture = packetCapture;
+        this.fishingController = new FishingAutomationController(
+                MinecraftClient.getInstance(), this::fishingAuthorized,
+                () -> configuration.get().automation().interactionProfile(),
+                this::estimateFishingPrice, authorizedAuctionAdapter,
+                () -> configuration.get().automation().actionDelayMillis()
+        );
     }
 
     /**
@@ -170,6 +197,107 @@ public final class ClientProductionRuntime implements AutoCloseable {
 
     public MarketScanner scanner() {
         return scanner;
+    }
+
+    public void tickFishing() {
+        ModRuntimeSettings settings = DonutFlipScannerClient.runtimeSettings();
+        if (!settings.enabled() || settings.mode() != OperatingMode.FISHING) {
+            fishingController.stop();
+            return;
+        }
+        fishingController.tick();
+    }
+
+    public String fishingStatus() {
+        return fishingController.status();
+    }
+
+    private boolean fishingAuthorized() {
+        ModRuntimeSettings runtime = DonutFlipScannerClient.runtimeSettings();
+        AutomationConfig config = configuration.get().automation();
+        String server = DonutFlipScannerClient.currentServerAddress().strip()
+                .toLowerCase(java.util.Locale.ROOT);
+        if (!runtime.enabled() || runtime.mode() != OperatingMode.FISHING
+                || !config.enabled() || config.mode()
+                != com.example.donutflipscanner.automation.model.AutomationMode.AUTOMATIC_AUTHORIZED_SERVER
+                || config.interactionProfile().isEmpty() || server.isBlank() || !config.serverAllowed(server)) {
+            return false;
+        }
+        TradeExecutionSnapshot session = automationSettings.snapshot().execution();
+        return session.sessionArmed() && !session.emergencyStopped()
+                && session.armedServer().filter(server::equals).isPresent();
+    }
+
+    private CompletableFuture<Optional<BigDecimal>> estimateFishingPrice(
+            net.minecraft.item.ItemStack caughtStack
+    ) {
+        Optional<AuctionInteractionProfile> profile = configuration.get().automation().interactionProfile();
+        if (profile.isEmpty() || caughtStack.isEmpty()) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        NormalizedItem normalized;
+        try {
+            normalized = new MinecraftStackFingerprintFactory().normalize(caughtStack, profile.orElseThrow());
+        } catch (RuntimeException unsupported) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        if (normalized.matchQuality().matchType()
+                == com.example.donutflipscanner.market.item.model.ItemMatchType.UNSUPPORTED
+                || normalized.matchQuality().matchType()
+                == com.example.donutflipscanner.market.item.model.ItemMatchType.APPROXIMATE) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        int minimumSales = Math.max(3, configuration.get().automation().minimumComparableSales());
+        MarketStatisticsConfig statisticsConfig = MarketStatisticsConfig.defaults()
+                .withMinimumComparableSales(minimumSales);
+        return marketStatistics.statisticsFor(normalized, statisticsConfig).thenApply(stats -> {
+            FishingMarketEvidence evidence = new FishingMarketEvidence(
+                    stats.comparableSaleCount(), stats.percentile25(), stats.weightedMedian(),
+                    stats.activeAsks().listingCount(), stats.activeAsks().uniqueSellerCount(),
+                    stats.activeAsks().lowestAsk(), stats.activeAsks().medianAsk(),
+                    stats.mostRecentSaleAt(), stats.calculatedAt()
+            );
+            return new FishingPricePolicy().listingPrice(
+                    evidence, minimumSales, Instant.now(), Duration.ofHours(24)
+            );
+        });
+    }
+
+    /** Applies the top-level switch and workflow mode immediately without restarting the client. */
+    public void applyModRuntimeSettings(ModRuntimeSettings settings) {
+        Objects.requireNonNull(settings, "settings");
+        boolean runMarketScanner = settings.enabled();
+        scanner.updateConfiguration(scanner.configuration().withScannerEnabled(runMarketScanner));
+        if (!settings.enabled() || settings.mode() != OperatingMode.FLIPPER) {
+            automationSettings.disarm();
+        }
+    }
+
+    private static AutomationConfig gatedAutomation(AutomationConfig config) {
+        ModRuntimeSettings runtime = DonutFlipScannerClient.runtimeSettings();
+        boolean enabled = config.enabled() && runtime.enabled();
+        return withAutomationEnabled(config, enabled);
+    }
+
+    private static AutomationConfig flipperAutomation(AutomationConfig config) {
+        ModRuntimeSettings runtime = DonutFlipScannerClient.runtimeSettings();
+        return withAutomationEnabled(gatedAutomation(config), runtime.mode() == OperatingMode.FLIPPER);
+    }
+
+    private static AutomationConfig withAutomationEnabled(AutomationConfig config, boolean enabled) {
+        if (config.enabled() == enabled) {
+            return config;
+        }
+        return new AutomationConfig(
+                enabled, config.mode(), config.allowedServerAddresses(), config.maximumPurchasePrice(),
+                config.maximumOpenExposure(), config.maximumPurchasesPerSession(), config.minimumConfidence(),
+                config.minimumComparableSales(), config.minimumNetProfit(), config.minimumRoi(),
+                config.maximumListingAgeSeconds(), config.purchaseCooldownSeconds(),
+                config.relistPricingStrategy(), config.targetRoi(), config.fixedMarkupPercent(),
+                config.requireInventoryVerification(), config.requireBalanceVerification(),
+                config.requireListingVerification(), config.showExecutionNotifications(),
+                config.interactionProfile(), config.actionDelayMillis()
+        );
     }
 
     public LiveMarketSnapshotService snapshots() {
@@ -243,7 +371,8 @@ public final class ClientProductionRuntime implements AutoCloseable {
                     apiClient, ingestion, FIRST_ACTIVE_LISTING_PAGE, LAST_ACTIVE_LISTING_PAGE
             );
             MarketScannerConfig scannerConfig = MarketScannerConfig.defaults(true)
-                    .withScannerEnabled(liveConfiguration.scannerEnabled());
+                    .withScannerEnabled(liveConfiguration.scannerEnabled()
+                            && DonutFlipScannerClient.runtimeSettings().enabled());
             MarketScanner scanner = new MarketScanner(work, scannerConfig);
             LiveMarketSnapshotService snapshots = new LiveMarketSnapshotService(
                     listings, sales, opportunities, Optional.of(detector), personalProfitTracker
@@ -257,9 +386,10 @@ public final class ClientProductionRuntime implements AutoCloseable {
                             () -> configuration.get().automation().interactionProfile()
                     );
             TradeAutomationCoordinator automation = new TradeAutomationCoordinator(
-                    () -> configuration.get().automation(),
+                    () -> gatedAutomation(configuration.get().automation()),
                     new DryRunAuctionInteractionAdapter(),
-                    authorizedAuctionAdapter,
+                    new ActionPacingAuctionInteractionAdapter(authorizedAuctionAdapter,
+                            () -> configuration.get().automation().actionDelayMillis()),
                     new RelistPricingService(), executionObserver, clock
             );
             ClientAutomationSettingsController automationSettings =
@@ -273,14 +403,14 @@ public final class ClientProductionRuntime implements AutoCloseable {
                              balanceProvider
                      );
             AutomaticOpportunityDispatcher automaticDispatcher = new AutomaticOpportunityDispatcher(
-                    () -> configuration.get().automation(), automation, snapshots::snapshot
+                    () -> flipperAutomation(configuration.get().automation()), automation, snapshots::snapshot
             );
             Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
             return Optional.of(new ClientProductionRuntime(
                     configurationManager, configuration, persistenceExecutor, apiClient,
                     database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
                     automaticDispatcher, snapshotSubscription,
-                    scanner, snapshots, analysis, personalProfitTracker
+                    scanner, snapshots, analysis, statistics, personalProfitTracker, null
             ));
         } catch (RuntimeException failure) {
             if (apiClient != null) {
@@ -350,16 +480,15 @@ public final class ClientProductionRuntime implements AutoCloseable {
                     personalProfitTracker
             );
 
-            AuctionInteractionProfile profile = liveConfiguration.automation().interactionProfile()
-                    .orElse(null);
             AuctionHouseDataCapture capture = new AuctionHouseDataCapture(
-                    () -> Optional.ofNullable(profile)
+                    () -> configuration.get().automation().interactionProfile()
             );
             AuctionHousePacketListener.setCapture(capture);
 
             PacketMarketScanWork work = new PacketMarketScanWork(capture, ingestion);
             MarketScannerConfig scannerConfig = MarketScannerConfig.defaults(true)
-                    .withScannerEnabled(liveConfiguration.scannerEnabled());
+                    .withScannerEnabled(liveConfiguration.scannerEnabled()
+                            && DonutFlipScannerClient.runtimeSettings().enabled());
             MarketScanner scanner = new MarketScanner(work, scannerConfig);
             LiveMarketSnapshotService snapshots = new LiveMarketSnapshotService(
                     listings, sales, opportunities, Optional.of(detector), personalProfitTracker
@@ -373,9 +502,10 @@ public final class ClientProductionRuntime implements AutoCloseable {
                             () -> configuration.get().automation().interactionProfile()
                     );
             TradeAutomationCoordinator automation = new TradeAutomationCoordinator(
-                    () -> configuration.get().automation(),
+                    () -> gatedAutomation(configuration.get().automation()),
                     new DryRunAuctionInteractionAdapter(),
-                    authorizedAuctionAdapter,
+                    new ActionPacingAuctionInteractionAdapter(authorizedAuctionAdapter,
+                            () -> configuration.get().automation().actionDelayMillis()),
                     new RelistPricingService(), executionObserver, clock
             );
             ClientAutomationSettingsController automationSettings =
@@ -388,14 +518,14 @@ public final class ClientProductionRuntime implements AutoCloseable {
                             automation
                     );
             AutomaticOpportunityDispatcher automaticDispatcher = new AutomaticOpportunityDispatcher(
-                    () -> configuration.get().automation(), automation, snapshots::snapshot
+                    () -> flipperAutomation(configuration.get().automation()), automation, snapshots::snapshot
             );
             Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
             return Optional.of(new ClientProductionRuntime(
                     configurationManager, configuration, persistenceExecutor, null,
                     database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
                     automaticDispatcher, snapshotSubscription,
-                    scanner, snapshots, analysis, personalProfitTracker
+                    scanner, snapshots, analysis, statistics, personalProfitTracker, capture
             ));
         } catch (RuntimeException failure) {
             if (database != null) {
@@ -467,7 +597,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
                                 new com.example.donutflipscanner.data.provider.LiveMarketStatisticsProvider(snapshots),
                                 new com.example.donutflipscanner.data.provider.DatabaseOpportunityHistoryProvider(snapshots),
                                 new com.example.donutflipscanner.data.provider.RegistryItemSearchProvider(),
-                                new PacketConnectionStatusProvider(),
+                                new PacketConnectionStatusProvider(packetCapture),
                                 itemFilters,
                                 com.example.donutflipscanner.data.MarketChartSnapshot::unavailable,
                                 new LiveNotificationSettingsController(
@@ -492,14 +622,23 @@ public final class ClientProductionRuntime implements AutoCloseable {
         });
     }
 
-    /**
-     * Connection status provider for packet mode — always reports connected since
-     * we're reading directly from Minecraft's network layer.
-     */
+    /** Reports whether the configured auction screen has a complete, stable packet snapshot. */
     private static final class PacketConnectionStatusProvider implements ApiConnectionStatusProvider {
+        private final AuctionHouseDataCapture capture;
+
+        private PacketConnectionStatusProvider(AuctionHouseDataCapture capture) {
+            this.capture = Objects.requireNonNull(capture, "capture");
+        }
+
         @Override
         public ApiConnectionStatus getApiConnectionStatus() {
-            return new ApiConnectionStatus("DonutSMP", "Packet interception active", true);
+            if (!capture.isCapturing()) {
+                return new ApiConnectionStatus("Packet Scan", "Waiting for configured auction screen", false);
+            }
+            if (!capture.hasStableSnapshot()) {
+                return new ApiConnectionStatus("Packet Scan", "Loading auction page", false);
+            }
+            return new ApiConnectionStatus("Packet Scan", "Capturing current auction page", true);
         }
     }
 
@@ -537,16 +676,49 @@ public final class ClientProductionRuntime implements AutoCloseable {
 
     @Override
     public void close() {
+        closeAsync();
+    }
+
+    public CompletableFuture<Void> closeAsync() {
+        CompletableFuture<Void> existing = closeCompletion.get();
+        if (existing != null) {
+            return existing;
+        }
+        CompletableFuture<Void> completion = new CompletableFuture<>();
+        if (!closeCompletion.compareAndSet(null, completion)) {
+            return closeCompletion.get();
+        }
         if (!closed.compareAndSet(false, true)) {
-            return;
+            completion.complete(null);
+            return completion;
+        }
+        fishingController.stop();
+        if (packetCapture != null) {
+            AuctionHousePacketListener.setCapture(null);
         }
         snapshotSubscription.run();
         automaticDispatcher.close();
         scanner.shutdownAsync().whenComplete((ignored, error) -> {
-            database.close();
-            authorizedAuctionAdapter.close();
-            persistenceExecutor.shutdown();
+            try {
+                database.close();
+                authorizedAuctionAdapter.close();
+                if (apiClient != null) {
+                    apiClient.close();
+                }
+                persistenceExecutor.shutdown();
+                if (error == null) {
+                    completion.complete(null);
+                } else {
+                    completion.completeExceptionally(error);
+                }
+            } catch (RuntimeException closeFailure) {
+                if (error != null) {
+                    closeFailure.addSuppressed(error);
+                }
+                completion.completeExceptionally(closeFailure);
+            }
         });
+        return completion;
     }
 
     private static ItemFilterPolicy filters(AppConfig configuration) {

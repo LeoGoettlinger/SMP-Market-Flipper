@@ -89,7 +89,8 @@ decrease.
    credential is configured. It is cached read-only profile data rather than transactional proof
    of a purchase debit, so it deliberately does not satisfy `requireBalanceVerification`.
    A future private-server provider must verify the pre/post debit atomically before that gate can
-   be satisfied. Gameplay automation is always denied on `donutsmp.net` and its subdomains.
+   be satisfied. Server addresses are not brand-restricted; execution still requires an exact
+   allowlist entry, a configured private-server interaction profile, and explicit per-session arming.
 3. Connect to the exact server and use **ALLOW CURRENT SERVER**.
 4. Select `CONFIRM EACH` for the first live tests and enable automation.
 5. Select **ARM SESSION** and type exactly `I HAVE AUTHORIZATION`.
@@ -104,3 +105,45 @@ immediately queues new actionable opportunities. `RUN` remains available for exp
 Do not use `AUTOMATIC_AUTHORIZED_SERVER` until the complete profile and failure behavior have been
 tested on disposable server data. The mod does not bypass anti-cheat, CAPTCHAs, rate limits, or
 server restrictions.
+
+## Fishing workflow
+
+Fishing shares the global switch, exact-server allowlist, private interaction profile, and the
+same memory-only per-session authorization. Select the `FISHING` workflow, enable Automation,
+choose `AUTOMATIC_AUTHORIZED_SERVER`, add the exact current server, and arm the session with
+`I HAVE AUTHORIZATION`. Changing workflow or server disarms the session. Flipper's market-opportunity
+dispatcher is disabled while Fishing is selected, so queued buy opportunities cannot run in Fishing.
+
+The client casts only with a fishing rod in the hotbar and at least one free inventory slot. It reads
+the server-synchronised vanilla bobber bite flag, waits the configured action delay, reels, and then
+compares the inventory before/after. It never guesses a bite from bobber motion. Existing matching
+items are not eligible for automatic sale: an item fingerprint must have been absent before the
+first catch in the current fishing session, or already be tracked as loot caught by that session.
+
+The price policy has two explicit evidence paths:
+
+1. **Completed-sales path:** requires the configured minimum number of comparable sales (at least
+   three; eight by default) and a most-recent sale within 24 hours. The candidate is bounded by the
+   lower quartile and weighted median of sales. When there are at least two fresh active asks from
+   two sellers, the lowest ask must be between 70% and 150% of the sale anchor; otherwise the
+   evidence is considered suspicious and listing is refused. A credible ask can only lower the
+   conservative sale-derived candidate (the policy undercuts it by one currency unit where relevant).
+2. **Ask-only path:** used when there is no adequate recent sale feed, including Packet Scan mode.
+   It requires at least five current active listings, three distinct sellers, both a lowest and median
+   ask, and a lowest-to-median ratio of at least 70%. The proposed price is one currency unit below
+   the lowest ask, rounded down to whole currency. This is a competitive asking-price estimate—not
+   a completed sale, a guaranteed fair value, or proof that the item will sell. Ask observations older
+   than ten minutes are excluded. If either path lacks sufficient, fresh, supported evidence, the catch
+   remains in inventory and is retried later. Unsupported/approximate item matches are not priced.
+
+Packet Scan has no transaction-history feed: it sees only visible listing snapshots. It captures the
+configured exact-title auction screen after a complete inventory snapshot has been quiet for 300 ms.
+It does not open the auction screen or click next-page controls. To build broader evidence without an
+API key, leave that screen open and manually visit pages; listings are retained as observations but
+stop contributing to current ask statistics if not reconfirmed within ten minutes. API Detection can
+provide completed transactions and is preferable for a sale-based estimate.
+
+The listing operation uses the configured `listingCommandTemplate` and `listingCreatedTitle`. It
+selects the exact caught stack, rechecks authorization immediately before the command, then requires
+the exact configured confirmation screen and the exact inventory decrease. If any precondition or
+verification fails, the catch is retained and no further listing command is sent.

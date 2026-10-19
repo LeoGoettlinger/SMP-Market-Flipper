@@ -31,7 +31,8 @@ public record AutomationConfig(
         boolean requireBalanceVerification,
         boolean requireListingVerification,
         boolean showExecutionNotifications,
-        Optional<AuctionInteractionProfile> interactionProfile
+        Optional<AuctionInteractionProfile> interactionProfile,
+        long actionDelayMillis
 ) {
     public AutomationConfig {
         Objects.requireNonNull(mode, "mode");
@@ -53,6 +54,28 @@ public record AutomationConfig(
         if (minimumConfidence < 0 || minimumConfidence > 100) {
             throw new IllegalArgumentException("minimumConfidence must be between 0 and 100");
         }
+        if (actionDelayMillis < 0 || actionDelayMillis > 10_000L) {
+            throw new IllegalArgumentException("actionDelayMillis must be between 0 and 10000");
+        }
+    }
+
+    /** Compatibility constructor for configurations created before action pacing was added. */
+    public AutomationConfig(
+            boolean enabled, AutomationMode mode, Set<String> allowedServerAddresses,
+            BigDecimal maximumPurchasePrice, BigDecimal maximumOpenExposure,
+            int maximumPurchasesPerSession, int minimumConfidence, int minimumComparableSales,
+            BigDecimal minimumNetProfit, BigDecimal minimumRoi, long maximumListingAgeSeconds,
+            long purchaseCooldownSeconds, RelistPricingStrategy relistPricingStrategy,
+            BigDecimal targetRoi, BigDecimal fixedMarkupPercent, boolean requireInventoryVerification,
+            boolean requireBalanceVerification, boolean requireListingVerification,
+            boolean showExecutionNotifications, Optional<AuctionInteractionProfile> interactionProfile
+    ) {
+        this(enabled, mode, allowedServerAddresses, maximumPurchasePrice, maximumOpenExposure,
+                maximumPurchasesPerSession, minimumConfidence, minimumComparableSales,
+                minimumNetProfit, minimumRoi, maximumListingAgeSeconds, purchaseCooldownSeconds,
+                relistPricingStrategy, targetRoi, fixedMarkupPercent, requireInventoryVerification,
+                requireBalanceVerification, requireListingVerification, showExecutionNotifications,
+                interactionProfile, 0L);
     }
 
     public AutomationConfig(

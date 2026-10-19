@@ -2,6 +2,7 @@ package com.example.donutflipscanner.automation;
 
 import com.example.donutflipscanner.automation.model.AuctionInteractionProfile;
 import com.example.donutflipscanner.market.item.ItemNormalizer;
+import com.example.donutflipscanner.market.item.SafeItemCategoryRegistry;
 import com.example.donutflipscanner.market.item.model.ArmorTrimDescriptor;
 import com.example.donutflipscanner.market.item.model.ItemDescriptor;
 import com.example.donutflipscanner.market.item.model.ItemEnchantmentDescriptor;
@@ -22,13 +23,21 @@ import java.util.OptionalInt;
 import java.util.TreeMap;
 
 /** Converts an in-game stack into the same provider-neutral fingerprint used for API items. */
-final class MinecraftStackFingerprintFactory {
+public final class MinecraftStackFingerprintFactory {
     private static final int MAXIMUM_CONTAINER_DEPTH = 4;
 
-    private final ItemNormalizer normalizer = new ItemNormalizer();
+    private final ItemNormalizer normalizer = new ItemNormalizer(
+            SafeItemCategoryRegistry.liveDefaults(), ItemNormalizer.DEFAULT_MAXIMUM_CONTAINER_DEPTH
+    );
 
-    String fingerprint(ItemStack stack, AuctionInteractionProfile profile) {
-        return normalizer.normalize(descriptor(stack, profile, 0)).fingerprint().sha256();
+    public String fingerprint(ItemStack stack, AuctionInteractionProfile profile) {
+        return normalize(stack, profile).fingerprint().sha256();
+    }
+
+    public com.example.donutflipscanner.market.item.model.NormalizedItem normalize(
+            ItemStack stack, AuctionInteractionProfile profile
+    ) {
+        return normalizer.normalize(descriptor(stack, profile, 0));
     }
 
     List<String> visibleLore(ItemStack stack) {
