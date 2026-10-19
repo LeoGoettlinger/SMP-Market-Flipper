@@ -25,7 +25,7 @@ A client-side auction-market scanner and opt-in automation toolkit for Minecraft
 
 ### Flipper
 
-The existing analysis workflow scans market evidence and surfaces candidates. Purchases/listings remain separately controlled from the Automation panel. Dry-run is the initial execution mode; it does not click, purchase or list.
+The analysis workflow scans market evidence and surfaces candidates. The current live Flipper adapter buys a unique AH listing and relists it in the AH; it does not place or collect Orders. The one-unit Order-bid/AH-undercut workflow is not implemented yet. Purchases/listings remain separately controlled from the Automation panel. Dry-run is the initial execution mode; it does not click, purchase or list.
 
 ### Fishing
 
