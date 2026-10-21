@@ -85,7 +85,7 @@ public final class MinecraftStackFingerprintFactory {
         if (container == null) {
             return List.of();
         }
-        return container.nonEmptyItemCopyStream().map(net.minecraft.world.item.ItemStackTemplate::create).limit(256)
+        return container.nonEmptyItemCopyStream().limit(256)
                 .map(value -> descriptor(value, profile, depth + 1)).toList();
     }
 
