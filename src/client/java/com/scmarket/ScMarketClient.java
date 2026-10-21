@@ -40,6 +40,7 @@ import java.util.function.UnaryOperator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class ScMarketClient implements ClientModInitializer {
@@ -51,7 +52,7 @@ public final class ScMarketClient implements ClientModInitializer {
     private static volatile ClientProductionRuntime productionRuntime;
     private static volatile CompletableFuture<Optional<ClientProductionRuntime>> productionStartup;
     private static final AtomicBoolean clientStopping = new AtomicBoolean();
-    private static final AtomicBoolean smokeTestStopRequested = new AtomicBoolean();
+    private static final AtomicInteger smokeTestTicks = new AtomicInteger();
     private static final AtomicLong detectionModeGeneration = new AtomicLong();
     private static final OpportunityHudOverlay HUD_OVERLAY = new OpportunityHudOverlay();
     private static volatile String currentServerAddress = "";
@@ -137,10 +138,15 @@ public final class ScMarketClient implements ClientModInitializer {
             if (runtime != null) {
                 runtime.tickFishing();
             }
-            if (Boolean.parseBoolean(System.getenv("SCMARKET_CI_SMOKE_TEST"))
-                    && smokeTestStopRequested.compareAndSet(false, true)) {
-                LOGGER.info("26.2 client smoke test reached the first client tick; shutting down cleanly.");
-                client.stop();
+            if (Boolean.parseBoolean(System.getenv("SCMARKET_CI_SMOKE_TEST"))) {
+                int smokeTick = smokeTestTicks.incrementAndGet();
+                if (smokeTick == 1) {
+                    client.gui.setScreen(new ClickGuiScreen(dataSources));
+                    LOGGER.info("26.2 client smoke test opened the SC-Market GUI.");
+                } else if (smokeTick >= 4) {
+                    LOGGER.info("26.2 client smoke test rendered the SC-Market GUI; shutting down cleanly.");
+                    client.stop();
+                }
             }
         });
 

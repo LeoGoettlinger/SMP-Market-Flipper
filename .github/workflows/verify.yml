@@ -30,7 +30,7 @@ jobs:
           set -o pipefail
           ./gradlew --write-verification-metadata sha256 test build --no-daemon 2>&1 | tee "$RUNNER_TEMP/scmarket-gradle.log"
 
-      - name: Launch the 26.2 client through its first tick to validate Mixin targets
+      - name: Launch the 26.2 client and render SC-Market GUI to validate mixins
         run: |
           set -o pipefail
           timeout --signal=TERM 180s xvfb-run -a env SCMARKET_CI_SMOKE_TEST=true LIBGL_ALWAYS_SOFTWARE=1 ./gradlew runClient --no-daemon 2>&1 | tee -a "$RUNNER_TEMP/scmarket-gradle.log"
