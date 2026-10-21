@@ -171,9 +171,9 @@ public final class OrderAutomationCoordinator {
                         "No fresh item currently passes the profit, evidence, fill-rate and AH sales-speed gates."));
             }
             OrderTradePlan plan = selected.orElseThrow();
-            OrderModuleSettings currentSettings;
+            OrderModuleSettings submissionSettings;
             try {
-                currentSettings = Objects.requireNonNull(moduleSettings.get(), "current module settings");
+                submissionSettings = Objects.requireNonNull(moduleSettings.get(), "current module settings");
             } catch (RuntimeException unavailable) {
                 return CompletableFuture.completedFuture(OrderCycleResult.idle(
                         "Order→AH settings are unavailable; no order was created."));
@@ -182,10 +182,10 @@ public final class OrderAutomationCoordinator {
                 return CompletableFuture.completedFuture(OrderCycleResult.idle(
                         "Authorization changed before order confirmation; no order was created."));
             }
-            if (plan.orderQuantity() != currentSettings.orderQuantity()
-                    || plan.expectedProfitPerItem().compareTo(currentSettings.minimumProfitPerItem()) < 0
-                    || !currentSettings.allowsItem(plan.itemId())
-                    || !capacityPolicy.canPlace(orders, plan.itemId(), currentSettings).allowed()) {
+            if (plan.orderQuantity() != submissionSettings.orderQuantity()
+                    || plan.expectedProfitPerItem().compareTo(submissionSettings.minimumProfitPerItem()) < 0
+                    || !submissionSettings.allowsItem(plan.itemId())
+                    || !capacityPolicy.canPlace(orders, plan.itemId(), submissionSettings).allowed()) {
                 return CompletableFuture.completedFuture(OrderCycleResult.idle(
                         "Order settings changed while prices were refreshed; re-evaluate on the next cycle."));
             }
