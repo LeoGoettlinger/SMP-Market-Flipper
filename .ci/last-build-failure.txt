@@ -22,29 +22,58 @@ Cannot remap modifiers because it does not exist in any of the targets [] or the
 > Task :compileJava
 > Task :processResources
 > Task :classes
+> Task :compileClientJava
+> Task :processClientResources
+> Task :jar
+> Task :sourcesJar
+> Task :clientClasses
+> Task :compileTestJava
+> Task :processTestResources
+> Task :testClasses
 
-> Task :compileClientJava FAILED
-/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/panel/ShellTabPanel.java:679: error: local variables referenced from a lambda expression must be final or effectively final
-                    value.orderQuantity(), value.maximumTotalOrders(), value.maximumOrdersPerItem(), next,
-                                                                                                     ^
-1 error
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792605135096.json
+> Task :test
+
+TradeAutomationCoordinatorTest > realModeRequiresExactAllowlistAndSessionPhrase() FAILED
+    org.opentest4j.AssertionFailedError at TradeAutomationCoordinatorTest.java:78
+
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/home/runner/.gradle/caches/modules-2/files-2.1/org.xerial/sqlite-jdbc/3.53.1.0/bfd33c5a7a195a60b8288d40934481861b552684/sqlite-jdbc-3.53.1.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+> Task :test
+
+DatabaseManagerTest > createsDatabaseAndRunsAllMigrations() FAILED
+    org.opentest4j.AssertionFailedError at DatabaseManagerTest.java:24
+
+SaleRepositoryTest > completedSalesSurviveDatabaseRestart() FAILED
+    org.opentest4j.AssertionFailedError at SaleRepositoryTest.java:92
+
+OrderAutomationCoordinatorTest > collectsOnlyOneCompletedOrderAndRefreshesPriceForEveryStack() FAILED
+    org.opentest4j.AssertionFailedError at OrderAutomationCoordinatorTest.java:37
+
+277 tests completed, 4 failed
+
+> Task :test FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792605240669.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/build/reports/problems/problems-report.html
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':compileClientJava'.
-> Compilation failed; see the compiler output below.
-  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/panel/ShellTabPanel.java:679: error: local variables referenced from a lambda expression must be final or effectively final
-                      value.orderQuantity(), value.maximumTotalOrders(), value.maximumOrdersPerItem(), next,
-                                                                                                       ^
-  1 error
+Execution failed for task ':test'.
+> There were failing tests. See the report at: file:///home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/build/reports/tests/test/index.html
 
 * Try:
-> Check your code and dependencies to fix the compilation error(s)
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
 
-BUILD FAILED in 1m 17s
-3 actionable tasks: 3 executed
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.4.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 1m 31s
+9 actionable tasks: 9 executed
