@@ -71,6 +71,8 @@ jobs:
           git push origin HEAD:arena/6a5c03e6-smp-market-flipper || true
 
   test-and-build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
