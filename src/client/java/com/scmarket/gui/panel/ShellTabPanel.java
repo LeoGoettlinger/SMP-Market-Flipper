@@ -675,10 +675,11 @@ public final class ShellTabPanel implements TabContentPanel {
             if (!foundNext) {
                 next = choices[0];
             }
+            BigDecimal selectedProfit = next;
             return updateOrderSettings(value -> new OrderModuleSettings(value.itemWhitelist(), value.whitelistOnly(),
-                    value.orderQuantity(), value.maximumTotalOrders(), value.maximumOrdersPerItem(), next,
+                    value.orderQuantity(), value.maximumTotalOrders(), value.maximumOrdersPerItem(), selectedProfit,
                     value.localActionRecording(), value.maximumRecordedActions()),
-                    "Minimum profit set to $" + next.toPlainString() + " per item.");
+                    "Minimum profit set to $" + selectedProfit.toPlainString() + " per item.");
         }
         if (contains(mouseX, mouseY, rightEdge - 112, CARD_TOP + 111, 112, 15)) {
             boolean enabled = !current.whitelistOnly();
