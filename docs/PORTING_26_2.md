@@ -1,6 +1,6 @@
 # Minecraft 26.2 port status and migration notes
 
-**Status: not ported.** The working tree still targets Minecraft 1.21.11/Yarn/Java 21. Do not advertise or install this build for Minecraft 26.2. The feature work in this branch has not changed the current Minecraft dependency or mapping namespace.
+**Status: not ported.** The branch still targets Minecraft 1.21.11 and Java 21; it must not be advertised or installed for Minecraft 26.2. The Yarn→Mojang source migration has now been applied to both main and client sources, but neither the intermediate 1.21.11 Mojang-mapped build nor the 26.2 port is verified yet.
 
 ## Findings from the 26.2 research
 
@@ -8,7 +8,7 @@ Minecraft 26.2 is in the post-1.21.11 unobfuscated era. Fabric's porting guide r
 
 The official 26.2 Fabric example uses the `net.fabricmc.fabric-loom` plugin, Java 25, split main/client source sets, and ordinary `implementation` dependencies for libraries. A merged community port (`0Mattias/cheesecake` PR #10) follows the same Yarn→Mojang-first order and reports additional API and Mixin fixes after the name migration. A second example (`iluha168/MCAutoCrafters` PR #4) likewise removes Yarn mappings for the unobfuscated game. Fabric's 26.2 announcement also flags rendering changes, so direct rendering hooks need a specific review.
 
-At the time of research, the references indicated Gradle 9.5.1, Loom 1.17, Loader 0.19.5, and Fabric API 0.160.0+26.2; repository search results later surfaced Fabric API 0.161.0+26.2. Pin exact versions against Fabric's current metadata at implementation time rather than treating those historical examples as permanent.
+Fabric's 26.2 announcement specifies Gradle 9.5.1 and Loom 1.17; Loader 0.19.5 and Fabric API 0.161.0+26.2 are known stable 26.2-compatible releases. Recheck the target-version metadata while updating the build rather than selecting 26.3/26.4-only releases just because they are newer.
 
 ## Project-specific migration risks
 
@@ -18,11 +18,13 @@ At the time of research, the references indicated Gradle 9.5.1, Loom 1.17, Loade
 - SQLite, Fabric API events, key bindings, lifecycle, screen handling, and optional diagnostics need both compile-time and private local-game verification.
 - New Order settings and the opt-in diagnostic recorder are presently attached to the existing Yarn UI/mixins; they are not yet 26.2-compatible.
 
-## Why this branch was not switched blindly
+## Porting progress and verification
 
-The sandbox has outbound access to GitHub, codeload, GitHub API, npm, and PyPI, but not to the Gradle distribution service or Fabric's Maven repository. The wrapper attempted to download Gradle 9.4.0 from `services.gradle.org` and failed its TLS handshake. A Java 25 runtime was obtained from the PyPI `jdk4py` wheel for investigation, but that wheel does not include `javac`; the Gradle distribution and Fabric dependencies were still unavailable. Consequently neither the intermediate mappings migration nor a 26.2 compile/game launch can be performed here.
+The Gradle wrapper and Minecraft/Fabric artifacts cannot currently be downloaded by the local sandbox because its Java environment is absent and its TLS egress to the relevant hosts has failed. GitHub Actions is the working remote verification path: it can download Gradle and game dependencies, run the unit suite, and compile the project. Use its build logs/diagnostics rather than treating local syntax checks as compilation.
 
-Changing the build coordinates alone would leave hundreds of source references and Mixin selectors unmigrated, producing a misleading, non-buildable result. The requested port therefore remains an explicit unfinished task. A GitHub Actions workflow is now the remote build path. On a push to the active Arena branch whose commit message contains `[migrate-mappings]`, it runs Loom's main/client Yarn→Mojang migration on 1.21.11, switches the mappings dependency, pushes the generated source conversion to the same branch, and then compiles/tests that intermediate state. It can run on GitHub-hosted networking, but it does not repair local TLS or replace the subsequent 26.2 API port. Continue with an accessible Gradle 9.5.1/Fabric Maven environment, perform Yarn→official migration, resolve compilation and Mixin errors in small steps, then launch a dedicated 26.2 client and verify the UI and recorder before calling the port complete.
+A conditional GitHub Actions job was run on the active Arena branch. Loom's `migrateMappings` and `migrateClientMappings` tasks completed, and commit `f68ce21` migrated both source sets and switched the 1.21.11 build to Mojang mappings. The follow-up intermediate compile then stopped before compilation because Loom generated layered-mappings artifacts not yet present in dependency verification. The workflow is being adjusted to write and persist those hashes; after that, resolve any actual compile/test failures before changing Minecraft versions.
+
+The subsequent real port still requires changing to unobfuscated Minecraft 26.2: use the non-remapping `net.fabricmc.fabric-loom` plugin, omit the mappings dependency, use ordinary `implementation` for Fabric dependencies, target Java 25, update Fabric API/metadata, and then resolve source, rendering, packet, GUI, and Mixin changes against the 26.2 client. A clean `test build` is necessary but not sufficient: a dedicated 26.2 client launch and focused private-profile/UI/recorder checks are needed before calling the port complete. Order→AH must remain fail-closed, require a confirmed private-server profile and explicit authorization, and never collect partial orders.
 
 ## References
 
