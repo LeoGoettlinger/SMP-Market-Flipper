@@ -68,6 +68,7 @@ class TradeAutomationCoordinatorTest {
     void realModeRequiresExactAllowlistAndSessionPhrase() {
         AutomationConfig config = enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
         TradeAutomationCoordinator coordinator = coordinator(config, new DryRunAuctionInteractionAdapter());
+        coordinator.onServerChanged("example.test");
 
         assertFalse(coordinator.armSession("example.test", "I have authorization"));
         assertFalse(coordinator.armSession("other.test", TradeAutomationCoordinator.ARM_CONFIRMATION));
