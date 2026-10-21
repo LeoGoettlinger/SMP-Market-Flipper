@@ -27,6 +27,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -109,14 +110,14 @@ public final class ScMarketClient implements ClientModInitializer {
             if (screen instanceof AbstractContainerScreen<?>) {
                 return; // Slot-aware recorder below captures these clicks with item metadata.
             }
-            ScreenMouseEvents.beforeMouseClick(screen).register((clickedScreen, mouseX, mouseY, button) -> {
+            ScreenMouseEvents.beforeMouseClick(screen).register((clickedScreen, event) -> {
                 LocalActionRecorder recorder = actionRecorder;
                 if (recorder == null || !recorder.isRecording()) {
                     return;
                 }
                 int containerId = client.player == null ? -1 : client.player.containerMenu.containerId;
-                recorder.recordGuiClick(screen.getTitle().getString(), containerId, -1, "", 0,
-                        button, (int) Math.round(mouseX), (int) Math.round(mouseY));
+                recorder.recordGuiClick(clickedScreen.getTitle().getString(), containerId, -1, "", 0,
+                        event.button(), (int) Math.round(event.x()), (int) Math.round(event.y()));
             });
         });
 
