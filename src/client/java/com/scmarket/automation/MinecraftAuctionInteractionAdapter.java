@@ -141,7 +141,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
                         );
                     }
                     client.gameMode.handleInventoryMouseClick(
-                            screen.getMenu().syncId,
+                            screen.getMenu().containerId,
                             capture.profile().purchaseConfirmationSlot(), 0,
                             ClickType.PICKUP, Objects.requireNonNull(client.player, "player")
                     );
