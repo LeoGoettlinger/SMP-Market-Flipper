@@ -33,8 +33,8 @@ jobs:
         run: |
           set -o pipefail
           {
-            ./gradlew migrateMappings --mappings "net.minecraft:mappings:1.21.11" --overrideInputsIHaveABackup
-            ./gradlew migrateClientMappings --mappings "net.minecraft:mappings:1.21.11" --overrideInputsIHaveABackup
+            ./gradlew --write-verification-metadata sha256 migrateMappings --mappings "net.minecraft:mappings:1.21.11" --overrideInputsIHaveABackup
+            ./gradlew --write-verification-metadata sha256 migrateClientMappings --mappings "net.minecraft:mappings:1.21.11" --overrideInputsIHaveABackup
           } 2>&1 | tee "$RUNNER_TEMP/scmarket-migration.log"
 
       - name: Switch the build to official mappings and preserve the migration
@@ -50,7 +50,7 @@ jobs:
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/main/java src/client/java build.gradle
+          git add src/main/java src/client/java build.gradle gradle/verification-metadata.xml
           git commit -m "Migrate Minecraft sources to Mojang mappings"
           git push origin HEAD:arena/6a5c03e6-smp-market-flipper
 
@@ -66,7 +66,7 @@ jobs:
           tail -n 240 "$RUNNER_TEMP/scmarket-migration.log" > .ci/last-mapping-migration-failure.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .ci/last-mapping-migration-failure.txt
+          git add .ci/last-mapping-migration-failure.txt gradle/verification-metadata.xml
           git commit -m "CI: preserve mapping migration diagnostics" || true
           git push origin HEAD:arena/6a5c03e6-smp-market-flipper || true
 
@@ -90,7 +90,18 @@ jobs:
       - name: Run tests and build the mod
         run: |
           set -o pipefail
-          ./gradlew test build --no-daemon 2>&1 | tee "$RUNNER_TEMP/scmarket-gradle.log"
+          ./gradlew --write-verification-metadata sha256 test build --no-daemon 2>&1 | tee "$RUNNER_TEMP/scmarket-gradle.log"
+
+      - name: Persist refreshed dependency verification checksums
+        if: success() && github.event_name == 'push' && github.ref_name == 'arena/6a5c03e6-smp-market-flipper'
+        run: |
+          git add gradle/verification-metadata.xml
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Update verified dependency checksums"
+            git push origin HEAD:arena/6a5c03e6-smp-market-flipper
+          fi
 
       - name: Preserve failure diagnostics for the active Arena branch
         if: failure() && github.event_name == 'push' && github.ref_name == 'arena/6a5c03e6-smp-market-flipper'
@@ -99,6 +110,6 @@ jobs:
           tail -n 180 "$RUNNER_TEMP/scmarket-gradle.log" > .ci/last-build-failure.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .ci/last-build-failure.txt
+          git add .ci/last-build-failure.txt gradle/verification-metadata.xml
           git commit -m "CI: preserve Gradle failure diagnostics"
           git push origin HEAD:arena/6a5c03e6-smp-market-flipper
