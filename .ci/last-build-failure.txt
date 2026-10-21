@@ -1,0 +1,180 @@
+    location: class OpportunityHudOverlay
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/render/GuiDraw.java:3: error: cannot find symbol
+  import net.minecraft.client.gui.GuiGraphics;
+                                 ^
+    symbol:   class GuiGraphics
+    location: package net.minecraft.client.gui
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/render/GuiDraw.java:11: error: cannot find symbol
+              GuiGraphics context,
+              ^
+    symbol:   class GuiGraphics
+    location: class GuiDraw
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/render/GuiDraw.java:42: error: cannot find symbol
+              GuiGraphics context,
+              ^
+    symbol:   class GuiGraphics
+    location: class GuiDraw
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/render/GuiDraw.java:64: error: cannot find symbol
+              GuiGraphics context,
+              ^
+    symbol:   class GuiGraphics
+    location: class GuiDraw
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/render/GuiDraw.java:86: error: cannot find symbol
+              GuiGraphics context,
+              ^
+    symbol:   class GuiGraphics
+    location: class GuiDraw
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:35: error: cannot find symbol
+  import net.minecraft.world.inventory.ClickType;
+                                      ^
+    symbol:   class ClickType
+    location: package net.minecraft.world.inventory
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/hud/OpportunityHudOverlay.java:104: error: cannot find symbol
+          if (!moduleEnabled || !notificationsEnabled || client.screen instanceof ClickGuiScreen) {
+                                                               ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/mixin/HandledScreenActionRecorder.java:32: error: cannot find symbol
+          if (client.player == null || client.screen == null) {
+                                             ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/mixin/HandledScreenActionRecorder.java:43: error: cannot find symbol
+          Component title = client.screen.getTitle();
+                                  ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/FishingAutomationController.java:89: error: cannot find symbol
+          if (client.screen != null) {
+                    ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:124: error: cannot find symbol
+                      ClickType.PICKUP, Objects.requireNonNull(client.player, "player")
+                      ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:146: error: cannot find symbol
+                              ClickType.PICKUP, Objects.requireNonNull(client.player, "player")
+                              ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:261: error: cannot find symbol
+          if (client.screen != null) {
+                    ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:282: error: cannot find symbol
+                      ClickType.SWAP, client.player
+                      ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:292: error: cannot find symbol
+                          ClickType.SWAP, client.player
+                          ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:307: error: cannot find symbol
+          if (client.screen instanceof AbstractContainerScreen<?>) {
+                    ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:313: error: cannot find symbol
+                      ClickType.SWAP, client.player
+                      ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:409: error: cannot find symbol
+                      handler.containerId, profile.nextPageSlot(), 0, ClickType.PICKUP,
+                                                                      ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:437: error: cannot find symbol
+                      handler.containerId, profile.previousPageSlot(), 0, ClickType.PICKUP,
+                                                                          ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:449: error: cannot find symbol
+              if (client.screen instanceof AbstractContainerScreen<?> screen
+                        ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:557: error: cannot find symbol
+              if (client.screen instanceof AbstractContainerScreen<?>) {
+                        ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:572: error: cannot find symbol
+                          ClickType.SWAP, client.player
+                          ^
+    symbol:   variable ClickType
+    location: class MinecraftAuctionInteractionAdapter
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:586: error: cannot find symbol
+          if (!(client.screen instanceof AbstractContainerScreen<?> screen)
+                      ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:595: error: cannot find symbol
+              if (client.screen instanceof AbstractContainerScreen<?> screen
+                        ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/ScMarketClient.java:93: error: cannot find symbol
+          openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                       ^
+    symbol:   variable KeyBindingHelper
+    location: class ScMarketClient
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/ScMarketClient.java:110: error: cannot find symbol
+                  if (client.screen instanceof ClickGuiScreen) {
+                            ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/ScMarketClient.java:112: error: cannot find symbol
+                  } else if (client.screen == null) {
+                                   ^
+    symbol:   variable screen
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/ClickGuiScreen.java:70: error: method does not override or implement a method from a supertype
+      @Override
+      ^
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/packet/AuctionHouseDataCapture.java:265: error: cannot find symbol
+          container.nonEmptyStream().limit(256).forEach(itemStack -> {
+                   ^
+    symbol:   method nonEmptyStream()
+    location: variable container of type ItemContainerContents
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/gui/ClickGuiScreen.java:268: error: cannot find symbol
+          minecraft.setScreen(null);
+                   ^
+    symbol:   method setScreen(<null>)
+    location: variable minecraft of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftStackFingerprintFactory.java:88: error: cannot find symbol
+          return container.nonEmptyStream().limit(256)
+                          ^
+    symbol:   method nonEmptyStream()
+    location: variable container of type ItemContainerContents
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/MinecraftAuctionInteractionAdapter.java:368: error: cannot find symbol
+                  client.setScreen(null);
+                        ^
+    symbol:   method setScreen(<null>)
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/ScMarketClient.java:111: error: cannot find symbol
+                      client.setScreen(null);
+                            ^
+    symbol:   method setScreen(<null>)
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/ScMarketClient.java:113: error: cannot find symbol
+                      client.setScreen(new ClickGuiScreen(dataSources));
+                            ^
+    symbol:   method setScreen(ClickGuiScreen)
+    location: variable client of type Minecraft
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/ScMarketClient.java:22: error: package net.fabricmc.fabric.api.client.keybinding.v1 does not exist
+  import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+                                                     ^
+  76 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 1m 19s
+3 actionable tasks: 3 executed
