@@ -559,7 +559,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
                 .thenCompose(recovered -> personalProfitTracker.initialize())
                 .thenCompose(recovered -> snapshots.refresh()).thenCompose(ignored -> {
             CompletableFuture<Void> attached = new CompletableFuture<>();
-            MinecraftClient.getInstance().execute(() -> {
+            Minecraft.getInstance().execute(() -> {
                 try {
                     if (!closed.get()) {
                         LiveClientDataIntegration.attach(
@@ -598,7 +598,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
                 .thenCompose(recovered -> personalProfitTracker.initialize())
                 .thenCompose(recovered -> snapshots.refresh()).thenCompose(ignored -> {
             CompletableFuture<Void> attached = new CompletableFuture<>();
-            MinecraftClient.getInstance().execute(() -> {
+            Minecraft.getInstance().execute(() -> {
                 try {
                     if (!closed.get()) {
                         LiveItemFilterController itemFilters = new LiveItemFilterController(

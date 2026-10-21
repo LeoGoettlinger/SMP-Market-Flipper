@@ -103,13 +103,13 @@ public final class ScMarketClient implements ClientModInitializer {
         );
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            net.minecraft.client.network.ServerInfo server = client.getCurrentServerEntry();
-            updateCurrentServerAddress(server == null ? "" : server.address);
+            net.minecraft.client.multiplayer.ServerData server = client.getCurrentServer();
+            updateCurrentServerAddress(server == null ? "" : server.ip);
             dataSources.automationSettings().snapshot();
-            while (openGuiKey.wasPressed()) {
-                if (client.currentScreen instanceof ClickGuiScreen) {
+            while (openGuiKey.consumeClick()) {
+                if (client.screen instanceof ClickGuiScreen) {
                     client.setScreen(null);
-                } else if (client.currentScreen == null) {
+                } else if (client.screen == null) {
                     client.setScreen(new ClickGuiScreen(dataSources));
                 }
             }

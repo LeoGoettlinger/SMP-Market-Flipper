@@ -126,13 +126,13 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             return capture;
         }).thenCompose(capture -> awaitHandledScreen(capture.profile().purchaseConfirmationTitle())
                 .thenCompose(screen -> onClient(() -> {
-                    requireSlot(screen.getScreenHandler(), capture.profile().purchaseConfirmationSlot());
-                    ItemStack confirmation = screen.getScreenHandler()
-                            .getSlot(capture.profile().purchaseConfirmationSlot()).getStack();
+                    requireSlot(screen.getMenu(), capture.profile().purchaseConfirmationSlot());
+                    ItemStack confirmation = screen.getMenu()
+                            .getSlot(capture.profile().purchaseConfirmationSlot()).getItem();
                     if (confirmation.isEmpty()
                             || !matcher.matchesSlot(request, capture.profile(), new AuctionSlotSnapshot(
                              capture.profile().purchaseConfirmationSlot(),
-                             Registries.ITEM.getId(confirmation.getItem()).toString(),
+                             BuiltInRegistries.ITEM.getKey(confirmation.getItem()).toString(),
                             confirmation.getCount(), fingerprintFactory.fingerprint(confirmation, capture.profile()),
                             fingerprintFactory.visibleLore(confirmation)
                     )) || !sameIntrinsicStack(capture.intrinsicStack(), confirmation, capture.profile())) {
@@ -140,10 +140,10 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
                                 "Confirmation slot does not repeat the exact immutable listing."
                         );
                     }
-                    client.interactionManager.clickSlot(
-                            screen.getScreenHandler().syncId,
+                    client.gameMode.handleInventoryMouseClick(
+                            screen.getMenu().syncId,
                             capture.profile().purchaseConfirmationSlot(), 0,
-                            SlotActionType.PICKUP, Objects.requireNonNull(client.player, "player")
+                            ClickType.PICKUP, Objects.requireNonNull(client.player, "player")
                     );
                     return new PurchaseResult(true, true,
                             "Purchase confirmation was clicked; inventory verification is required.");
@@ -186,7 +186,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             String command = commandRenderer.listing(capture.profile(), relistPlan.listingPrice());
             capture.relistPrice = relistPlan.listingPrice();
             requireConnection();
-            client.getNetworkHandler().sendChatCommand(command);
+            client.getConnection().sendCommand(command);
             return new ListingResult(true,
                     "Relist command submitted; title and inventory verification are required.");
         })).exceptionally(error -> new ListingResult(false, rootMessage(error)));
@@ -401,7 +401,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             }
             AbstractContainerMenu handler = screen.getMenu();
             requireSlot(handler, profile.nextPageSlot());
-            if (handler.getSlot(profile.nextPageSlot()).getStack().isEmpty()) {
+            if (handler.getSlot(profile.nextPageSlot()).getItem().isEmpty()) {
                 return Optional.<String>empty();
             }
             String before = pageSignature(screen, profile);
@@ -429,7 +429,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             AbstractContainerScreen<?> screen = currentHandled(profile.resultsScreenTitle());
             AbstractContainerMenu handler = screen.getMenu();
             requireSlot(handler, profile.previousPageSlot());
-            if (handler.getSlot(profile.previousPageSlot()).getStack().isEmpty()) {
+            if (handler.getSlot(profile.previousPageSlot()).getItem().isEmpty()) {
                 throw new IllegalStateException("Configured previous-page control is unavailable.");
             }
             String before = pageSignature(screen, profile);
