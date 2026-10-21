@@ -8,4 +8,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "donut-algorithm"
+rootProject.name = "sc-market"

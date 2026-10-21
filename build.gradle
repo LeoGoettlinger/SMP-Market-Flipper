@@ -14,7 +14,7 @@ loom {
     splitEnvironmentSourceSets()
 
     mods {
-        "donut_flip_scanner" {
+        "sc_market" {
             sourceSet sourceSets.main
             sourceSet sourceSets.client
         }

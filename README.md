@@ -1,10 +1,10 @@
-# Donut Algorithm
+# SC-Market
 
 **Author:** SampleCraft
 
-A client-side auction-market scanner and opt-in automation toolkit for Minecraft Java Edition. It records observed listings and completed sales, estimates conservative values, reports opportunities, and includes a guarded Fishing workflow for authorized private/test servers.
+A client-side market scanner and opt-in automation toolkit for Minecraft Java Edition. SC-Market records observed listings and completed sales, estimates conservative values, reports opportunities, and provides independently switchable Fishing/AH Deals workflows plus a fail-closed Order→AH strategy core for authorized private/test servers.
 
-> **Compatibility:** this repository targets **Minecraft 1.21.11**, Yarn mappings, Fabric Loader 0.19.x and Java 21. Minecraft 26.2 is not a supported build target here. The 26.2 port requires the official-name mapping/API migration and is not enabled by merely changing version numbers.
+> **Compatibility / port status:** the working build is still **Minecraft 1.21.11**, Yarn mappings, Fabric Loader 0.19.x and Java 21. Minecraft 26.2 is **not yet supported**. The 26.2 mapping/API migration has been researched, but this checkout has not been migrated; do not install it on 26.2. The current sandbox lacks an accessible Gradle distribution and Fabric Maven host, so the requested 26.2 build could not be executed here. See the [26.2 port report](docs/PORTING_26_2.md).
 
 ## Start here
 
@@ -12,20 +12,28 @@ A client-side auction-market scanner and opt-in automation toolkit for Minecraft
 2. Build with Java 21 using `./gradlew build`.
 3. Put the remapped JAR from `build/libs/` into `.minecraft/mods` and start the game.
 4. Press **Right Shift** to open or close the ClickGUI; press **Escape** to close it.
-5. In Settings, choose the workflow and data source. Changes to the workflow, data source and API credential apply live; Minecraft does not need to restart.
+5. In Settings, independently toggle Fishing, AH Deals, and Order→AH, and choose the data source. Changes apply live; toggling modules invalidates the current session authorization and requires re-arming.
 
 ## ClickGUI controls
 
 ### Settings
 
 - **Mod switch** in the window header pauses or resumes scanning and HUD alerts immediately.
-- **Workflow** switches between `FLIPPER` and `FISHING`.
+- **Modules** toggle `FISHING`, `AH DEALS`, and `ORDER → AH` independently; multiple may be selected. The global **Mod** switch still pauses everything.
 - **Detection source** switches between `API Detection` and `Packet Scan`.
-- **API credential** can be saved or removed in the panel. It is stored separately in `config/donut-flip-scanner/api-key.txt`, not in `config.json`. Saving a credential while API Detection is selected reconnects the client live.
+- **API credential** can be saved or removed in the panel. It is stored separately in `config/sc-market/api-key.txt`, not in `config.json`. Saving a credential while API Detection is selected reconnects the client live.
+- **Order→AH limits and item whitelist** are editable under **Item Filters → Order → AH Settings**. The default size is 1,024; the UI allows up to the screenshot-supported 2,048-item size, while total and per-item order limits never exceed the server-observed 10/2 ceilings.
+- **Local action capture** is an explicit opt-in in that same panel. It saves a bounded JSONL file under `config/sc-market/diagnostics/`; chat and typed text are excluded. Review [Local action capture](docs/LOCAL_ACTION_CAPTURE.md) before sharing a file.
 
-### Flipper
+### AH Deals
 
-The analysis workflow scans market evidence and surfaces candidates. The current live Flipper adapter buys a unique AH listing and relists it in the AH; it does not place or collect Orders. The one-unit Order-bid/AH-undercut workflow is not implemented yet. Purchases/listings remain separately controlled from the Automation panel. Dry-run is the initial execution mode; it does not click, purchase or list.
+This existing workflow scans AH/API evidence, surfaces candidates, and includes the guarded AH buy/relist state machine. Purchases/listings remain separately controlled from the Automation panel. Dry-run is the initial execution mode; it does not click, purchase, or list.
+
+### Order → AH
+
+The Order economics, candidate ranking, configurable order size (1,024 by default, up to 2,048), minimum profit, 10-total/2-per-item capacity ceilings, per-item whitelist, separate completion-observation ledger, and serial order coordinator are implemented with focused tests. Settings persist to `order-module.properties`; the item whitelist and limits are editable in **Item Filters → Order → AH Settings**. The coordinator can consume these settings live, re-reads Order/AH quotes before each new order and every stack sale, collects at most one fully completed order per cycle, and never treats partial deliveries as independent sales. It refuses stale/thin evidence, unprofitable candidates, and fill forecasts beyond four days.
+
+**Live Order GUI actions remain fail-closed and are not yet connected.** The supplied screenshots do not show the tooltip/lore for an individual Order row or the completed-order detail/claim screen, so SC-Market cannot yet verify the server's order ID, current unit price/fill state, delivery time, or exact claim control. Do not enable automatic Order→AH actions until a private profile adapter can verify those details and the displayed deposit, 1% fee, and total against the fresh plan. Reference screenshots and the detailed contract are in [Order→AH](docs/ORDER_TO_AH.md).
 
 ### Fishing
 
@@ -52,7 +60,7 @@ Useful sale-backed fair values and trend estimates need enough completed sales p
 
 ## Private-server configuration and safeguards
 
-No public-server auction screen or command profile is included. Configure `automation.interactionProfile` in `config/donut-flip-scanner/config.json` for an authorized private/test server. The profile defines exact screen titles, slots, lore markers and command templates. See [Automation profile setup](docs/AUTOMATION.md) and [the example configuration](docs/config.example.json).
+No public-server auction screen or command profile is included. Configure `automation.interactionProfile` in `config/sc-market/config.json` for an authorized private/test server. The profile defines exact screen titles, slots, lore markers and command templates. See [Automation profile setup](docs/AUTOMATION.md) and [the example configuration](docs/config.example.json).
 
 Real gameplay actions require all of these gates:
 
@@ -65,13 +73,17 @@ The initial configuration is disabled, dry-run, and has no allowlisted server or
 ## Configuration and local data
 
 ```text
-config/donut-flip-scanner/config.json               # filters, limits, private auction profile
-config/donut-flip-scanner/api-key.txt                # separate API credential
-config/donut-flip-scanner/market-detection-mode.txt  # API or packet source
-config/donut-flip-scanner/runtime-settings.txt       # global switch and workflow
-config/donut-flip-scanner/market-data.db             # local market history
-config/donut-flip-scanner/exports/                   # user exports
-config/donut-flip-scanner/backups/                   # configuration/database backups
+config/sc-market/config.json               # filters, limits, private auction profile
+config/sc-market/api-key.txt                # separate API credential
+config/sc-market/market-detection-mode.txt  # API or packet source
+config/sc-market/runtime-settings.txt       # global switch and independent module set
+config/sc-market/order-module.properties   # Order→AH limits, whitelist and capture opt-in
+config/sc-market/diagnostics/              # local action captures, only when enabled
+config/sc-market/market-data.db             # local market history
+config/sc-market/exports/                   # user exports
+config/sc-market/backups/                   # configuration/database backups
 ```
 
-For API credential details see [API integration](docs/API_INTEGRATION.md). For exact feature and safety-check behavior, see [Features and safety](docs/FEATURES_AND_SAFETY.md). For the automation state machine, private profiles, limits and safe testing sequence see [Automation](docs/AUTOMATION.md). For UI/backend wiring see [GUI/backend integration](docs/GUI_BACKEND_INTEGRATION.md).
+On first launch, existing files from the historical `config/donut-flip-scanner/` folder are copied into `config/sc-market/` only when the destination file does not already exist. The old folder is retained as a backup; databases, exports, API credentials, and settings are never deleted or overwritten by migration. The previous single-workflow runtime setting is also read and migrated to the independent module format.
+
+For API credential details see [API integration](docs/API_INTEGRATION.md). For exact feature and safety-check behavior, see [Features and safety](docs/FEATURES_AND_SAFETY.md). For the automation state machine, private profiles, limits and safe testing sequence see [Automation](docs/AUTOMATION.md). For the Order→AH contract and current live-GUI boundary, see [Order→AH](docs/ORDER_TO_AH.md). For UI/backend wiring see [GUI/backend integration](docs/GUI_BACKEND_INTEGRATION.md). For the local diagnostic capture format and privacy boundaries, see [Local action capture](docs/LOCAL_ACTION_CAPTURE.md).

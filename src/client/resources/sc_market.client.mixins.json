@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.scmarket.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AuctionHousePacketListener",
+    "FishingBobberAccessor",
+    "HandledScreenActionRecorder",
+    "ScreenActionRecorder",
+    "ClientPlayerInteractionRecorder"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

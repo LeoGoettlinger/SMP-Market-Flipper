@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "donut_flip_scanner",
+  "id": "sc_market",
   "version": "${version}",
-  "name": "Donut Algorithm",
+  "name": "SC-Market",
   "description": "A client-side trading dashboard with robust market statistics, conservative evaluations, explainable confidence, and neutral anomaly protection.",
   "authors": [
     "SampleCraft"
@@ -12,11 +12,11 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "com.example.donutflipscanner.DonutFlipScannerClient"
+      "com.scmarket.ScMarketClient"
     ]
   },
   "mixins": [
-    "donut_flip_scanner.client.mixins.json"
+    "sc_market.client.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.19.3",

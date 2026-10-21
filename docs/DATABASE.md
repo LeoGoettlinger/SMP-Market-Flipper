@@ -4,7 +4,7 @@ The local backend uses SQLite through Xerial SQLite JDBC 3.53.1.0. The intended 
 location is:
 
 ```text
-config/donut-flip-scanner/market-data.db
+config/sc-market/market-data.db
 ```
 
 The database file is created only when a live integration instantiates a
@@ -23,6 +23,8 @@ Migrations are embedded in the mod JAR and applied in version order:
    append-only state transitions used for audit and crash recovery.
 5. `V005__personal_profit_ledger.sql`: confirmed scanner purchases, exact cost
    basis, matched completed-sale keys, and realized gross profit.
+6. `V006__order_completion_observations.sql`: one deduplicated record per fully
+   fully filled Order (1,024 items by default, configurable up to 2,048), kept separate from completed AH transactions.
 
 Each migration runs in its own transaction and is recorded in `schema_version`.
 Normal upgrades never drop user tables. The migration framework checkpoints WAL
