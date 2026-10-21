@@ -145,9 +145,13 @@ class MarketScannerTest {
     @Test
     void temporaryApiFailureDoesNotImmediatelyKillScanner() {
         FakeWork work = new FakeWork();
+        CompletableFuture<ScanBatchResult> unrelatedWork = new CompletableFuture<>();
         work.set(ScannerActivity.RECENT_LISTINGS, () -> CompletableFuture.failedFuture(
                 new ApiException("sanitized temporary failure", 503, true)
         ));
+        // Keep other zero-delay activities from succeeding and clearing the failure under test.
+        work.set(ScannerActivity.COMPLETED_TRANSACTIONS, () -> unrelatedWork);
+        work.set(ScannerActivity.ACTIVE_LISTING_REFRESH, () -> unrelatedWork);
         MarketScanner scanner = new MarketScanner(work, config(true, Duration.ofSeconds(1), 3));
         try {
             scanner.start();
@@ -158,6 +162,7 @@ class MarketScannerTest {
             assertEquals("Market API is temporarily unavailable.",
                     scanner.snapshot().lastSanitizedError().orElseThrow());
         } finally {
+            unrelatedWork.complete(emptyResult());
             scanner.shutdownAsync().join();
         }
     }
