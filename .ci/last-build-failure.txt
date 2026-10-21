@@ -44,19 +44,10 @@ WARNING: Restricted methods will be blocked in a future release unless native ac
 
 > Task :test
 
-DatabaseManagerTest > createsDatabaseAndRunsAllMigrations() FAILED
-    org.opentest4j.AssertionFailedError at DatabaseManagerTest.java:24
-
-SaleRepositoryTest > completedSalesSurviveDatabaseRestart() FAILED
-    org.opentest4j.AssertionFailedError at SaleRepositoryTest.java:92
-
-OrderAutomationCoordinatorTest > collectsOnlyOneCompletedOrderAndRefreshesPriceForEveryStack() FAILED
-    org.opentest4j.AssertionFailedError at OrderAutomationCoordinatorTest.java:37
-
-277 tests completed, 4 failed
+277 tests completed, 1 failed
 
 > Task :test FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792605240669.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792605402591.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/build/reports/problems/problems-report.html
 
@@ -75,5 +66,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.4.0/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD FAILED in 1m 31s
+BUILD FAILED in 1m 21s
 9 actionable tasks: 9 executed

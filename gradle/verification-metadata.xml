@@ -1104,6 +1104,7 @@
                <also-trust value="cf18d6e2250950bcea7a0b4c0c836274ee35cb5b7e36196672814e056643c0a5"/>
                <also-trust value="0cb4fc0dc364dbfced2c10a574793c2a6ab67972bbfcb5594edb6f71c6765c5c"/>
                <also-trust value="0a538cc062564409462865926eadfed1711a87ec2f7f4874526a49ec0cfdfc4b"/>
+               <also-trust value="e539a2f0aeac7cb413be1dd63b87f3132c7c936d2ba9dd65bcad4c2e8c7b09bc"/>
             </sha256>
          </artifact>
          <artifact name="minecraft-clientOnly-6dd721cd7d-1.21.11-net.fabricmc.yarn.1_21_11.1.21.11+build.6-v2.pom">
@@ -1117,6 +1118,7 @@
                <also-trust value="bebc6e464c8f19cf09ed7fd3e8ffc00ef69044ac8f84049178434db65203ee5e"/>
                <also-trust value="b26c5a8d58ac104fd2c0b0f48a5d5a0496e44722511dc5135edd8b3d435128d0"/>
                <also-trust value="bd08007a38f11fddd6ca1644f884f5c36391e89537d41abcda351cb54fe5f135"/>
+               <also-trust value="4e3a3a59f1f36c681f8e22df9900cc647de813d4cbcc4192d776c83bd393feb0"/>
             </sha256>
          </artifact>
          <artifact name="minecraft-common-6dd721cd7d-1.21.11-net.fabricmc.yarn.1_21_11.1.21.11+build.6-v2.pom">
@@ -1734,6 +1736,7 @@
                <also-trust value="09ee26530fc9ba71d4b9199204b7f01c018e32d934f3d8f7c7998e5aca997dc0"/>
                <also-trust value="edb1909cf8e64e8199dc51d62f999d76a01a3e27e1644f388e2d462ee51e9258"/>
                <also-trust value="f542d29e0c33f5a165f2236b0db8e20afced681f55e65f8690991be2ea62439d"/>
+               <also-trust value="4b7412ba6f31d25eb15b8264ded3b31f0c0d70531ed5049c49d479569f301b7d"/>
             </sha256>
          </artifact>
          <artifact name="fabric-api-16c8840d-common-0.141.4+1.21.11.pom">
@@ -1747,6 +1750,7 @@
                <also-trust value="7d75939cea629503043f821ab068e54a2cc055ed746a4b97633245b08a882f39"/>
                <also-trust value="835e02d162cbe77d0fc656b2da943ce3e61bfc57a7ac9fd490c9d79e34c4cda2"/>
                <also-trust value="31862ca1601ea279c43879931beb8c589bd73f3f0f9508eab7e6bc7ea867ddf4"/>
+               <also-trust value="40ebfbc1355bce2cb0e1e09b24125916d3e0c9b03f68cd84094985cc99182cda"/>
             </sha256>
          </artifact>
          <artifact name="fabric-api-base-16c8840d-common-1.0.5+4ebb5c083e.pom">
@@ -1760,6 +1764,7 @@
                <also-trust value="7ebbaccf04348f16b558489bc5786f614f81271fb045fa84e9871ece4cf99d22"/>
                <also-trust value="5fd520f26e88befca52f88444553ebb941e4fae56b259be7f066a5588e0d2456"/>
                <also-trust value="aaaf3a950f2be0bff4600ee98c39b1ac46211dbe52d1e6dc892bfad0324a8fab"/>
+               <also-trust value="4978e5e625819490aeeb718dec9921c93c8b63b4d519e97faae5adeb74ccae1a"/>
             </sha256>
          </artifact>
          <artifact name="fabric-api-lookup-api-v1-16c8840d-common-1.6.114+20dc27073e.pom">
@@ -1773,6 +1778,7 @@
                <also-trust value="565518c98d6089db940eddc706828335e5f4d0e13bbf1102d11e3bd007b22c81"/>
                <also-trust value="eefcb5f1695f9558225f4fdf7829bf0c45512d7ef0d7e57d85f8f8dcbbed5424"/>
                <also-trust value="90fa9d9f439c241a1bc7099b744ecdf907caa5c1034dacec5ddd1c1cf0c30fee"/>
+               <also-trust value="5cf0f62e58d23f34d9e2a2851f09d45d1699fd0adce3f5fc2dd40cfcca0908fa"/>
             </sha256>
          </artifact>
          <artifact name="fabric-biome-api-v1-16c8840d-common-17.1.1+4fc5413f3e.pom">
@@ -1786,6 +1792,7 @@
                <also-trust value="9ecb83df9ef9485b3ca5cb414873776851ad06edb402b3eca3d2420eea3d9f7a"/>
                <also-trust value="2b2279e1d360ea919dcbea27863fea44c818f47ba36fc5139a28334f8cd95aad"/>
                <also-trust value="143e906f4ac18647f76d9a8a7a0c3eb7f52f5bf5337132a06281dfd57cb7a2df"/>
+               <also-trust value="e94676798c087e45340c8d377162ac064e2d757052bc30cd22db5d4c84fa6244"/>
             </sha256>
          </artifact>
          <artifact name="fabric-block-api-v1-16c8840d-common-1.1.10+4ebb5c083e.pom">
@@ -1799,6 +1806,7 @@
                <also-trust value="7d6f524f9ea504735d8421cec0ddb96e814eb5884411809cd143d0e1433741ae"/>
                <also-trust value="4fd266c30cd5fd9c88a836295f7fbcb60f13f4a49054d4da0aa9af293ff3936a"/>
                <also-trust value="ef8cef55a84ed694577c0cb19fc15bbf3c8be2c76d7fe37a1f10d21f8798df59"/>
+               <also-trust value="aa952117547acda59d01bb6e4103810b21c26155f3490f75cebbd450d20a3236"/>
             </sha256>
          </artifact>
          <artifact name="fabric-block-view-api-v2-16c8840d-client-1.0.39+4ebb5c083e.pom">
@@ -1812,6 +1820,7 @@
                <also-trust value="af957a35d550463184651be2882ee58d6056d9602344295c4938163f96aa86fb"/>
                <also-trust value="bc7c5eeb6c7605f47b2e0a042f50d8c71968b642da3e7465a98000b0305c9d50"/>
                <also-trust value="1e5052246b0352458a4a6bfaae612692534365116c43b361bc70873cb6764750"/>
+               <also-trust value="2d4dfc7e39c8c93af761be0309eb19cd205cca6c17b15845e8e3df5ed1c4e25f"/>
             </sha256>
          </artifact>
          <artifact name="fabric-block-view-api-v2-16c8840d-common-1.0.39+4ebb5c083e.pom">
@@ -1825,6 +1834,7 @@
                <also-trust value="88685bc540e6c221f3f2d69590d0b2c26c9a8d74dadab41f61c01c065bad3f95"/>
                <also-trust value="fcce60cff2f647153734ec1b0466f4312229489ee896e467ce59e5cfbb9f1ddf"/>
                <also-trust value="904fb584427c5c3df8b6348619e61114ceabc8c97ac14b901a23a0dadc557846"/>
+               <also-trust value="2a997c63385cf9ce526a97370532035d1d54717861a261fb71bab33cbbc5ac7a"/>
             </sha256>
          </artifact>
          <artifact name="fabric-client-gametest-api-v1-16c8840d-client-4.3.5+bfe9fcf43e.pom">
@@ -1838,6 +1848,7 @@
                <also-trust value="73da410aee680a4f9ba363f14e1cb64ba4531aee11fefbc6964cf45c786e984f"/>
                <also-trust value="67d0d729f665c5f5d076f7796c28ade53d246b18e51aba5966fb03ac4b104329"/>
                <also-trust value="c7a0adbc784405d46f0cc30d03a6d3008b68eb02512f36b52a247b29a5d0a39b"/>
+               <also-trust value="4ce79ce2200cfb9a44068fadaed9c82133387f73049fc5c7dfe51b22249cbe78"/>
             </sha256>
          </artifact>
          <artifact name="fabric-command-api-v2-16c8840d-client-2.4.7+6b42a6003e.pom">
@@ -1851,6 +1862,7 @@
                <also-trust value="0b7007c245f95539b0ecf1e967c0fbb205efac99aa20cecb3e6079c2c58f2f36"/>
                <also-trust value="c0302be4d81625d0c955b901f3114e61b15adb6f00100d5cd92fdee258cc078a"/>
                <also-trust value="627106ef798155eae7b26071434ce1387f480252a44666282e8b0874e79487db"/>
+               <also-trust value="19ad89db4521ab06fba5b289c5107b8dfde734ab9c78ac9513191ad62259f417"/>
             </sha256>
          </artifact>
          <artifact name="fabric-command-api-v2-16c8840d-common-2.4.7+6b42a6003e.pom">
@@ -1864,6 +1876,7 @@
                <also-trust value="635609677e4fc9b881d2c2dcf2f5fd53e35a45ca123b676614d089fbc4bb6807"/>
                <also-trust value="32cdc1ead617d7a5afd460b3cc17c35e2936039bdd187a22b75948d597425c31"/>
                <also-trust value="09e034c7eadd9d41856daea145f1b51bca26dab0dfdfc1e3fc1dda38da6fd192"/>
+               <also-trust value="e4280e8e44e8038f094a9d49a9b6a908d31f6a22704bdfbace546faec59b3651"/>
             </sha256>
          </artifact>
          <artifact name="fabric-content-registries-v0-16c8840d-common-10.2.14+4fc5413f3e.pom">
@@ -1877,6 +1890,7 @@
                <also-trust value="54cda7b5b642ebc99cf7ed46691fac71cc523461a4e18ac7c34be41bba50bec4"/>
                <also-trust value="ce39fcec21b8b8c7da073e65539bef355593c9ca927fb466740d99db0aab693d"/>
                <also-trust value="4d6a1f6fbc0427c55e9337bc94e5bf8541e20daf0df4449bed0f4b515c468939"/>
+               <also-trust value="b1ea8e9af5caf46021c8d31c9a7811f32f816598859e7800d3a758cc00d9fdee"/>
             </sha256>
          </artifact>
          <artifact name="fabric-convention-tags-v1-16c8840d-common-2.1.55+7f945d5b3e.pom">
@@ -1890,6 +1904,7 @@
                <also-trust value="cc2df6339e661274f19ed375c294feca459cfc73a6b88bb00756a080805361e1"/>
                <also-trust value="874b2567437d15b73729a8bf72436f4b7f4c58a77b45f58ac924be4e47db7b0d"/>
                <also-trust value="2ac0b4b52915529ddcba3957989e970e6699269f636999fb76f1baf80cf5617d"/>
+               <also-trust value="e1667e650438af8fab6b7051532c13c50dd1851e3ac84dab22aa448eeea71ae4"/>
             </sha256>
          </artifact>
          <artifact name="fabric-convention-tags-v2-16c8840d-common-2.17.3+8ef948ba3e.pom">
@@ -1903,6 +1918,7 @@
                <also-trust value="99a5fd9037a4370c2465daca7c6dc665da94d97c7dcd9f714165b98cb82f908e"/>
                <also-trust value="8c14d1af0d8c79ed32321301590e677e0475140f27e8615c3ac0e09fcf6e1750"/>
                <also-trust value="b0853c40a33065750a3ad26348a11245ed077b40dce97d66dba5561016394cec"/>
+               <also-trust value="d2d4113678f6981054c29eac4aac43eb3302dc7bf29b2cbc420e779496d7e2a3"/>
             </sha256>
          </artifact>
          <artifact name="fabric-crash-report-info-v1-16c8840d-common-0.3.23+4ebb5c083e.pom">
@@ -1916,6 +1932,7 @@
                <also-trust value="4e71e0b8ba7fff254449f935374220ea653706490b29f1ac7c743b29f48561fb"/>
                <also-trust value="fbbb2c3b68caac58abc5b00fbb93e5267ac85578364ff54c0f574c210845380a"/>
                <also-trust value="0ce06299b52ee6b6912ad1ad0f45402488731f704853269af43e71538d5ef650"/>
+               <also-trust value="deececf83ba21b87a1b01981ba980ceefa4e813ad76416da5a4707fd8ee1f0f6"/>
             </sha256>
          </artifact>
          <artifact name="fabric-data-attachment-api-v1-16c8840d-client-1.8.48+eed0806f3e.pom">
@@ -1929,6 +1946,7 @@
                <also-trust value="bca31661b3eecf95e260eccf46dc9dc7739a82627d5ac151402cbaa50d0e0b2b"/>
                <also-trust value="067d1fae03a15b72901430f52904e5cd263edfa6bb408dea16c60da9c9b46d6d"/>
                <also-trust value="afa997efdc49124fb3e1cb7ecc1d01a957ef2442b8ef96e5128f20fcbb64cb24"/>
+               <also-trust value="2a2176e82a92b263a1bfe28a5b0391532d25f00c9d7dc4243a5ec533763fca83"/>
             </sha256>
          </artifact>
          <artifact name="fabric-data-attachment-api-v1-16c8840d-common-1.8.48+eed0806f3e.pom">
@@ -1942,6 +1960,7 @@
                <also-trust value="706f762b3252b1ae8bf8116a1883042811c4f9939ee3867e2ca41f0b9f3892b4"/>
                <also-trust value="c313ba75fdc2f5985e8758b05161d2f71eed82ec6457282f3fe91a27a09a6197"/>
                <also-trust value="9c55f7bf53b09e7a51a689d87c3e929cfc8a76b36a11900f89d1e5ebe178b403"/>
+               <also-trust value="b4d3cf7cf5eebcd8fbd8c699d301b8f5ba1eb8a8c718117fd868f3b598d2dbdc"/>
             </sha256>
          </artifact>
          <artifact name="fabric-data-generation-api-v1-16c8840d-client-23.4.1+69974c4e3e.pom">
@@ -1955,6 +1974,7 @@
                <also-trust value="eb4a75b09df270f34e4d5ddd907c236f23821deed9b1e6044133557ba63efaa4"/>
                <also-trust value="b3ae22f3d07a942ae80b6957466f57d4519fc8689b41964918c8180ebb5dccd8"/>
                <also-trust value="d7035e39265198659e2fd95f09a75d646ea2e5aa07b81358b4ba960f8ee3545e"/>
+               <also-trust value="9c120368a896b620df8b3716c3af04941366ba06c2fbae94c99f33bc6853d4f6"/>
             </sha256>
          </artifact>
          <artifact name="fabric-data-generation-api-v1-16c8840d-common-23.4.1+69974c4e3e.pom">
@@ -1968,6 +1988,7 @@
                <also-trust value="7398d3fed325b6b6e45cdb21d977b9d2a47afe997b03b663c99aec133d0ee44a"/>
                <also-trust value="f6ae1d19b9684d4a791f615cac9f5946a665b524f2d875818ba8e60627a05e14"/>
                <also-trust value="70db3c5785ce9e830a87c8db6cc5142b70f2d75c6b818b412fcd3fcd4c4fb5a9"/>
+               <also-trust value="a9d82b8fbf6a59266ff4c450112c04afbb7d71a11b3e0728aceb9e738eb42ab5"/>
             </sha256>
          </artifact>
          <artifact name="fabric-dimensions-v1-16c8840d-common-4.0.28+4fc5413f3e.pom">
@@ -1981,6 +2002,7 @@
                <also-trust value="78be4583699ed262c5eff6c2702df3f16fcdb01e9235b5b224827e0b75efcf60"/>
                <also-trust value="32c4f417700aebeb6e21788416c50257bd972a6c0ace107029a572671f8333d8"/>
                <also-trust value="733c000a15bb038d9b67846e4d8f85daf0f0e82a1975be416e614949af0698b8"/>
+               <also-trust value="b41f3de800423ed0a1f13ed15ff882472e88accc86b087a27483e5aad0224ae5"/>
             </sha256>
          </artifact>
          <artifact name="fabric-entity-events-v1-16c8840d-common-3.1.1+1d0ab4303e.pom">
@@ -1994,6 +2016,7 @@
                <also-trust value="6094746fe5d6e0994368906ce37e655930bacd80ee7aa46b5c6c53f27ed2aca2"/>
                <also-trust value="c7d4679eac0191b4d6eaed7ee55a13758249276502bd06fcc3d192e178eb61f9"/>
                <also-trust value="1fe3e97eb7bd55a06c2d726783f612702de2fc7d3edb2aa5ce2c877891ea506d"/>
+               <also-trust value="33a63db5578d55b789d249085caef2e4f170f6cb36ae55ca1c09090b782c33c0"/>
             </sha256>
          </artifact>
          <artifact name="fabric-events-interaction-v0-16c8840d-client-4.1.1+3b89ecf63e.pom">
@@ -2007,6 +2030,7 @@
                <also-trust value="b6928cb16c550b0206ab640e6796ac91aba1ca0f1d3122408f91bf243dacfd13"/>
                <also-trust value="c79e420ef9d729ad0c6ef319a0a9b5cef0d1f10c84ef831cc6d9245ca788c829"/>
                <also-trust value="f626a58e4c9eb2531237f6411a53e2a84d9289d18ca934e3e1b6beb0cef75093"/>
+               <also-trust value="43309ee48dcd2e5188e3385fb1b50d96191a0b48c7e27643967bb85106728808"/>
             </sha256>
          </artifact>
          <artifact name="fabric-events-interaction-v0-16c8840d-common-4.1.1+3b89ecf63e.pom">
@@ -2020,6 +2044,7 @@
                <also-trust value="7de71687e7e7e75f996fe07a6bf731fd7617f91a6ea8ddbb7245a88bc88ac4f1"/>
                <also-trust value="950a737c49c29947a3dbaaa1bcad20f5de58b1284091e620a2a684127aec7df9"/>
                <also-trust value="bd21cf9635f15a14b7a68881641b4a71a5229007e0e9125465fbb5b8ee153c56"/>
+               <also-trust value="9a1932004f943b7382ec57e7287d98744ff6b3637b3accc97a83e6883fb64ff6"/>
             </sha256>
          </artifact>
          <artifact name="fabric-game-rule-api-v1-16c8840d-client-2.0.3+4fc5413f3e.pom">
@@ -2033,6 +2058,7 @@
                <also-trust value="efc4fa3f052ed680544d3546780438dd8c48a83191b4f2b3fcd580bbe710c611"/>
                <also-trust value="d316606c85c4746ce8fcf36d1f3d78fb54c7430e729c5273f050403d1543f639"/>
                <also-trust value="893fb44f6c69a4c5860bb3b449431172e212b0ea2b0b9961bfd3cbe1962109aa"/>
+               <also-trust value="38296e132f682c0f3647c7e45b630412f1b66b72d559d02c374f876320e43b1d"/>
             </sha256>
          </artifact>
          <artifact name="fabric-game-rule-api-v1-16c8840d-common-2.0.3+4fc5413f3e.pom">
@@ -2046,6 +2072,7 @@
                <also-trust value="8089224a7ca5b39df27677879ddf9f6d0153c6675780a999c22f714142317071"/>
                <also-trust value="d6eea77897b70b4e7a145dfa607ce9701fb33ad6f3e9c742a1bc2ebde3fca127"/>
                <also-trust value="69d06accfcf0f086767abc2f4bcfe996b8026f93393c7358079579012b5cdc62"/>
+               <also-trust value="49a4c4149b05c2c2e69ddf8de590a2208aa98bd8d34f190348741314b8abc70e"/>
             </sha256>
          </artifact>
          <artifact name="fabric-gametest-api-v1-16c8840d-common-3.1.27+4fc5413f3e.pom">
@@ -2059,6 +2086,7 @@
                <also-trust value="4f41cf8fe048beca776c58bdf11caf9761af9000fd32df45116e25e5266ac2f6"/>
                <also-trust value="08fda765b73be5916f47027c6dc690008eb97f657e8154eda3b665aeaf4bcc2b"/>
                <also-trust value="a08bd5b1e2a65a13c64c2c4210e8815b6fd9e7290341029697e7d6c6db1c44bc"/>
+               <also-trust value="1652336922aa9e79b54fe1b40ee46bf2e3b5427a2e584d98b23194d7a7d31f55"/>
             </sha256>
          </artifact>
          <artifact name="fabric-item-api-v1-16c8840d-client-11.5.20+d0c46b9e3e.pom">
@@ -2072,6 +2100,7 @@
                <also-trust value="a31a4ca489907db772ac72c0d29ead9d9ec554ed0aace18bcf7c766087fc6f75"/>
                <also-trust value="212d632e16e6ecdb807455c11bb6a7ca73f489271c7a151b1963ae6fcddc10cf"/>
                <also-trust value="9e57c4f782f19465b70ee4fbe2a610351f671b1f91b7104e354d63105d0df154"/>
+               <also-trust value="9dc4cc7c2b8ab49d431b27d7bb50a455452b237d14b0f53b0776b5ada09a500b"/>
             </sha256>
          </artifact>
          <artifact name="fabric-item-api-v1-16c8840d-common-11.5.20+d0c46b9e3e.pom">
@@ -2085,6 +2114,7 @@
                <also-trust value="c45801f418a5815044be3b5b4a26a30910985f6b7a65e96c21f9348cc5d612a5"/>
                <also-trust value="88d2f789d05d8bd21269a66ed7b20315f0d543b71ff2ad5fe77516142ce51fdd"/>
                <also-trust value="f4fb9512963a8af36c9fe55b0923165f1f9a4941dfad15a2cb64683cf7abbf18"/>
+               <also-trust value="f3a4515f38004ca8a261d8839bf6a413b380b7fc73c4ecf0dbf6367a8deb6766"/>
             </sha256>
          </artifact>
          <artifact name="fabric-item-group-api-v1-16c8840d-client-4.2.36+4fc5413f3e.pom">
@@ -2098,6 +2128,7 @@
                <also-trust value="9e8db2891cf21cd2fe9bc2287d4c70caa9473d2af02aa3d368ec1386d0266d4a"/>
                <also-trust value="8f9e8930dd8dd8843adff697f09bac190b3c624714a7b669bcb0e4e75f6a6b52"/>
                <also-trust value="3a6eb2010d7f93f16cedbb551be5e7766907d18e88ad50e42605c6604c5612b6"/>
+               <also-trust value="faf0f0dde8492639acecd19dbf6886f37269eeb1a234aa589595e97d176d6ce5"/>
             </sha256>
          </artifact>
          <artifact name="fabric-item-group-api-v1-16c8840d-common-4.2.36+4fc5413f3e.pom">
@@ -2111,6 +2142,7 @@
                <also-trust value="a3cc9cab939c6af846bff186b710ba9da620c2853841ab67601dd78b200fca99"/>
                <also-trust value="dda2575d2e5db2ce91f2830db7abef2dd6f700bf3ee7fe52d52fb37f34cadf2d"/>
                <also-trust value="73fc9cea89012747fa10d6923493da6045769727c1193a6578e416dd19773f7d"/>
+               <also-trust value="4e6c51ed20bf2b8205657233e43399545038030689648460409fc6a9d9f16904"/>
             </sha256>
          </artifact>
          <artifact name="fabric-key-binding-api-v1-16c8840d-client-1.1.7+4fc5413f3e.pom">
@@ -2124,6 +2156,7 @@
                <also-trust value="6f8868fcaf0d719b7102199b40e094646bf23b216ede24408ddfe45bf43f6f38"/>
                <also-trust value="8ce558239cbea737287d9adc875377f8dd75da0b54f97ff594e7f410a37f3361"/>
                <also-trust value="f872a1db504c4eda7e004a1d093940965e54e088fa7f19833a1536b63158d023"/>
+               <also-trust value="6ab683b92a4a232858354d5bbe60649f97bdb2f6a7e042cd278987728817b617"/>
             </sha256>
          </artifact>
          <artifact name="fabric-lifecycle-events-v1-16c8840d-client-2.6.15+4ebb5c083e.pom">
@@ -2137,6 +2170,7 @@
                <also-trust value="ec2155d3a2d67ac595b2b8b6071bdad4ae84dd877ad0c1d7f1b5deb7ca3e45a3"/>
                <also-trust value="b67f941ea0d6ef07438eb4c502dc242223e25b1c9ad2721e8baaf407c7457754"/>
                <also-trust value="241d412c598603f091e4fa12344f7f00740ece29820e0374ff3e190c45a486ff"/>
+               <also-trust value="66db622f457eff1f7df7da949091ed0b476814c975b143026dc79a4743f6e002"/>
             </sha256>
          </artifact>
          <artifact name="fabric-lifecycle-events-v1-16c8840d-common-2.6.15+4ebb5c083e.pom">
@@ -2150,6 +2184,7 @@
                <also-trust value="3dd9bd115e0f81b2828215928fb1e8a6de5d6a37aedc1fd3a530df1bafa437b3"/>
                <also-trust value="760300a103a7e2d95147c803ddaf388b2786e20b64b89b1dc77354dca7dbacf0"/>
                <also-trust value="dd8c2f8ca9c943dfb68d5f0c030648962112032295bd298b781b27b8af4e7db7"/>
+               <also-trust value="863290068941e0e0ff7280523b5254aa1860f4ce09fffdd0cd2091e85d8c2570"/>
             </sha256>
          </artifact>
          <artifact name="fabric-loot-api-v2-16c8840d-common-3.0.73+3f89f5a53e.pom">
@@ -2163,6 +2198,7 @@
                <also-trust value="530844c58f497c7413371f03d11844b3a33e1f534b758d83eec7fcec68fec252"/>
                <also-trust value="c16fc4da62dfb9ca443cb71657445ec8d802f05d47622a5587ae4c8ee430a16c"/>
                <also-trust value="fc3824868198027b4d4d15a60caa4db3de824fb1d309c21ee924134f00537b4b"/>
+               <also-trust value="bfb2e0a512e06c3e1c88b81d17934be860362e8939ba87880e409dd626b549ee"/>
             </sha256>
          </artifact>
          <artifact name="fabric-loot-api-v3-16c8840d-common-2.0.20+78c8b4663e.pom">
@@ -2176,6 +2212,7 @@
                <also-trust value="8e203080687b556177fd3040ce205b8fe9aef5a0ba7549f59503ee3b8da67e27"/>
                <also-trust value="4ecb99ed3d0c1374167d69a780eaa667b199b15049545cb0470f9f8d1ceb95a1"/>
                <also-trust value="cac9ef3835ec581b6f9897bbea53027b0610f166269f155ace16496a296e366c"/>
+               <also-trust value="9482059b965d2d29610c4f05721966304fcfc30ffb87d9459f1f98ba566d3d33"/>
             </sha256>
          </artifact>
          <artifact name="fabric-message-api-v1-16c8840d-client-6.1.12+4ebb5c083e.pom">
@@ -2189,6 +2226,7 @@
                <also-trust value="b755a4b1320b439c4e0f3ce83af373f559d5643e918b9ed341037488a8f2219f"/>
                <also-trust value="a41478c88f8b3ad9b5e52557971a079e8fc86072ad5eedb467366a9bc0d82dfd"/>
                <also-trust value="4087caeaf46b15ec9b320f5601643b4459a33e9fe8faacceb7c4d3d81b8a75ae"/>
+               <also-trust value="7dbb58b414e1a3b6cb363b7f10df4e7e853dc3ca692c949712c74df7e37d79ad"/>
             </sha256>
          </artifact>
          <artifact name="fabric-message-api-v1-16c8840d-common-6.1.12+4ebb5c083e.pom">
@@ -2202,6 +2240,7 @@
                <also-trust value="10de28abdbd4ef30887ff2d6ca2198a986506dbff92d24211cea1dba84e9a3ab"/>
                <also-trust value="6f40400f4efce49e81e6eb793b5fcd57eea59964c99c3b0db6f0836753c48aba"/>
                <also-trust value="1cc3c0d7a45849954f250d37700242a81df90aa515196a8f5ffcd52d0a3f6b29"/>
+               <also-trust value="ab58ab7fe30a109c91c4d12be1cd926379bb7152834907fae38fe2b7c2bf1e71"/>
             </sha256>
          </artifact>
          <artifact name="fabric-model-loading-api-v1-16c8840d-client-6.0.15+4fc5413f3e.pom">
@@ -2215,6 +2254,7 @@
                <also-trust value="915cba060e2a64d28e1cddbbe365113347df17d850a82602ba2ceab5d7418f51"/>
                <also-trust value="8a56507041a9e05cc219954446df14bc3388e78b45dc652bb5f7659a65899a50"/>
                <also-trust value="ca443ba3391ffa729db3a09e4a690c9a84ec67823357010c79591cfd4bf21ba1"/>
+               <also-trust value="64a73a4ce11e17436eefe3144a1b7e6e874ffe6d498088ecac7cccb70a7aca5f"/>
             </sha256>
          </artifact>
          <artifact name="fabric-networking-api-v1-16c8840d-client-5.1.6+6b6d71a53e.pom">
@@ -2228,6 +2268,7 @@
                <also-trust value="e2231e90a7fb1f394260e61d2974049547fb4232cc3578098bcedbaa0f14b006"/>
                <also-trust value="32aea18249456bb7d40e952073970403aca1ff16cd5a1f9ac0e6964946687031"/>
                <also-trust value="59207a7b01c5d362af6e9b2851fd3cfbbc122fea80e8d56e12df775e6a3147c2"/>
+               <also-trust value="f5d17b4245483fd3c4a41f665a2d880b05ee98a52b5eddb70c8b469a75b1fadf"/>
             </sha256>
          </artifact>
          <artifact name="fabric-networking-api-v1-16c8840d-common-5.1.6+6b6d71a53e.pom">
@@ -2241,6 +2282,7 @@
                <also-trust value="ac556ada8f2120d56731f15dfe2fa04d309df0b5e8c564f3a82f660e8936f563"/>
                <also-trust value="8bfa87cc891307b6873b4cf7ec26e3dcfe2402588d5f1a204a1807735066a9ff"/>
                <also-trust value="02357959e340647088aae9f69656cd061cbfd1c3b69fd3fdfb0bb36dfa7519a7"/>
+               <also-trust value="67c6c45d76b1a9c318efc23a583be529ac53a750b30407f7f98b4f8e69a0696c"/>
             </sha256>
          </artifact>
          <artifact name="fabric-object-builder-api-v1-16c8840d-client-21.1.40+4fc5413f3e.pom">
@@ -2254,6 +2296,7 @@
                <also-trust value="15da3a1ababecc79ac7f8c475863ca4c73731e8e41fc638d4f74303ebac276b6"/>
                <also-trust value="1bf6b2515c7ef1a2da997d90bddb4723854b1193a0ffb1c9c6cfee05e927eaa7"/>
                <also-trust value="ecc0561966780695264767b55f932077106932df27ebb9c69e2826724cf5ce0d"/>
+               <also-trust value="809d91b389b94c08166c2d12da70803639502300ddb63b30644131ab80fa5226"/>
             </sha256>
          </artifact>
          <artifact name="fabric-object-builder-api-v1-16c8840d-common-21.1.40+4fc5413f3e.pom">
@@ -2267,6 +2310,7 @@
                <also-trust value="ddf009985a082271373a74c46fbb75e1cdc800d68a0000a06e6e9d8da9caddf2"/>
                <also-trust value="0cff0999c00180059d1cdf4a94c02e20a4e4cb40d182ea386c72b054bf8ba2c7"/>
                <also-trust value="1f361cd92b0ecd2246581a8e4129f9e3ae24aac9db9e28bf6cbea01e13d4cec7"/>
+               <also-trust value="4064881913b9b11a083557198daef9ecacd76365d41c110011f730caaea08714"/>
             </sha256>
          </artifact>
          <artifact name="fabric-particles-v1-16c8840d-client-4.2.12+4fc5413f3e.pom">
@@ -2280,6 +2324,7 @@
                <also-trust value="0320cdae50c5184112ef0dc368741a6b3b9768f4cb41edf89654aec288bb9397"/>
                <also-trust value="f994c2cabee7e11887bec8f4fcb21b3342a3b38f6852a17f95f52c60f1ef94b5"/>
                <also-trust value="20e790f98613ecb5dac816e4cb89aceadd1072bbf781b291f54275a2f271c088"/>
+               <also-trust value="1f25f447d5563d198cc0e5a891cf15a0818103005685c6491bbc20960de4f85f"/>
             </sha256>
          </artifact>
          <artifact name="fabric-particles-v1-16c8840d-common-4.2.12+4fc5413f3e.pom">
@@ -2293,6 +2338,7 @@
                <also-trust value="ce963ed19eb438c54f564c24aae197d4e518edb8567681eb5511ec739b37b571"/>
                <also-trust value="caf84265a23e16cf5881cb7400a3855dbdbaa499212d5d75e0edb1a3ee504cd5"/>
                <also-trust value="9d0671ffdb733293861c17c4bd417844067221caef33a9677ff34e4d92e68194"/>
+               <also-trust value="c9d2f734d2dcb389be3c29f8401ba487e126fdb7e8efc9dab3c01c0c16c332b4"/>
             </sha256>
          </artifact>
          <artifact name="fabric-recipe-api-v1-16c8840d-client-8.2.4+4ebb5c083e.pom">
@@ -2306,6 +2352,7 @@
                <also-trust value="122e688670cba59b561cf347f24b3ef2313ea02f17b0efbc0873b88a319bc105"/>
                <also-trust value="a61f701097a0bcd8dea5a2020db410e3e14e81345149da4ac9fb271fa81a6609"/>
                <also-trust value="ec43e7789d5d2b9dd5979efadc87def231f61494593dee239a783162f0f36ea3"/>
+               <also-trust value="c7f715b155998768be1eadd7cf9d85baf6d927c4242bb245eb2fa94f835f0a1d"/>
             </sha256>
          </artifact>
          <artifact name="fabric-recipe-api-v1-16c8840d-common-8.2.4+4ebb5c083e.pom">
@@ -2319,6 +2366,7 @@
                <also-trust value="4d9bc366e651d62bf85b2ed9f65054476bc6e043ebc7e667463b668a6f8efe0f"/>
                <also-trust value="bf5801bf8ddc9934ccda40db1cc5941b2096573ae49538203db03303da889777"/>
                <also-trust value="cd3612ca11521055f6c80ec8acbe2c791be6d39294a682c7507cc44cac441af3"/>
+               <also-trust value="455e7135a23d00a8d81908f37f53f7bb1d440f42592b0a14e5ff567670d8f00f"/>
             </sha256>
          </artifact>
          <artifact name="fabric-registry-sync-v0-16c8840d-client-6.2.6+1718722b3e.pom">
@@ -2332,6 +2380,7 @@
                <also-trust value="82fabde24ae597615c09ac2f38f17f902a5dfcb5f95d4d35b212de819fba667e"/>
                <also-trust value="4e360a56059da000c725ad43e679e92af9c3dea73bf181dfc46f297158555998"/>
                <also-trust value="79540bbd22f6f3241279a5eebece7bd0e03266c8f8a9f3cacfebaf8c69751a19"/>
+               <also-trust value="dc769e8f35e623aa7b385a397755a14898e41e85a40caa191d57f5ad7e309c29"/>
             </sha256>
          </artifact>
          <artifact name="fabric-registry-sync-v0-16c8840d-common-6.2.6+1718722b3e.pom">
@@ -2345,6 +2394,7 @@
                <also-trust value="e6c374acb31b6941580ff0e1af36954047cd14c1732acc2c7135b373f6e1fe17"/>
                <also-trust value="96d0fdf33e01fcbba5767f1c83f725f683a1411463476fcbb2b788964a3ba975"/>
                <also-trust value="4bf5c06cc5bf1aba6162850ebbfe674952b299467c86fb954b64a6d56d7020f3"/>
+               <also-trust value="06c8fd6bd0bc8fb5ac3ed91952a8772a48fe854885984f5a2e36dddd048d4e27"/>
             </sha256>
          </artifact>
          <artifact name="fabric-renderer-api-v1-16c8840d-client-8.0.3+f4ffd2e53e.pom">
@@ -2358,6 +2408,7 @@
                <also-trust value="20f65b73e48e9150082cf20525896e1cc167f2a3c72f1e8053844048aca49ce2"/>
                <also-trust value="4f3fec2389593b85a6a47993d3dde3821a2abd9ff67652a5efd0d4681dce9f24"/>
                <also-trust value="5c374e736b2b0a45c23e366bcc7e01e120df2702ff0051d1698cb78ebf1492c4"/>
+               <also-trust value="e49629379e69a7487da74cb8082282de0d0a32e9890dd1a03f4be7c4472fd446"/>
             </sha256>
          </artifact>
          <artifact name="fabric-renderer-indigo-16c8840d-client-5.0.3+f4ffd2e53e.pom">
@@ -2371,6 +2422,7 @@
                <also-trust value="7368b4e2c4e15baf5fc3de1f166902ec3e303553b17701e153d0b41e80ede9a2"/>
                <also-trust value="b942e7dd3545462c6a714db43d471a93e22b514c5626788122e362780c33d1ba"/>
                <also-trust value="5795c9a687e6279b16e31050b33a3d94585920a36ded269d31e99e3a6dc1b677"/>
+               <also-trust value="39b132bca9805620d1b9c8dfbbd6b2d0f6055977539b0039e8d464822dbbdf63"/>
             </sha256>
          </artifact>
          <artifact name="fabric-rendering-fluids-v1-16c8840d-client-3.1.43+4ebb5c083e.pom">
@@ -2384,6 +2436,7 @@
                <also-trust value="824be1f2bdb3d08c386a975f0628500ab2f8ab5d5e08ab99786639e9df3f8ef0"/>
                <also-trust value="c3210172985a0c0956c78d6951f3b95ccd609730818a371c3f854fb7130abc2f"/>
                <also-trust value="e3f3560fb6112cbd957862dde5d1e39197a18f0827cf5974c65bd8b87b4d96fb"/>
+               <also-trust value="778dcfe6f2665b44df177701b449a358978fab55c1e1cd31b9b6b667584f4245"/>
             </sha256>
          </artifact>
          <artifact name="fabric-rendering-fluids-v1-16c8840d-common-3.1.43+4ebb5c083e.pom">
@@ -2397,6 +2450,7 @@
                <also-trust value="a813a4424103c92cca71db3e71b6f263e2474fe86e3d2158cf6d95934e2a9282"/>
                <also-trust value="1c8b69c1c745272ab2618c1a4c8360cce0b2ffc058a0243dbdac0b3d6d6e00a3"/>
                <also-trust value="c9ceac2769ebc394d7ffc2e394afdadc0d601275a77fec54044932b1db577f22"/>
+               <also-trust value="02a4e83e75297df8b2795bf091a73e5cbdac42abd0745e86f770b988cbea4469"/>
             </sha256>
          </artifact>
          <artifact name="fabric-rendering-v1-16c8840d-client-16.2.10+0290ad933e.pom">
@@ -2410,6 +2464,7 @@
                <also-trust value="ab2c979806b9acaae9079716591905b3883e834a87e82a578656203e158642fe"/>
                <also-trust value="0e07d33262069e7a6b54074c340f24046e05dcbd51e636e4af6f25248a147e6a"/>
                <also-trust value="51685657671210799d6fd54e15fd68b24ec1781aa39364b8766494bbaab84558"/>
+               <also-trust value="31196d122ae7512865d54b796dedf7395697ef8504298509f3d50fd9bd0cfbee"/>
             </sha256>
          </artifact>
          <artifact name="fabric-resource-conditions-api-v1-16c8840d-common-5.0.35+4fc5413f3e.pom">
@@ -2423,6 +2478,7 @@
                <also-trust value="f8bdbd786522f0a0df0db7168026d120565cd2e761859d8bfcb1cd40719d7fb1"/>
                <also-trust value="61132e3398af2fb06e3ed95ec1675647b88b1d2976e415d24e52a14269f779c2"/>
                <also-trust value="76f504db572196d1f260ff4c5818c6d117767621ba1636970526e70c951068b9"/>
+               <also-trust value="0307df4da8d409393447b6747302c41f068674fe115fa7faa27d50c9ede23c27"/>
             </sha256>
          </artifact>
          <artifact name="fabric-resource-loader-v0-16c8840d-common-3.3.4+4fc5413f3e.pom">
@@ -2436,6 +2492,7 @@
                <also-trust value="77c0c5b0c27a601c5bc68e4d87d5ab60215e87b0b7b47e0ea1567db24be066e5"/>
                <also-trust value="474c52585812add952d245d3698b49d6d1fd37d165aef80fb0faca3c76ec56b5"/>
                <also-trust value="bb8ce57948c4f4197538e8e2fad29456d0589465da0618a4292ea62c01e0884b"/>
+               <also-trust value="df2aca82a5d6b94ec483d9aa0840e1a0d9e6125d2353b7e0d645d5a45549797e"/>
             </sha256>
          </artifact>
          <artifact name="fabric-resource-loader-v1-16c8840d-client-1.0.10+78c8b4663e.pom">
@@ -2449,6 +2506,7 @@
                <also-trust value="ca7950aeae6fac6a978e170640c616f61555e556aff208d2082986cf0ea6e63a"/>
                <also-trust value="922b6ae26c65dc5ad73cfcf0a7368ce085364e633cd3cd1c828a1406420135d8"/>
                <also-trust value="f38b57c65198b84108a6a45910cfe30896f8a7234c33b4b3984bb2da5a1861d8"/>
+               <also-trust value="ba5aab3aee52741392b20df1ec4a96e15977eb7ec0d9bf11af430e420aa462f8"/>
             </sha256>
          </artifact>
          <artifact name="fabric-resource-loader-v1-16c8840d-common-1.0.10+78c8b4663e.pom">
@@ -2462,6 +2520,7 @@
                <also-trust value="7e6e2ef9a39a84f07de4d8ae7323cba91c736542c46d86bc4232527a0ca43856"/>
                <also-trust value="c7558d3e7f62687f5d628a0866cb8153b6f6fb382f225278f70d96f539001872"/>
                <also-trust value="0c0ebaf98ea662b87faa61b715ee615c413d7023753fb464391d1e32a3608279"/>
+               <also-trust value="bd408b7ac0885fe2043dfd357fef515eafeb2409c0d6b84d596046db3cb0bcc8"/>
             </sha256>
          </artifact>
          <artifact name="fabric-screen-api-v1-16c8840d-client-3.1.7+4ebb5c083e.pom">
@@ -2475,6 +2534,7 @@
                <also-trust value="667dc4965042a863064c09814d977ecad9c32d97e8025073372304f4dcd00ec7"/>
                <also-trust value="ead471e605f761ade6fed4b74a7cd5e385808cd95fd690b42f137f4111fde03e"/>
                <also-trust value="80425ece1f709f9a5d3233e7627bc01d2b9c147df5de5b89c1a295ace222432d"/>
+               <also-trust value="b3ce385c01ff65e73936c1a2c56e8814e973336d72471b41717c5dc81d580f2a"/>
             </sha256>
          </artifact>
          <artifact name="fabric-screen-handler-api-v1-16c8840d-client-1.3.162+4fc5413f3e.pom">
@@ -2488,6 +2548,7 @@
                <also-trust value="6d6126fa4840bcfc22e007bebe7a64c5db635cd36b402e464dd7567bbe9c0395"/>
                <also-trust value="65891073572d173c9d346088ceb39e47dc43235fbec8750e4ccb0d5dcdfdb99f"/>
                <also-trust value="de5964c79c241b6a0dbdd7016267ec186d44574a25a6b69c932c174b3171f2b5"/>
+               <also-trust value="f03114278f2ee3dd88d28c612f0abc978719618288e88c9ce0e91aebd22d1860"/>
             </sha256>
          </artifact>
          <artifact name="fabric-screen-handler-api-v1-16c8840d-common-1.3.162+4fc5413f3e.pom">
@@ -2501,6 +2562,7 @@
                <also-trust value="2b712c5497bcaa33e1dd6db1c3f85b98e6989eba0e881a53245f30750b8c7e21"/>
                <also-trust value="d9be8d479f5ceac39dab8a0e6e823ca1b3f4a0883c61a4b3f05d647e401c6458"/>
                <also-trust value="003dd0b283c99ea074dc3dc9bc3386fa6c25c71493ff7bad188222f993c33095"/>
+               <also-trust value="469a02c65470f97783dc1ab2b0963f875ae8153aae0fb9e424306ed9864a92bf"/>
             </sha256>
          </artifact>
          <artifact name="fabric-serialization-api-v1-16c8840d-common-1.0.5+4ebb5c083e.pom">
@@ -2514,6 +2576,7 @@
                <also-trust value="89b3e3b6091ce0e13c59eee47674b5daf54e78b7f85b531d9a34a0c64ec965eb"/>
                <also-trust value="6b1829933fb7b92ad2d225b88c940eeabe994a52f9b66cc857f02f0c93a6db8f"/>
                <also-trust value="b80a60c148ac6645e0d2704833d619d7f6dcfc15541ee9d860a7d8575fc7f46e"/>
+               <also-trust value="8ee4802c5276de515439abde1c71783e03b6fef070880808b52b3ed8524160dc"/>
             </sha256>
          </artifact>
          <artifact name="fabric-sound-api-v1-16c8840d-client-1.0.51+4fc5413f3e.pom">
@@ -2527,6 +2590,7 @@
                <also-trust value="6300d4926d426b97af8d04cd119f80dae23f954f8ddd3db4c96d1429c8a01788"/>
                <also-trust value="78a5836bffa7e8ef7540ee563e867c22d5a3908d37afa69f1b072f193ea2f98a"/>
                <also-trust value="375cb2dfdacbc932093139ff07fca9835524d9ca721fdf1adb7dc36a36606882"/>
+               <also-trust value="d41056d47a13833941fb655212bc132475e5ef73dc36bcbcc7dd2985cb3cc81d"/>
             </sha256>
          </artifact>
          <artifact name="fabric-tag-api-v1-16c8840d-client-1.2.20+4fc5413f3e.pom">
@@ -2540,6 +2604,7 @@
                <also-trust value="869370033dc688d0953689ced56b30603431ad3746720d3c39e410f31f89c4fa"/>
                <also-trust value="25ef50a6f18a0caba40fc46a388708e96db0ccda6b7815e4d93980c531b74373"/>
                <also-trust value="24eff22144c619e9778942b6c71d3d869033d6b47dcbec4029dbea30d377dc68"/>
+               <also-trust value="63680ed52f6db7e3591b02f5ebbaa15003391ab6871e71ca5d3d7b2c361354c6"/>
             </sha256>
          </artifact>
          <artifact name="fabric-tag-api-v1-16c8840d-common-1.2.20+4fc5413f3e.pom">
@@ -2553,6 +2618,7 @@
                <also-trust value="66de172d4604953b232fd3e54beeb3f0075c72caab15f5c141c70c10bce55d7c"/>
                <also-trust value="298612ee55d2ed77ea1f4b442e89549b9f15c8377d2598bd4364888f9c4f41e1"/>
                <also-trust value="8a231c23e09868f322f9f00d8af2341110f6ea29a52c4002e233edac1cebfcd8"/>
+               <also-trust value="1396f7e7cf1eadb2b549a7ca781447b91629ee66091c42de6500f4a7a8cf6cbb"/>
             </sha256>
          </artifact>
          <artifact name="fabric-transfer-api-v1-16c8840d-client-6.0.25+4fc5413f3e.pom">
@@ -2566,6 +2632,7 @@
                <also-trust value="994b88854045bdb68c2d2c69b3f98e00c87719b7206f2cc7f1660e0cea7871ba"/>
                <also-trust value="8960a2a8678d94fc81625edf07f98024900c046ad0aab5b4d4abc49150d9a863"/>
                <also-trust value="dca5638a938da8708c70fc501b041481c09e1479f7f569f78dd5ee0e644e622c"/>
+               <also-trust value="c0c626b32ab5b115d890c418dbfd2a6e823fae50b51db2d63933f761cf0149c6"/>
             </sha256>
          </artifact>
          <artifact name="fabric-transfer-api-v1-16c8840d-common-6.0.25+4fc5413f3e.pom">
@@ -2579,6 +2646,7 @@
                <also-trust value="fe7a6fbbb4d4cc7471d9efc3cafe68246badee14fc49b9ab51aacfad9f72df57"/>
                <also-trust value="b2f3caab98b3c00866f9a4fb50320f991d8c003d0451116a2c38cd45fa899b39"/>
                <also-trust value="6ec4fd7351d7bfd2704246131d71c281cfcace79babb21ae883b2820861862dd"/>
+               <also-trust value="d3609214517be2d320b5feeeec8463e6a5c5da8ea179943048e9e341cfd61785"/>
             </sha256>
          </artifact>
          <artifact name="fabric-transitive-access-wideners-v1-16c8840d-common-7.1.0+014c8cec3e.pom">
