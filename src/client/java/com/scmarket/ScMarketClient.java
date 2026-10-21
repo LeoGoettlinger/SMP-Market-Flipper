@@ -52,6 +52,7 @@ public final class ScMarketClient implements ClientModInitializer {
     private static volatile ClientProductionRuntime productionRuntime;
     private static volatile CompletableFuture<Optional<ClientProductionRuntime>> productionStartup;
     private static final AtomicBoolean clientStopping = new AtomicBoolean();
+    private static final AtomicBoolean smokeTestStopRequested = new AtomicBoolean();
     private static final AtomicInteger smokeTestTicks = new AtomicInteger();
     private static final AtomicLong detectionModeGeneration = new AtomicLong();
     private static final OpportunityHudOverlay HUD_OVERLAY = new OpportunityHudOverlay();
@@ -143,8 +144,8 @@ public final class ScMarketClient implements ClientModInitializer {
                 if (smokeTick == 1) {
                     client.gui.setScreen(new ClickGuiScreen(dataSources));
                     LOGGER.info("26.2 client smoke test opened the SC-Market GUI.");
-                } else if (smokeTick >= 4) {
-                    LOGGER.info("26.2 client smoke test rendered the SC-Market GUI; shutting down cleanly.");
+                } else if (smokeTick >= 100 && smokeTestStopRequested.compareAndSet(false, true)) {
+                    LOGGER.info("26.2 client smoke test rendered the SC-Market GUI for 100 ticks; shutting down.");
                     client.stop();
                 }
             }
