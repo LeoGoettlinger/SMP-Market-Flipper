@@ -3,6 +3,7 @@
 Generated from the current SC-Market workspace. Git metadata, Gradle caches, and build output are excluded.
 
 ```text
+.github\workflows\verify.yml
 .gitignore
 LICENSE
 README.md
