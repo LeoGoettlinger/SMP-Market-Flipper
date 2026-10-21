@@ -1,6 +1,6 @@
 # Minecraft 26.2 port status and migration notes
 
-**Status: 26.2 build/test and headless startup pass; GUI/runtime port is still in progress and not ready to advertise.** Both source sets use Mojang names and the build targets Minecraft 26.2, Java 25, non-remapping Loom, Fabric Loader 0.19.5, and Fabric API 0.161.0+26.2. The first 26.2 `test build` passed in CI run `39651667908`, and a headless launch passed through its first client tick in run `39654239978`. CI is being extended to open/render the custom GUI before shutdown. No private-server gameplay, order, or recorder behavior has been verified on 26.2.
+**Status: 26.2 build/test and headless GUI smoke pass; private-server gameplay validation remains outstanding.** Both source sets use Mojang names and the build targets Minecraft 26.2, Java 25, non-remapping Loom, Fabric Loader 0.19.5, and Fabric API 0.161.0+26.2. CI run `39654637092` passed `test build` and launched the 26.2 client, opened and rendered SC-Market's custom GUI, then shut down cleanly. No private-server gameplay, order execution, packet capture from a live AH, or user-driven recorder behavior has been verified on 26.2, so don't advertise this as a fully runtime-verified port yet.
 
 ## Findings from the 26.2 research
 
@@ -10,21 +10,20 @@ The official 26.2 Fabric example uses the `net.fabricmc.fabric-loom` plugin, Jav
 
 The current Fabric 26.2 example uses the non-remapping `net.fabricmc.fabric-loom` plugin, Java 25, Loader 0.19.5, and Fabric API 0.161.0+26.2. Its current Gradle example is 9.7.1; this branch pins the stable Loom 1.18.4 release and Gradle 9.7.1. Keep the Fabric API pinned to a release explicitly targeting 26.2 rather than selecting a numerically newer 26.3/26.4-only build.
 
-## Project-specific migration risks
+## Remaining runtime validation
 
-- All Minecraft class references now use Mojang names, but many call sites still reflect the 1.21.11 API; packet, container, player-interaction, and client accessors must be checked against 26.2.
-- Existing packet and player-interaction mixins still target 1.21.11 handler method descriptors; each injection and accessor must be checked against 26.2 bytecode.
-- HUD rendering and custom widgets must be reviewed for the 26.2 rendering/extraction model; current 1.21 render code must not be assumed compatible.
-- SQLite, Fabric API events, key bindings, lifecycle, screen handling, and optional diagnostics need both compile-time and private local-game verification.
-- Order settings, full-order gating, and the opt-in diagnostic recorder have migrated source names, but remain subject to 26.2 API, Mixin, and runtime verification.
+- CI successfully launches the 26.2 client, applies required mixins, opens SC-Market's custom screen, renders it, and exits cleanly. Mouse/key behavior and data presentation still need a hands-on session.
+- The HUD is only visible in-game; the smoke run starts offline at the title screen and does not validate the overlay against a live player/world.
+- Packet listener mixins and AH packet parsing have not been exercised against an actual server auction-house UI.
+- Order→AH, fresh price lookup/relisting, full-order gating, private-profile confirmation, and opt-in action recording have not been exercised on a configured private test server. No public server or unapproved partial order was used.
 
 ## Porting progress and verification
 
 The local sandbox still cannot run Gradle: it currently has no `java` executable on PATH, and earlier TLS attempts to the Gradle distribution/Fabric Maven endpoints failed. GitHub Actions is the available verification path; it can download Gradle and game dependencies and run tests/builds remotely.
 
-Loom's `migrateMappings` and `migrateClientMappings` completed on the active branch. Commit `f68ce21` migrated both source sets to Mojang names; follow-up CI fixes resolved the remaining 1.21.11 Mojang-mapped compile and test failures. The 277-test suite/build passed on commit `832a1c4` (CI run `39650200570`). After switching to the 26.2 toolchain, the first compile exposed old GUI, screen, input, key mapping, and container-content APIs. Those were ported, and `test build` passed on commit `d99770b` (CI run `39651667908`). The first-tick smoke launch exposed two runtime-only Mixin defects: `Screen.mouseClicked` is inherited in 26.2, and a public static helper was incorrectly declared on a mixin class. Generic non-container click capture has been moved to Fabric's per-screen `ScreenMouseEvents` API, and the packet capture bridge is now a standalone registry; handled-container clicks remain slot-aware. Those corrections passed a headless 26.2 startup in CI run `39654239978`. The smoke is now being extended to instantiate and render SC-Market's custom GUI before shutdown.
+Loom's `migrateMappings` and `migrateClientMappings` completed on the active branch. Commit `f68ce21` migrated both source sets to Mojang names; follow-up CI fixes resolved the remaining 1.21.11 Mojang-mapped compile and test failures. The 277-test suite/build passed on commit `832a1c4` (CI run `39650200570`). After switching to the 26.2 toolchain, the first compile exposed old GUI, screen, input, key mapping, and container-content APIs. Those were ported, and `test build` passed on commit `d99770b` (CI run `39651667908`). The first-tick smoke launch exposed two runtime-only Mixin defects: `Screen.mouseClicked` is inherited in 26.2, and a public static helper was incorrectly declared on a mixin class. Generic non-container click capture has been moved to Fabric's per-screen `ScreenMouseEvents` API, and the packet capture bridge is now a standalone registry; handled-container clicks remain slot-aware. These corrections, `test build`, and opening/rendering SC-Market's GUI all passed in headless CI run `39654637092`. The test uses no server profile and does not simulate AH packets or order/recorder actions; private-server integration remains outstanding.
 
-After the smoke launch, address any runtime/Mixin issues and verify the UI, packet capture, action recorder, and order safeguards on 26.2 using an explicitly configured private-server profile. The smoke check does not connect to a server and does not prove gameplay or AH behavior. Order→AH must remain fail-closed, require a confirmed private-server profile and explicit authorization, and never collect partial orders.
+The remaining acceptance step is a hands-on session on an explicitly configured, authorized private-server profile: verify HUD, packet capture, AH parsing, pricing/relisting, full-order safeguards, and opt-in recorder behavior without submitting an unauthorized or partial order. No server address or credentials were added to the repository. Until that server-specific check is performed, this is a build- and GUI-smoke-verified 26.2 port, not a fully gameplay-verified release.
 
 ## References
 
