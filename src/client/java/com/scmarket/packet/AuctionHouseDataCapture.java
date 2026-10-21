@@ -262,7 +262,7 @@ public final class AuctionHouseDataCapture {
             return List.of();
         }
         List<ApiContainerItem> result = new ArrayList<>();
-        container.nonEmptyStream().limit(256).forEach(itemStack -> {
+        container.nonEmptyItemCopyStream().map(net.minecraft.world.item.ItemStackTemplate::create).limit(256).forEach(itemStack -> {
             String id = BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString();
             Optional<String> name = Optional.of(itemStack.getHoverName().getString()).filter(s -> !s.isBlank());
             Optional<ApiItemData> data = parseItemData(itemStack);

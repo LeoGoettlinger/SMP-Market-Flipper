@@ -17,7 +17,7 @@ import java.util.Locale;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Small Geist HUD alert. It reads provider snapshots and performs no I/O. */
 public final class OpportunityHudOverlay {
@@ -99,9 +99,9 @@ public final class OpportunityHudOverlay {
         }
     }
 
-    public void render(GuiGraphics context, DeltaTracker tickCounter) {
+    public void extractRenderState(GuiGraphicsExtractor context, DeltaTracker tickCounter) {
         Minecraft client = Minecraft.getInstance();
-        if (!moduleEnabled || !notificationsEnabled || client.screen instanceof ClickGuiScreen) {
+        if (!moduleEnabled || !notificationsEnabled || client.gui.screen() instanceof ClickGuiScreen) {
             return;
         }
         Instant now = clock.instant();
@@ -126,7 +126,7 @@ public final class OpportunityHudOverlay {
     }
 
     private static void draw(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             OpportunityAlertQueue.QueuedAlert alert,
             Instant now,
@@ -156,7 +156,7 @@ public final class OpportunityHudOverlay {
     }
 
     private static void drawExecution(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             ExecutionNotice notice,
             Instant now,

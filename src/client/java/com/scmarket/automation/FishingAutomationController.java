@@ -86,7 +86,7 @@ public final class FishingAutomationController {
             status = "Fishing paused: not connected to a world.";
             return;
         }
-        if (client.screen != null) {
+        if (client.gui.screen() != null) {
             status = "Fishing paused while a screen is open.";
             return;
         }

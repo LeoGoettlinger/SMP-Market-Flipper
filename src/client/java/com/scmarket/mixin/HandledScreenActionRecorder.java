@@ -29,7 +29,7 @@ public abstract class HandledScreenActionRecorder {
             return;
         }
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null || client.screen == null) {
+        if (client.player == null || client.gui.screen() == null) {
             return;
         }
         Slot slot;
@@ -40,7 +40,7 @@ public abstract class HandledScreenActionRecorder {
         }
         ItemStack stack = slot == null ? ItemStack.EMPTY : slot.getItem();
         String itemId = stack.isEmpty() ? "" : BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-        Component title = client.screen.getTitle();
+        Component title = client.gui.screen().getTitle();
         recorder.recordGuiClick(title == null ? "" : title.getString(),
                 client.player.containerMenu.containerId,
                 slot == null ? -1 : slot.index,

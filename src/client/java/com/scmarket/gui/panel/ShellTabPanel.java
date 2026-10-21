@@ -31,7 +31,7 @@ import java.util.Locale;
 import java.util.Objects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -84,7 +84,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     @Override
-    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
+    public void render(GuiGraphicsExtractor context, Font textRenderer, int mouseX, int mouseY) {
         GuiTypography.draw(context, textRenderer, tab.displayName(), CONTENT_X, CONTENT_Y,
                 GuiColors.PRIMARY_TEXT, false);
         GuiTypography.draw(context, textRenderer, fit(textRenderer, tab.description(), CONTENT_WIDTH),
@@ -292,7 +292,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return false;
     }
 
-    private void renderDashboard(GuiGraphics context, Font textRenderer) {
+    private void renderDashboard(GuiGraphicsExtractor context, Font textRenderer) {
         ScannerStatus scanner = dataSources.scannerStatus().getScannerStatus();
         ApiConnectionStatus api = dataSources.apiConnectionStatus().getApiConnectionStatus();
         MarketStatistics market = dataSources.marketStatistics().getMarketStatistics();
@@ -314,7 +314,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderMarketChart(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             MarketChartSnapshot chart,
             int y
@@ -380,7 +380,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void drawChartSegment(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             int startX,
             int startY,
             int endX,
@@ -398,7 +398,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderOpportunities(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font textRenderer,
             int mouseX,
             int mouseY
@@ -441,7 +441,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void opportunityCard(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             FlipOpportunity value,
             int x,
@@ -487,7 +487,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderPurchaseConfirmation(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             int mouseX,
             int mouseY
@@ -512,7 +512,7 @@ public final class ShellTabPanel implements TabContentPanel {
                 contains(mouseX, mouseY, x + 222, y + 58, 69, 15));
     }
 
-    private void renderFilters(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
+    private void renderFilters(GuiGraphicsExtractor context, Font textRenderer, int mouseX, int mouseY) {
         ItemFilterSnapshot filters = dataSources.itemFilters().getItemFilters();
         panel(context, CONTENT_X, CARD_TOP, 220, 211);
         panel(context, CONTENT_X + 227, CARD_TOP, CONTENT_WIDTH - 227, 211);
@@ -544,7 +544,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderOrderModuleSettings(
-            GuiGraphics context, Font renderer, int mouseX, int mouseY, int rightX
+            GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY, int rightX
     ) {
         OrderModuleSettings settings = ScMarketClient.orderModuleSettings();
         int rightEdge = CONTENT_RIGHT - 10;
@@ -574,7 +574,7 @@ public final class ShellTabPanel implements TabContentPanel {
             tradeItemField.setTextShadow(false);
             tradeItemField.setHint(Component.literal("minecraft:diamond"));
         }
-        tradeItemField.renderWidget(context, mouseX, mouseY, 0.0F);
+        tradeItemField.extractRenderState(context, mouseX, mouseY, 0.0F);
         button(context, renderer, rightEdge - 34, tradeItemFieldY(), 34, 16, "ADD",
                 contains(mouseX, mouseY, rightEdge - 34, tradeItemFieldY(), 34, 16));
 
@@ -617,7 +617,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void drawSettingStepper(
-            GuiGraphics context, Font renderer, int left, int right, String label,
+            GuiGraphicsExtractor context, Font renderer, int left, int right, String label,
             Object value, int buttonY, int buttonWidth, int mouseX, int mouseY
     ) {
         GuiTypography.draw(context, renderer, label, left, buttonY + 5, GuiColors.MUTED_TEXT, false);
@@ -770,7 +770,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return choices[0];
     }
 
-    private void renderHistory(GuiGraphics context, Font textRenderer) {
+    private void renderHistory(GuiGraphicsExtractor context, Font textRenderer) {
         List<OpportunityHistoryEntry> history = dataSources.history().getHistory();
         panel(context, CONTENT_X, CARD_TOP, CONTENT_WIDTH, 211);
         context.fill(CONTENT_X + 1, CARD_TOP + 1, CONTENT_RIGHT - 1, CARD_TOP + 23,
@@ -807,7 +807,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderAutomation(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             int mouseX,
             int mouseY
@@ -891,7 +891,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderAuthorizationModal(
-            GuiGraphics context, Font renderer, int mouseX, int mouseY
+            GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY
     ) {
         context.fill(CONTENT_X, CARD_TOP, CONTENT_RIGHT, CARD_TOP + 211, 0xB8121417);
         panel(context, AUTH_MODAL_X, AUTH_MODAL_Y, AUTH_MODAL_WIDTH, AUTH_MODAL_HEIGHT);
@@ -910,7 +910,7 @@ public final class ShellTabPanel implements TabContentPanel {
             authorizationField.setHint(Component.literal("Authorization phrase"));
             authorizationField.setFocused(true);
         }
-        authorizationField.renderWidget(context, mouseX, mouseY, 0.0F);
+        authorizationField.extractRenderState(context, mouseX, mouseY, 0.0F);
         int buttonY = AUTH_MODAL_Y + 82;
         button(context, renderer, AUTH_MODAL_X + 12, buttonY, 134, 20, "AUTHORIZE SESSION",
                 contains(mouseX, mouseY, AUTH_MODAL_X + 12, buttonY, 134, 20));
@@ -1085,7 +1085,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return millis == 0L ? "OFF" : millis + " ms";
     }
 
-    private void renderSettings(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
+    private void renderSettings(GuiGraphicsExtractor context, Font textRenderer, int mouseX, int mouseY) {
         ScannerStatus scanner = dataSources.scannerStatus().getScannerStatus();
         ApiConnectionStatus api = dataSources.apiConnectionStatus().getApiConnectionStatus();
         boolean notifications = dataSources.notificationSettings().getNotificationSettings().enabled();
@@ -1160,7 +1160,7 @@ public final class ShellTabPanel implements TabContentPanel {
             apiKeyField.setTextShadow(false);
             apiKeyField.setHint(Component.literal("Paste API key"));
         }
-        apiKeyField.renderWidget(context, mouseX, mouseY, 0.0F);
+        apiKeyField.extractRenderState(context, mouseX, mouseY, 0.0F);
         button(context, textRenderer, apiKeySaveX(), apiKeyFieldY(), 30, 16, "SAVE",
                 contains(mouseX, mouseY, apiKeySaveX(), apiKeyFieldY(), 30, 16));
         button(context, textRenderer, apiKeyClearX(), apiKeyFieldY(), 34, 16, "CLEAR",
@@ -1244,7 +1244,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void settingsToggle(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             int x,
             int y,
@@ -1288,7 +1288,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void metric(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             int x,
             int y,
@@ -1304,7 +1304,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void lineAt(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             int left,
             int right,
@@ -1319,14 +1319,14 @@ public final class ShellTabPanel implements TabContentPanel {
                 GuiColors.PRIMARY_TEXT, false);
     }
 
-    private static void panel(GuiGraphics context, int x, int y, int width, int height) {
+    private static void panel(GuiGraphicsExtractor context, int x, int y, int width, int height) {
         GuiDraw.fillVerticalGradient(context, x + 1, y + 1, width - 2, height - 2,
                 GuiColors.RAISED_PANEL, GuiColors.RAISED_PANEL_BOTTOM);
         GuiDraw.strokeRect(context, x, y, width, height, GuiColors.SECONDARY_BORDER);
     }
 
     private static void button(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             int x,
             int y,
@@ -1341,12 +1341,12 @@ public final class ShellTabPanel implements TabContentPanel {
                 GuiColors.PRIMARY_TEXT);
     }
 
-    private static void tableHeader(GuiGraphics context, Font renderer, String text, int x, int y) {
+    private static void tableHeader(GuiGraphicsExtractor context, Font renderer, String text, int x, int y) {
         GuiTypography.draw(context, renderer, text, x, y, GuiColors.MUTED_TEXT, false);
     }
 
     private static void drawWrapped(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             String text,
             int x,

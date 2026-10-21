@@ -2,7 +2,7 @@ package com.scmarket.gui.theme;
 
 import com.scmarket.ModConstants;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.Style;
@@ -26,7 +26,7 @@ public final class GuiTypography {
     }
 
     public static void draw(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             String value,
             int x,
@@ -34,11 +34,11 @@ public final class GuiTypography {
             int color,
             boolean shadow
     ) {
-        context.drawString(renderer, text(value), x, y, color, shadow);
+        context.text(renderer, text(value), x, y, color, shadow);
     }
 
     public static void drawCentered(
-            GuiGraphics context,
+            GuiGraphicsExtractor context,
             Font renderer,
             String value,
             int centerX,
@@ -46,7 +46,7 @@ public final class GuiTypography {
             int color
     ) {
         Component styled = text(value);
-        context.drawString(renderer, styled, centerX - renderer.width(styled) / 2,
+        context.text(renderer, styled, centerX - renderer.width(styled) / 2,
                 y, color, false);
     }
 

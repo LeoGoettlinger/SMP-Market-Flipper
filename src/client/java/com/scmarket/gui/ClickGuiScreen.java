@@ -18,7 +18,7 @@ import org.lwjgl.glfw.GLFW;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -68,7 +68,7 @@ public final class ClickGuiScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         if (layout == null) {
             layout = GuiLayout.fit(width, height);
         }
@@ -87,10 +87,10 @@ public final class ClickGuiScreen extends Screen {
         renderStatusBar(context);
 
         matrices.popMatrix();
-        super.render(context, mouseX, mouseY, delta);
+        super.extractRenderState(context, mouseX, mouseY, delta);
     }
 
-    private void renderFrame(GuiGraphics context) {
+    private void renderFrame(GuiGraphicsExtractor context) {
         GuiDraw.fillVerticalGradient(context, 0, 0,
                 GuiLayout.LOGICAL_WIDTH, GuiLayout.LOGICAL_HEIGHT,
                 GuiColors.FRAME_GRADIENT_TOP, GuiColors.FRAME_GRADIENT_BOTTOM);
@@ -108,7 +108,7 @@ public final class ClickGuiScreen extends Screen {
         context.fill(1, GuiLayout.LOGICAL_HEIGHT - GuiLayout.STATUS_BAR_HEIGHT - 1, GuiLayout.LOGICAL_WIDTH - 1, GuiLayout.LOGICAL_HEIGHT - GuiLayout.STATUS_BAR_HEIGHT, GuiColors.SECONDARY_BORDER);
     }
 
-    private void renderHeader(GuiGraphics context, int mouseX, int mouseY) {
+    private void renderHeader(GuiGraphicsExtractor context, int mouseX, int mouseY) {
         context.blit(
                 RenderPipelines.GUI_TEXTURED,
                 DONUT_LOGO,
@@ -127,7 +127,7 @@ public final class ClickGuiScreen extends Screen {
                 isInsideScannerToggle(mouseX, mouseY));
     }
 
-    private void renderScannerToggle(GuiGraphics context, boolean enabled, boolean hovered) {
+    private void renderScannerToggle(GuiGraphicsExtractor context, boolean enabled, boolean hovered) {
         int trackColor = enabled
                 ? hovered ? GuiColors.TOGGLE_ON_HOVER : GuiColors.TOGGLE_ON_TRACK
                 : hovered ? GuiColors.TOGGLE_OFF_HOVER : GuiColors.TOGGLE_OFF_TRACK;
@@ -147,7 +147,7 @@ public final class ClickGuiScreen extends Screen {
                 enabled ? GuiColors.INVERSE_TEXT : GuiColors.PRIMARY_TEXT);
     }
 
-    private void renderStatusBar(GuiGraphics context) {
+    private void renderStatusBar(GuiGraphicsExtractor context) {
         ApiConnectionStatus api = dataSources.apiConnectionStatus().getApiConnectionStatus();
         MarketStatistics statistics = dataSources.marketStatistics().getMarketStatistics();
         int y = GuiLayout.LOGICAL_HEIGHT - 14;
@@ -161,7 +161,7 @@ public final class ClickGuiScreen extends Screen {
         drawStatusText(context, Integer.toString(statistics.opportunitiesFound()), GuiColors.PRIMARY_TEXT, x, y);
     }
 
-    private void renderTabContent(GuiGraphics context, int mouseX, int mouseY, long now) {
+    private void renderTabContent(GuiGraphicsExtractor context, int mouseX, int mouseY, long now) {
         if (outgoingTab == null) {
             panels.get(selectedTab).render(context, font, mouseX, mouseY);
             return;
@@ -191,7 +191,7 @@ public final class ClickGuiScreen extends Screen {
         );
     }
 
-    private int drawStatusText(GuiGraphics context, String text, int color, int x, int y) {
+    private int drawStatusText(GuiGraphicsExtractor context, String text, int color, int x, int y) {
         GuiTypography.draw(context, font, text, x, y, color, false);
         return x + GuiTypography.width(font, text);
     }
@@ -265,7 +265,7 @@ public final class ClickGuiScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(null);
+        minecraft.gui.setScreen(null);
     }
 
     @Override

@@ -19,7 +19,7 @@ import com.scmarket.market.scanner.MarketScanner;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
@@ -90,7 +90,7 @@ public final class ScMarketClient implements ClientModInitializer {
         KeyMapping.Category category = KeyMapping.Category.register(
                 Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, ModConstants.KEYBIND_CATEGORY_PATH)
         );
-        openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        openGuiKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 ModConstants.OPEN_GUI_KEY,
                 InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
@@ -99,7 +99,7 @@ public final class ScMarketClient implements ClientModInitializer {
         HudElementRegistry.attachElementAfter(
                 VanillaHudElements.MISC_OVERLAYS,
                 Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, "opportunity_alerts"),
-                HUD_OVERLAY::render
+                HUD_OVERLAY::extractRenderState
         );
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -107,10 +107,10 @@ public final class ScMarketClient implements ClientModInitializer {
             updateCurrentServerAddress(server == null ? "" : server.ip);
             dataSources.automationSettings().snapshot();
             while (openGuiKey.consumeClick()) {
-                if (client.screen instanceof ClickGuiScreen) {
-                    client.setScreen(null);
-                } else if (client.screen == null) {
-                    client.setScreen(new ClickGuiScreen(dataSources));
+                if (client.gui.screen() instanceof ClickGuiScreen) {
+                    client.gui.setScreen(null);
+                } else if (client.gui.screen() == null) {
+                    client.gui.setScreen(new ClickGuiScreen(dataSources));
                 }
             }
             HUD_OVERLAY.tick(dataSources);
