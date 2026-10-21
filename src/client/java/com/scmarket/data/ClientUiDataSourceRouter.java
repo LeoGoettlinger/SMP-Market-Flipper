@@ -136,6 +136,11 @@ public final class ClientUiDataSourceRouter {
             }
 
             @Override
+            public CompletableFuture<Void> setActionDelayMillis(long delayMillis) {
+                return selected.get().automationSettings().setActionDelayMillis(delayMillis);
+            }
+
+            @Override
             public CompletableFuture<Void> allowCurrentServer() {
                 return selected.get().automationSettings().allowCurrentServer();
             }

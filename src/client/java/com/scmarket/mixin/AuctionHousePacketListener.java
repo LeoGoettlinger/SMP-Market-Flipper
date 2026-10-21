@@ -42,7 +42,7 @@ public abstract class AuctionHousePacketListener extends ClientCommonNetworkHand
         if (capture == null) {
             return;
         }
-        String title = packet.getTitle().getString();
+        String title = packet.getName().getString();
         int syncId = packet.getSyncId();
         capture.onScreenOpened(syncId, title);
     }
@@ -53,8 +53,8 @@ public abstract class AuctionHousePacketListener extends ClientCommonNetworkHand
         if (capture == null) {
             return;
         }
-        int syncId = packet.getSyncId();
-        List<ItemStack> contents = packet.getContents();
+        int syncId = packet.syncId();
+        List<ItemStack> contents = packet.contents();
         capture.onInventorySynced(syncId, contents);
     }
 
