@@ -10,13 +10,6 @@ import com.scmarket.api.model.ApiItemData;
 import com.scmarket.api.model.ApiPaginationMetadata;
 import com.scmarket.api.model.ApiSeller;
 import com.scmarket.automation.model.AuctionInteractionProfile;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ContainerComponent;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.component.type.LoreComponent;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.equipment.trim.ArmorTrim;
-import net.minecraft.registry.Registries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +23,13 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.function.Supplier;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
+import net.minecraft.world.item.component.ItemLore;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
 
 /**
  * Thread-safe capture of auction house screen data intercepted from Minecraft packets.
@@ -150,9 +150,9 @@ public final class AuctionHouseDataCapture {
 
     private Optional<ApiAuctionListing> parseListing(ItemStack stack, AuctionInteractionProfile profile) {
         try {
-            String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
             int count = stack.getCount();
-            Optional<String> displayName = Optional.of(stack.getName().getString()).filter(s -> !s.isBlank());
+            Optional<String> displayName = Optional.of(stack.getHoverName().getString()).filter(s -> !s.isBlank());
             List<String> lore = visibleLore(stack);
             Optional<ApiItemData> itemData = parseItemData(stack);
             List<ApiContainerItem> contents = parseContents(stack);
@@ -207,7 +207,7 @@ public final class AuctionHouseDataCapture {
     }
 
     private List<String> visibleLore(ItemStack stack) {
-        LoreComponent lore = stack.get(DataComponentTypes.LORE);
+        ItemLore lore = stack.get(DataComponents.LORE);
         if (lore == null) {
             return List.of();
         }
@@ -228,43 +228,43 @@ public final class AuctionHouseDataCapture {
 
     private List<ApiEnchantment> parseEnchantments(ItemStack stack) {
         Map<String, Integer> levels = new TreeMap<>();
-        addEnchantments(levels, stack.get(DataComponentTypes.ENCHANTMENTS));
-        addEnchantments(levels, stack.get(DataComponentTypes.STORED_ENCHANTMENTS));
+        addEnchantments(levels, stack.get(DataComponents.ENCHANTMENTS));
+        addEnchantments(levels, stack.get(DataComponents.STORED_ENCHANTMENTS));
         List<ApiEnchantment> result = new ArrayList<>();
         levels.forEach((id, level) -> result.add(new ApiEnchantment(id, level)));
         return List.copyOf(result);
     }
 
-    private static void addEnchantments(Map<String, Integer> levels, ItemEnchantmentsComponent component) {
+    private static void addEnchantments(Map<String, Integer> levels, ItemEnchantments component) {
         if (component == null) {
             return;
         }
-        component.getEnchantmentEntries().forEach(entry -> levels.merge(
-                entry.getKey().getIdAsString(), entry.getIntValue(), Math::max
+        component.entrySet().forEach(entry -> levels.merge(
+                entry.getKey().getRegisteredName(), entry.getIntValue(), Math::max
         ));
     }
 
     private Optional<ApiArmorTrim> parseTrim(ItemStack stack) {
-        ArmorTrim value = stack.get(DataComponentTypes.TRIM);
+        ArmorTrim value = stack.get(DataComponents.TRIM);
         if (value == null) {
             return Optional.empty();
         }
         return Optional.of(new ApiArmorTrim(
-                Optional.of(value.material().getIdAsString()),
-                Optional.of(value.pattern().getIdAsString()),
+                Optional.of(value.material().getRegisteredName()),
+                Optional.of(value.pattern().getRegisteredName()),
                 List.of()
         ));
     }
 
     private List<ApiContainerItem> parseContents(ItemStack stack) {
-        ContainerComponent container = stack.get(DataComponentTypes.CONTAINER);
+        ItemContainerContents container = stack.get(DataComponents.CONTAINER);
         if (container == null) {
             return List.of();
         }
         List<ApiContainerItem> result = new ArrayList<>();
-        container.streamNonEmpty().limit(256).forEach(itemStack -> {
-            String id = Registries.ITEM.getId(itemStack.getItem()).toString();
-            Optional<String> name = Optional.of(itemStack.getName().getString()).filter(s -> !s.isBlank());
+        container.nonEmptyStream().limit(256).forEach(itemStack -> {
+            String id = BuiltInRegistries.ITEM.getKey(itemStack.getItem()).toString();
+            Optional<String> name = Optional.of(itemStack.getHoverName().getString()).filter(s -> !s.isBlank());
             Optional<ApiItemData> data = parseItemData(itemStack);
             result.add(new ApiContainerItem(
                     Optional.of(id),

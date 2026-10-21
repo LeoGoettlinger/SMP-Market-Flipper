@@ -9,16 +9,15 @@ import com.scmarket.gui.ClickGuiScreen;
 import com.scmarket.gui.render.GuiDraw;
 import com.scmarket.gui.theme.GuiColors;
 import com.scmarket.gui.theme.GuiTypography;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** Small Geist HUD alert. It reads provider snapshots and performs no I/O. */
 public final class OpportunityHudOverlay {
@@ -37,7 +36,7 @@ public final class OpportunityHudOverlay {
     private volatile String lastExecutionStatus = "";
 
     public OpportunityHudOverlay() {
-        this(Clock.systemUTC(), command -> MinecraftClient.getInstance().keyboard.setClipboard(command));
+        this(Clock.systemUTC(), command -> Minecraft.getInstance().keyboardHandler.setClipboard(command));
     }
 
     OpportunityHudOverlay(Clock clock) {
@@ -100,20 +99,20 @@ public final class OpportunityHudOverlay {
         }
     }
 
-    public void render(DrawContext context, RenderTickCounter tickCounter) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (!moduleEnabled || !notificationsEnabled || client.currentScreen instanceof ClickGuiScreen) {
+    public void render(GuiGraphics context, DeltaTracker tickCounter) {
+        Minecraft client = Minecraft.getInstance();
+        if (!moduleEnabled || !notificationsEnabled || client.screen instanceof ClickGuiScreen) {
             return;
         }
         Instant now = clock.instant();
         boolean opportunityVisible = alerts.current(now)
                 .map(alert -> {
-                    draw(context, client.textRenderer, alert, now, animationsEnabled);
+                    draw(context, client.font, alert, now, animationsEnabled);
                     return true;
                 }).orElse(false);
         ExecutionNotice execution = executionNotice;
         if (execution != null && execution.expiresAt().isAfter(now)) {
-            drawExecution(context, client.textRenderer, execution, now,
+            drawExecution(context, client.font, execution, now,
                     animationsEnabled, opportunityVisible ? 76 : 18);
         }
     }
@@ -127,8 +126,8 @@ public final class OpportunityHudOverlay {
     }
 
     private static void draw(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             OpportunityAlertQueue.QueuedAlert alert,
             Instant now,
             boolean animationsEnabled
@@ -138,8 +137,8 @@ public final class OpportunityHudOverlay {
         if (opacity <= 0.0F) {
             return;
         }
-        MinecraftClient client = MinecraftClient.getInstance();
-        int x = Math.max(6, client.getWindow().getScaledWidth() - WIDTH - 8);
+        Minecraft client = Minecraft.getInstance();
+        int x = Math.max(6, client.getWindow().getGuiScaledWidth() - WIDTH - 8);
         int y = 18;
         GuiDraw.fillVerticalGradient(context, x + 1, y + 1, WIDTH - 2, HEIGHT - 2,
                 withOpacity(GuiColors.NOTIFICATION_GRADIENT_TOP, opacity),
@@ -157,16 +156,16 @@ public final class OpportunityHudOverlay {
     }
 
     private static void drawExecution(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             ExecutionNotice notice,
             Instant now,
             boolean animationsEnabled,
             int y
     ) {
         float opacity = fadeOpacity(notice.queuedAt(), now, animationsEnabled);
-        MinecraftClient client = MinecraftClient.getInstance();
-        int x = Math.max(6, client.getWindow().getScaledWidth() - WIDTH - 8);
+        Minecraft client = Minecraft.getInstance();
+        int x = Math.max(6, client.getWindow().getGuiScaledWidth() - WIDTH - 8);
         GuiDraw.fillVerticalGradient(context, x + 1, y + 1, WIDTH - 2, HEIGHT - 2,
                 withOpacity(GuiColors.NOTIFICATION_GRADIENT_TOP, opacity),
                 withOpacity(GuiColors.NOTIFICATION_GRADIENT_BOTTOM, opacity));
@@ -180,7 +179,7 @@ public final class OpportunityHudOverlay {
                 x + 8, y + 38, withOpacity(GuiColors.MUTED_TEXT, opacity), false);
     }
 
-    private static String fit(TextRenderer renderer, String value, int maximumWidth) {
+    private static String fit(Font renderer, String value, int maximumWidth) {
         if (GuiTypography.width(renderer, value) <= maximumWidth) {
             return value;
         }

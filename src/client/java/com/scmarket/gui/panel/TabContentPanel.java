@@ -1,12 +1,12 @@
 package com.scmarket.gui.panel;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
 
 public interface TabContentPanel {
-    void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY);
+    void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY);
 
     default boolean mouseClicked(int mouseX, int mouseY, int button) {
         return false;
@@ -16,11 +16,11 @@ public interface TabContentPanel {
         return false;
     }
 
-    default boolean keyPressed(KeyInput input) {
+    default boolean keyPressed(KeyEvent input) {
         return false;
     }
 
-    default boolean charTyped(CharInput input) {
+    default boolean charTyped(CharacterEvent input) {
         return false;
     }
 }

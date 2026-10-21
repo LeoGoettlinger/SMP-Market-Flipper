@@ -1,5 +1,6 @@
 package com.scmarket;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.scmarket.api.FileApiCredentialsStore;
 import com.scmarket.configuration.ConfigDirectoryMigrator;
 import com.scmarket.configuration.MarketDetectionMode;
@@ -22,9 +23,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public final class ScMarketClient implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModConstants.MOD_ID);
-    private static KeyBinding openGuiKey;
+    private static KeyMapping openGuiKey;
     private static ClientUiDataSources dataSources;
     private static ClientUiDataSourceRouter dataSourceRouter;
     private static volatile MarketScanner marketScanner;
@@ -87,18 +87,18 @@ public final class ScMarketClient implements ClientModInitializer {
         HUD_OVERLAY.setModuleEnabled(runtimeSettings.enabled());
         dataSourceRouter = new ClientUiDataSourceRouter(ClientUiDataSources.createMock());
         dataSources = dataSourceRouter.dataSources();
-        KeyBinding.Category category = KeyBinding.Category.create(
-                Identifier.of(ModConstants.MOD_ID, ModConstants.KEYBIND_CATEGORY_PATH)
+        KeyMapping.Category category = KeyMapping.Category.register(
+                Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, ModConstants.KEYBIND_CATEGORY_PATH)
         );
-        openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+        openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 ModConstants.OPEN_GUI_KEY,
-                InputUtil.Type.KEYSYM,
+                InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_RIGHT_SHIFT,
                 category
         ));
         HudElementRegistry.attachElementAfter(
                 VanillaHudElements.MISC_OVERLAYS,
-                Identifier.of(ModConstants.MOD_ID, "opportunity_alerts"),
+                Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, "opportunity_alerts"),
                 HUD_OVERLAY::render
         );
 
@@ -389,9 +389,9 @@ public final class ScMarketClient implements ClientModInitializer {
     private static CompletableFuture<Optional<ClientProductionRuntime>> startDetectionMode(
             Path configDirectory, MarketDetectionMode mode
     ) {
-        String username = net.minecraft.client.MinecraftClient.getInstance().getSession().getUsername();
-        String uuid = Optional.ofNullable(net.minecraft.client.MinecraftClient.getInstance()
-                .getSession().getUuidOrNull()).map(java.util.UUID::toString).orElse("");
+        String username = net.minecraft.client.Minecraft.getInstance().getUser().getName();
+        String uuid = Optional.ofNullable(net.minecraft.client.Minecraft.getInstance()
+                .getUser().getProfileId()).map(java.util.UUID::toString).orElse("");
         return mode == MarketDetectionMode.API
                 ? ClientProductionRuntime.startAsync(configDirectory, username, uuid)
                 : ClientProductionRuntime.startPacketModeAsync(configDirectory, username, uuid);

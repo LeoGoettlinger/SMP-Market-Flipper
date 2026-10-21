@@ -1,6 +1,6 @@
 package com.scmarket.gui.render;
 
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.GuiGraphics;
 
 /** Small drawing helpers shared by shell and future components. */
 public final class GuiDraw {
@@ -8,7 +8,7 @@ public final class GuiDraw {
     }
 
     public static void fillRoundedRect(
-            DrawContext context,
+            GuiGraphics context,
             int x,
             int y,
             int width,
@@ -39,7 +39,7 @@ public final class GuiDraw {
     }
 
     public static void fillVerticalGradient(
-            DrawContext context,
+            GuiGraphics context,
             int x,
             int y,
             int width,
@@ -61,7 +61,7 @@ public final class GuiDraw {
     }
 
     public static void fillHorizontalGradient(
-            DrawContext context,
+            GuiGraphics context,
             int x,
             int y,
             int width,
@@ -83,7 +83,7 @@ public final class GuiDraw {
     }
 
     public static void strokeRect(
-            DrawContext context,
+            GuiGraphics context,
             int x,
             int y,
             int width,

@@ -5,8 +5,8 @@ import com.scmarket.gui.GuiTab;
 import com.scmarket.gui.render.GuiDraw;
 import com.scmarket.gui.theme.GuiColors;
 import com.scmarket.gui.theme.GuiTypography;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 
 public final class SidebarNavigation {
     private static final int START_X = 6;
@@ -16,8 +16,8 @@ public final class SidebarNavigation {
     private static final int BUTTON_GAP = 6;
 
     public void render(
-            DrawContext context,
-            TextRenderer textRenderer,
+            GuiGraphics context,
+            Font textRenderer,
             GuiTab selectedTab,
             int mouseX,
             int mouseY

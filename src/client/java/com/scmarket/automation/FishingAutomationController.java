@@ -3,13 +3,6 @@ package com.scmarket.automation;
 import com.scmarket.automation.model.AuctionInteractionProfile;
 import com.scmarket.automation.service.GameplayActionGate;
 import com.scmarket.mixin.FishingBobberAccessor;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
-import net.minecraft.registry.Registries;
-
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -21,6 +14,12 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.projectile.FishingHook;
+import net.minecraft.world.item.ItemStack;
 
 /** Client-tick fishing loop. It uses the server-synchronised bite flag and fails closed on uncertain loot. */
 public final class FishingAutomationController {
@@ -29,7 +28,7 @@ public final class FishingAutomationController {
     private static final long CATCH_SETTLE_NANOS = 750_000_000L;
     private static final long SALE_RETRY_NANOS = 30_000_000_000L;
 
-    private final MinecraftClient client;
+    private final Minecraft client;
     private final BooleanSupplier authorized;
     private final Supplier<Optional<AuctionInteractionProfile>> profileSupplier;
     private final Function<ItemStack, CompletableFuture<Optional<BigDecimal>>> marketPrice;
@@ -48,7 +47,7 @@ public final class FishingAutomationController {
     private String status = "Fishing is idle.";
 
     public FishingAutomationController(
-            MinecraftClient client,
+            Minecraft client,
             BooleanSupplier authorized,
             Supplier<Optional<AuctionInteractionProfile>> profileSupplier,
             Function<ItemStack, CompletableFuture<Optional<BigDecimal>>> marketPrice,
@@ -80,14 +79,14 @@ public final class FishingAutomationController {
             status = "Fishing paused: configure a private-server interaction profile.";
             return;
         }
-        ClientPlayerEntity player = client.player;
-        if (player == null || client.world == null || client.interactionManager == null
-                || client.getNetworkHandler() == null) {
+        LocalPlayer player = client.player;
+        if (player == null || client.level == null || client.gameMode == null
+                || client.getConnection() == null) {
             phase = Phase.IDLE;
             status = "Fishing paused: not connected to a world.";
             return;
         }
-        if (client.currentScreen != null) {
+        if (client.screen != null) {
             status = "Fishing paused while a screen is open.";
             return;
         }
@@ -97,7 +96,7 @@ public final class FishingAutomationController {
             return;
         }
 
-        FishingBobberEntity bobber = player.fishHook;
+        FishingHook bobber = player.fishing;
         switch (phase) {
             case IDLE -> {
                 if (bobber != null) {
@@ -153,7 +152,7 @@ public final class FishingAutomationController {
                     }
                     try (GameplayActionGate.Lease ignored = lease.orElseThrow()) {
                         player.getInventory().setSelectedSlot(rodSlot);
-                        client.interactionManager.interactItem(player, Hand.MAIN_HAND);
+                        client.gameMode.useItem(player, InteractionHand.MAIN_HAND);
                         phase = Phase.REELING;
                         deadlineNanos = now + REEL_TIMEOUT_NANOS;
                         status = "Reeled in; checking the inventory for the exact catch.";
@@ -190,15 +189,15 @@ public final class FishingAutomationController {
         status = "Fishing stopped; no pending items will be listed automatically.";
     }
 
-    private void cast(ClientPlayerEntity player, AuctionInteractionProfile profile, long now) {
+    private void cast(LocalPlayer player, AuctionInteractionProfile profile, long now) {
         int rodSlot = findFishingRod(player);
         if (rodSlot < 0) {
             status = "Fishing paused: place a fishing rod in the hotbar.";
             return;
         }
         boolean hasSpace = false;
-        for (int slot = 0; slot < player.getInventory().size(); slot++) {
-            if (player.getInventory().getStack(slot).isEmpty()) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (player.getInventory().getItem(slot).isEmpty()) {
                 hasSpace = true;
                 break;
             }
@@ -216,7 +215,7 @@ public final class FishingAutomationController {
             player.getInventory().setSelectedSlot(rodSlot);
             beforeReel.clear();
             beforeReel.putAll(inventoryCounts(profile));
-            client.interactionManager.interactItem(player, Hand.MAIN_HAND);
+            client.gameMode.useItem(player, InteractionHand.MAIN_HAND);
             phase = Phase.CASTING;
             deadlineNanos = now + CAST_TIMEOUT_NANOS;
             status = "Fishing rod cast; waiting for the server bobber.";
@@ -357,8 +356,8 @@ public final class FishingAutomationController {
         if (client.player == null) {
             return counts;
         }
-        for (int slot = 0; slot < client.player.getInventory().size(); slot++) {
-            ItemStack stack = client.player.getInventory().getStack(slot);
+        for (int slot = 0; slot < client.player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = client.player.getInventory().getItem(slot);
             if (!stack.isEmpty()) {
                 try {
                     counts.merge(fingerprintFactory.fingerprint(stack, profile), stack.getCount(), Integer::sum);
@@ -374,8 +373,8 @@ public final class FishingAutomationController {
         if (client.player == null) {
             return ItemStack.EMPTY;
         }
-        for (int slot = 0; slot < client.player.getInventory().size(); slot++) {
-            ItemStack stack = client.player.getInventory().getStack(slot);
+        for (int slot = 0; slot < client.player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = client.player.getInventory().getItem(slot);
             if (!stack.isEmpty()) {
                 try {
                     if (fingerprint.equals(fingerprintFactory.fingerprint(stack, profile))) {
@@ -389,9 +388,9 @@ public final class FishingAutomationController {
         return ItemStack.EMPTY;
     }
 
-    private static int findFishingRod(ClientPlayerEntity player) {
+    private static int findFishingRod(LocalPlayer player) {
         for (int slot = 0; slot < 9; slot++) {
-            if (Registries.ITEM.getId(player.getInventory().getStack(slot).getItem())
+            if (BuiltInRegistries.ITEM.getKey(player.getInventory().getItem(slot).getItem())
                     .toString().equals("minecraft:fishing_rod")) {
                 return slot;
             }

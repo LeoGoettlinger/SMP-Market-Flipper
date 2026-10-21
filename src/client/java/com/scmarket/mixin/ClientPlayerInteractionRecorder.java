@@ -2,18 +2,18 @@ package com.scmarket.mixin;
 
 import com.scmarket.ScMarketClient;
 import com.scmarket.diagnostics.LocalActionRecorder;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -21,46 +21,46 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Opt-in action metadata; target coordinates, names, chat, and key contents are intentionally omitted. */
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(MultiPlayerGameMode.class)
 public abstract class ClientPlayerInteractionRecorder {
-    @Inject(method = "interactItem", at = @At("HEAD"))
-    private void scmarket$recordUseItem(ClientPlayerEntity player, Hand hand,
-                                        CallbackInfoReturnable<ActionResult> cir) {
-        scmarket$record("use_item", player.getStackInHand(hand));
+    @Inject(method = "useItem", at = @At("HEAD"))
+    private void scmarket$recordUseItem(LocalPlayer player, InteractionHand hand,
+                                        CallbackInfoReturnable<InteractionResult> cir) {
+        scmarket$record("use_item", player.getItemInHand(hand));
     }
 
-    @Inject(method = "attackBlock", at = @At("HEAD"))
+    @Inject(method = "startDestroyBlock", at = @At("HEAD"))
     private void scmarket$recordAttackBlock(BlockPos position, Direction direction,
                                             CallbackInfoReturnable<Boolean> cir) {
-        ClientPlayerEntity player = net.minecraft.client.MinecraftClient.getInstance().player;
+        LocalPlayer player = net.minecraft.client.Minecraft.getInstance().player;
         if (player != null) {
-            scmarket$record("attack_block", player.getMainHandStack());
+            scmarket$record("attack_block", player.getMainHandItem());
         }
     }
 
-    @Inject(method = "interactBlock", at = @At("HEAD"))
-    private void scmarket$recordInteractBlock(ClientPlayerEntity player, Hand hand, BlockHitResult hit,
-                                              CallbackInfoReturnable<ActionResult> cir) {
-        scmarket$record("interact_block", player.getStackInHand(hand));
+    @Inject(method = "useItemOn", at = @At("HEAD"))
+    private void scmarket$recordInteractBlock(LocalPlayer player, InteractionHand hand, BlockHitResult hit,
+                                              CallbackInfoReturnable<InteractionResult> cir) {
+        scmarket$record("interact_block", player.getItemInHand(hand));
     }
 
-    @Inject(method = "attackEntity", at = @At("HEAD"))
-    private void scmarket$recordAttackEntity(PlayerEntity player, Entity target, CallbackInfo ci) {
-        scmarket$record("attack_entity", player.getMainHandStack());
+    @Inject(method = "attack", at = @At("HEAD"))
+    private void scmarket$recordAttackEntity(Player player, Entity target, CallbackInfo ci) {
+        scmarket$record("attack_entity", player.getMainHandItem());
     }
 
-    @Inject(method = "interactEntity", at = @At("HEAD"))
-    private void scmarket$recordInteractEntity(PlayerEntity player, Entity target, Hand hand,
-                                               CallbackInfoReturnable<ActionResult> cir) {
-        scmarket$record("interact_entity", player.getStackInHand(hand));
+    @Inject(method = "interact", at = @At("HEAD"))
+    private void scmarket$recordInteractEntity(Player player, Entity target, InteractionHand hand,
+                                               CallbackInfoReturnable<InteractionResult> cir) {
+        scmarket$record("interact_entity", player.getItemInHand(hand));
     }
 
-    @Inject(method = "interactEntityAtLocation", at = @At("HEAD"))
+    @Inject(method = "interactAt", at = @At("HEAD"))
     private void scmarket$recordInteractEntityAtLocation(
-            PlayerEntity player, Entity target, EntityHitResult hit, Hand hand,
-            CallbackInfoReturnable<ActionResult> cir
+            Player player, Entity target, EntityHitResult hit, InteractionHand hand,
+            CallbackInfoReturnable<InteractionResult> cir
     ) {
-        scmarket$record("interact_entity", player.getStackInHand(hand));
+        scmarket$record("interact_entity", player.getItemInHand(hand));
     }
 
     private static void scmarket$record(String action, ItemStack stack) {
@@ -69,7 +69,7 @@ public abstract class ClientPlayerInteractionRecorder {
             return;
         }
         String itemId = stack == null || stack.isEmpty()
-                ? "" : Registries.ITEM.getId(stack.getItem()).toString();
+                ? "" : BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
         recorder.recordPlayerAction(action, itemId);
     }
 }

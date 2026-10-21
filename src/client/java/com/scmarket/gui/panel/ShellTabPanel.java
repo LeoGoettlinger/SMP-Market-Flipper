@@ -23,21 +23,21 @@ import com.scmarket.gui.render.GuiDraw;
 import com.scmarket.gui.theme.GuiColors;
 import com.scmarket.gui.theme.GuiTypography;
 import com.scmarket.market.opportunity.ItemFilterMode;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.input.MouseInput;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
+import net.minecraft.network.chat.Component;
 
 /** Provider-driven panels for the spacious blue trading workspace. */
 public final class ShellTabPanel implements TabContentPanel {
@@ -63,9 +63,9 @@ public final class ShellTabPanel implements TabContentPanel {
     private final ClientUiDataSources dataSources;
     private volatile String notice = "";
     private int opportunityOffset;
-    private TextFieldWidget authorizationField;
-    private TextFieldWidget apiKeyField;
-    private TextFieldWidget tradeItemField;
+    private EditBox authorizationField;
+    private EditBox apiKeyField;
+    private EditBox tradeItemField;
     private int whitelistOffset;
     private boolean authorizationModalVisible;
     private String pendingPurchaseId;
@@ -84,7 +84,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     @Override
-    public void render(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    public void render(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         GuiTypography.draw(context, textRenderer, tab.displayName(), CONTENT_X, CONTENT_Y,
                 GuiColors.PRIMARY_TEXT, false);
         GuiTypography.draw(context, textRenderer, fit(textRenderer, tab.description(), CONTENT_WIDTH),
@@ -156,18 +156,18 @@ public final class ShellTabPanel implements TabContentPanel {
         }
         if (tab == GuiTab.SETTINGS && apiKeyField != null && contains(mouseX, mouseY,
                 apiKeyFieldX(), apiKeyFieldY(), apiKeyFieldWidth(), 16)) {
-            apiKeyField.onClick(new Click(mouseX, mouseY,
-                    new MouseInput(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
+            apiKeyField.onClick(new MouseButtonEvent(mouseX, mouseY,
+                    new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
             return true;
         }
         if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
                 apiKeySaveX(), apiKeyFieldY(), 30, 16)) {
-            char[] key = apiKeyField == null ? new char[0] : apiKeyField.getText().toCharArray();
+            char[] key = apiKeyField == null ? new char[0] : apiKeyField.getValue().toCharArray();
             try {
                 ScMarketClient.saveApiKey(key);
                 notice = "API key saved securely; API mode reconnects now when selected.";
                 if (apiKeyField != null) {
-                    apiKeyField.setText("");
+                    apiKeyField.setValue("");
                     apiKeyField.setFocused(false);
                 }
             } catch (RuntimeException failure) {
@@ -182,7 +182,7 @@ public final class ShellTabPanel implements TabContentPanel {
             try {
                 ScMarketClient.clearApiKey();
                 if (apiKeyField != null) {
-                    apiKeyField.setText("");
+                    apiKeyField.setValue("");
                     apiKeyField.setFocused(false);
                 }
                 notice = "Stored API key removed; API mode switches to its unavailable state.";
@@ -271,13 +271,13 @@ public final class ShellTabPanel implements TabContentPanel {
             }
             if (contains(mouseX, mouseY, x + OPPORTUNITY_CARD_WIDTH - 77, y + 31, 20, 13)) {
                 String command = AuctionSearchCommand.forOpportunity(opportunity);
-                MinecraftClient.getInstance().keyboard.setClipboard(command);
+                Minecraft.getInstance().keyboardHandler.setClipboard(command);
                 notice = "Copied " + command + " - paste it in chat.";
                 return true;
             }
             if (contains(mouseX, mouseY, x + OPPORTUNITY_CARD_WIDTH - 53, y + 31, 30, 13)) {
                 String command = AuctionSearchCommand.sellAtTargetPrice(opportunity);
-                MinecraftClient.getInstance().keyboard.setClipboard(command);
+                Minecraft.getInstance().keyboardHandler.setClipboard(command);
                 notice = "Copied target-price " + command + " - verify the held stack before pasting.";
                 return true;
             }
@@ -292,7 +292,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return false;
     }
 
-    private void renderDashboard(DrawContext context, TextRenderer textRenderer) {
+    private void renderDashboard(GuiGraphics context, Font textRenderer) {
         ScannerStatus scanner = dataSources.scannerStatus().getScannerStatus();
         ApiConnectionStatus api = dataSources.apiConnectionStatus().getApiConnectionStatus();
         MarketStatistics market = dataSources.marketStatistics().getMarketStatistics();
@@ -314,8 +314,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderMarketChart(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             MarketChartSnapshot chart,
             int y
     ) {
@@ -380,7 +380,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void drawChartSegment(
-            DrawContext context,
+            GuiGraphics context,
             int startX,
             int startY,
             int endX,
@@ -398,8 +398,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderOpportunities(
-            DrawContext context,
-            TextRenderer textRenderer,
+            GuiGraphics context,
+            Font textRenderer,
             int mouseX,
             int mouseY
     ) {
@@ -441,8 +441,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void opportunityCard(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             FlipOpportunity value,
             int x,
             int y,
@@ -487,8 +487,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderPurchaseConfirmation(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             int mouseX,
             int mouseY
     ) {
@@ -512,7 +512,7 @@ public final class ShellTabPanel implements TabContentPanel {
                 contains(mouseX, mouseY, x + 222, y + 58, 69, 15));
     }
 
-    private void renderFilters(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private void renderFilters(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         ItemFilterSnapshot filters = dataSources.itemFilters().getItemFilters();
         panel(context, CONTENT_X, CARD_TOP, 220, 211);
         panel(context, CONTENT_X + 227, CARD_TOP, CONTENT_WIDTH - 227, 211);
@@ -544,7 +544,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderOrderModuleSettings(
-            DrawContext context, TextRenderer renderer, int mouseX, int mouseY, int rightX
+            GuiGraphics context, Font renderer, int mouseX, int mouseY, int rightX
     ) {
         OrderModuleSettings settings = ScMarketClient.orderModuleSettings();
         int rightEdge = CONTENT_RIGHT - 10;
@@ -568,11 +568,11 @@ public final class ShellTabPanel implements TabContentPanel {
                 settings.whitelistOnly() ? "WHITELIST ONLY · ON" : "WHITELIST ONLY · OFF",
                 contains(mouseX, mouseY, rightEdge - 112, CARD_TOP + 111, 112, 15));
         if (tradeItemField == null) {
-            tradeItemField = new TextFieldWidget(renderer, rightX, tradeItemFieldY(),
-                    Math.max(70, rightEdge - rightX - 38), 16, Text.literal("Trade whitelist item ID"));
+            tradeItemField = new EditBox(renderer, rightX, tradeItemFieldY(),
+                    Math.max(70, rightEdge - rightX - 38), 16, Component.literal("Trade whitelist item ID"));
             tradeItemField.setMaxLength(256);
             tradeItemField.setTextShadow(false);
-            tradeItemField.setPlaceholder(Text.literal("minecraft:diamond"));
+            tradeItemField.setHint(Component.literal("minecraft:diamond"));
         }
         tradeItemField.renderWidget(context, mouseX, mouseY, 0.0F);
         button(context, renderer, rightEdge - 34, tradeItemFieldY(), 34, 16, "ADD",
@@ -617,7 +617,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void drawSettingStepper(
-            DrawContext context, TextRenderer renderer, int left, int right, String label,
+            GuiGraphics context, Font renderer, int left, int right, String label,
             Object value, int buttonY, int buttonWidth, int mouseX, int mouseY
     ) {
         GuiTypography.draw(context, renderer, label, left, buttonY + 5, GuiColors.MUTED_TEXT, false);
@@ -693,13 +693,13 @@ public final class ShellTabPanel implements TabContentPanel {
         if (contains(mouseX, mouseY, rightX, tradeItemFieldY(),
                 Math.max(70, rightEdge - rightX - 38), 16)) {
             if (tradeItemField != null) {
-                tradeItemField.onClick(new Click(mouseX, mouseY,
-                        new MouseInput(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
+                tradeItemField.onClick(new MouseButtonEvent(mouseX, mouseY,
+                        new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
             }
             return true;
         }
         if (contains(mouseX, mouseY, whitelistButtonX, tradeItemFieldY(), 34, 16)) {
-            String itemId = tradeItemField == null ? "" : tradeItemField.getText().strip();
+            String itemId = tradeItemField == null ? "" : tradeItemField.getValue().strip();
             if (itemId.isEmpty()) {
                 notice = "Enter a namespaced item ID such as minecraft:diamond.";
                 return true;
@@ -707,7 +707,7 @@ public final class ShellTabPanel implements TabContentPanel {
             boolean updated = updateOrderSettings(value -> value.withWhitelistItem(itemId),
                     "Added " + itemId + " to the Order→AH trade whitelist.");
             if (updated && tradeItemField != null) {
-                tradeItemField.setText("");
+                tradeItemField.setValue("");
                 tradeItemField.setFocused(false);
             }
             return true;
@@ -770,7 +770,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return choices[0];
     }
 
-    private void renderHistory(DrawContext context, TextRenderer textRenderer) {
+    private void renderHistory(GuiGraphics context, Font textRenderer) {
         List<OpportunityHistoryEntry> history = dataSources.history().getHistory();
         panel(context, CONTENT_X, CARD_TOP, CONTENT_WIDTH, 211);
         context.fill(CONTENT_X + 1, CARD_TOP + 1, CONTENT_RIGHT - 1, CARD_TOP + 23,
@@ -807,8 +807,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderAutomation(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             int mouseX,
             int mouseY
     ) {
@@ -891,7 +891,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private void renderAuthorizationModal(
-            DrawContext context, TextRenderer renderer, int mouseX, int mouseY
+            GuiGraphics context, Font renderer, int mouseX, int mouseY
     ) {
         context.fill(CONTENT_X, CARD_TOP, CONTENT_RIGHT, CARD_TOP + 211, 0xB8121417);
         panel(context, AUTH_MODAL_X, AUTH_MODAL_Y, AUTH_MODAL_WIDTH, AUTH_MODAL_HEIGHT);
@@ -901,13 +901,13 @@ public final class ShellTabPanel implements TabContentPanel {
                 "Type exactly: " + TradeAutomationCoordinator.ARM_CONFIRMATION,
                 AUTH_MODAL_X + 12, AUTH_MODAL_Y + 29, GuiColors.MUTED_TEXT, false);
         if (authorizationField == null) {
-            authorizationField = new TextFieldWidget(
+            authorizationField = new EditBox(
                     renderer, AUTH_MODAL_X + 12, AUTH_MODAL_Y + 47,
-                    AUTH_MODAL_WIDTH - 24, 18, Text.literal("Authorization confirmation")
+                    AUTH_MODAL_WIDTH - 24, 18, Component.literal("Authorization confirmation")
             );
             authorizationField.setMaxLength(64);
             authorizationField.setTextShadow(false);
-            authorizationField.setPlaceholder(Text.literal("Authorization phrase"));
+            authorizationField.setHint(Component.literal("Authorization phrase"));
             authorizationField.setFocused(true);
         }
         authorizationField.renderWidget(context, mouseX, mouseY, 0.0F);
@@ -923,7 +923,7 @@ public final class ShellTabPanel implements TabContentPanel {
             int buttonY = AUTH_MODAL_Y + 82;
             if (contains(mouseX, mouseY, AUTH_MODAL_X + 12, buttonY, 134, 20)) {
                 boolean armed = dataSources.automationSettings().armCurrentServer(
-                        authorizationField == null ? "" : authorizationField.getText()
+                        authorizationField == null ? "" : authorizationField.getValue()
                 );
                 notice = armed ? "Session armed for the exact current server."
                         : "Authorization rejected; verify mode, allowlist, server, and exact phrase.";
@@ -937,8 +937,8 @@ public final class ShellTabPanel implements TabContentPanel {
             }
             if (authorizationField != null && contains(mouseX, mouseY,
                     AUTH_MODAL_X + 12, AUTH_MODAL_Y + 47, AUTH_MODAL_WIDTH - 24, 18)) {
-                authorizationField.onClick(new Click(mouseX, mouseY,
-                        new MouseInput(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
+                authorizationField.onClick(new MouseButtonEvent(mouseX, mouseY,
+                        new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
             }
             return true;
         }
@@ -1009,7 +1009,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     @Override
-    public boolean keyPressed(KeyInput input) {
+    public boolean keyPressed(KeyEvent input) {
         if (pendingPurchaseId != null && input.key() == GLFW.GLFW_KEY_ESCAPE) {
             pendingPurchaseId = null;
             pendingPurchaseLabel = null;
@@ -1032,7 +1032,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     @Override
-    public boolean charTyped(CharInput input) {
+    public boolean charTyped(CharacterEvent input) {
         if (authorizationModalVisible && authorizationField != null) {
             return authorizationField.charTyped(input);
         }
@@ -1046,7 +1046,7 @@ public final class ShellTabPanel implements TabContentPanel {
     private void closeAuthorizationModal() {
         authorizationModalVisible = false;
         if (authorizationField != null) {
-            authorizationField.setText("");
+            authorizationField.setValue("");
             authorizationField.setFocused(false);
         }
     }
@@ -1085,7 +1085,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return millis == 0L ? "OFF" : millis + " ms";
     }
 
-    private void renderSettings(DrawContext context, TextRenderer textRenderer, int mouseX, int mouseY) {
+    private void renderSettings(GuiGraphics context, Font textRenderer, int mouseX, int mouseY) {
         ScannerStatus scanner = dataSources.scannerStatus().getScannerStatus();
         ApiConnectionStatus api = dataSources.apiConnectionStatus().getApiConnectionStatus();
         boolean notifications = dataSources.notificationSettings().getNotificationSettings().enabled();
@@ -1154,11 +1154,11 @@ public final class ShellTabPanel implements TabContentPanel {
                 apiKeyConfigured ? GuiColors.POSITIVE_TEXT : GuiColors.MUTED_TEXT,
                 false);
         if (apiKeyField == null) {
-            apiKeyField = new TextFieldWidget(textRenderer, apiKeyFieldX(), apiKeyFieldY(),
-                    apiKeyFieldWidth(), 16, Text.literal("API key"));
+            apiKeyField = new EditBox(textRenderer, apiKeyFieldX(), apiKeyFieldY(),
+                    apiKeyFieldWidth(), 16, Component.literal("API key"));
             apiKeyField.setMaxLength(512);
             apiKeyField.setTextShadow(false);
-            apiKeyField.setPlaceholder(Text.literal("Paste API key"));
+            apiKeyField.setHint(Component.literal("Paste API key"));
         }
         apiKeyField.renderWidget(context, mouseX, mouseY, 0.0F);
         button(context, textRenderer, apiKeySaveX(), apiKeyFieldY(), 30, 16, "SAVE",
@@ -1244,8 +1244,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void settingsToggle(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             int x,
             int y,
             boolean enabled,
@@ -1288,8 +1288,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void metric(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             int x,
             int y,
             int width,
@@ -1304,8 +1304,8 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static void lineAt(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             int left,
             int right,
             String label,
@@ -1319,15 +1319,15 @@ public final class ShellTabPanel implements TabContentPanel {
                 GuiColors.PRIMARY_TEXT, false);
     }
 
-    private static void panel(DrawContext context, int x, int y, int width, int height) {
+    private static void panel(GuiGraphics context, int x, int y, int width, int height) {
         GuiDraw.fillVerticalGradient(context, x + 1, y + 1, width - 2, height - 2,
                 GuiColors.RAISED_PANEL, GuiColors.RAISED_PANEL_BOTTOM);
         GuiDraw.strokeRect(context, x, y, width, height, GuiColors.SECONDARY_BORDER);
     }
 
     private static void button(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             int x,
             int y,
             int width,
@@ -1341,13 +1341,13 @@ public final class ShellTabPanel implements TabContentPanel {
                 GuiColors.PRIMARY_TEXT);
     }
 
-    private static void tableHeader(DrawContext context, TextRenderer renderer, String text, int x, int y) {
+    private static void tableHeader(GuiGraphics context, Font renderer, String text, int x, int y) {
         GuiTypography.draw(context, renderer, text, x, y, GuiColors.MUTED_TEXT, false);
     }
 
     private static void drawWrapped(
-            DrawContext context,
-            TextRenderer renderer,
+            GuiGraphics context,
+            Font renderer,
             String text,
             int x,
             int y,
@@ -1379,7 +1379,7 @@ public final class ShellTabPanel implements TabContentPanel {
         return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
     }
 
-    private static String fit(TextRenderer renderer, String text, int maximumWidth) {
+    private static String fit(Font renderer, String text, int maximumWidth) {
         if (GuiTypography.width(renderer, text) <= maximumWidth) {
             return text;
         }

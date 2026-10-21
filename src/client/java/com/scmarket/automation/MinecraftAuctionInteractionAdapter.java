@@ -15,14 +15,6 @@ import com.scmarket.automation.service.AuctionInteractionAdapter;
 import com.scmarket.automation.service.AuctionCommandRenderer;
 import com.scmarket.automation.service.PurchasedStackPlacementPlanner;
 import com.scmarket.automation.service.StrictAuctionListingMatcher;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -36,6 +28,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Bounded Minecraft adapter for an explicitly configured private-server screen contract.
@@ -45,7 +44,7 @@ import java.util.function.Supplier;
 public final class MinecraftAuctionInteractionAdapter implements AuctionInteractionAdapter, AutoCloseable {
     private static final Duration SCREEN_TIMEOUT = Duration.ofSeconds(5);
 
-    private final MinecraftClient client;
+    private final Minecraft client;
     private final Supplier<Optional<AuctionInteractionProfile>> profileSupplier;
     private final StrictAuctionListingMatcher matcher = new StrictAuctionListingMatcher();
     private final AuctionCommandRenderer commandRenderer = new AuctionCommandRenderer();
@@ -55,7 +54,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     private final Map<String, CapturedListing> captures = new ConcurrentHashMap<>();
 
     public MinecraftAuctionInteractionAdapter(
-            MinecraftClient client,
+            Minecraft client,
             Supplier<Optional<AuctionInteractionProfile>> profileSupplier
     ) {
         this.client = Objects.requireNonNull(client, "client");
@@ -84,7 +83,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
         }
         return onClient(() -> {
             requireConnection();
-            client.getNetworkHandler().sendChatCommand(command);
+            client.getConnection().sendCommand(command);
             return null;
         }).thenCompose(ignored -> awaitHandledScreen(profile.resultsScreenTitle()))
                 .thenCompose(ignored -> scanAllPages(request, profile))
@@ -97,14 +96,14 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     ) {
         return onClient(() -> {
             CapturedListing capture = requiredCapture(request.executionId());
-            HandledScreen<?> screen = currentHandled(capture.profile().resultsScreenTitle());
+            AbstractContainerScreen<?> screen = currentHandled(capture.profile().resultsScreenTitle());
             StrictAuctionListingMatcher.Match match = matcher.match(
                     request, capture.profile(), snapshots(screen, capture.profile())
             );
             if (match.slot().isEmpty() || match.slot().orElseThrow().slotId() != capture.slotId()) {
                 return AuctionVerificationResult.rejected(match.message());
             }
-            ItemStack current = screen.getScreenHandler().getSlot(capture.slotId()).getStack();
+            ItemStack current = screen.getMenu().getSlot(capture.slotId()).getItem();
             if (!sameIntrinsicStack(capture.intrinsicStack(), current, capture.profile())) {
                 return AuctionVerificationResult.rejected("Listing components changed after it was located.");
             }
@@ -118,11 +117,11 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     ) {
         return onClient(() -> {
             CapturedListing capture = requiredCapture(request.executionId());
-            HandledScreen<?> screen = currentHandled(capture.profile().resultsScreenTitle());
-            requireSlot(screen.getScreenHandler(), capture.slotId());
-            client.interactionManager.clickSlot(
-                    screen.getScreenHandler().syncId, capture.slotId(), 0,
-                    SlotActionType.PICKUP, Objects.requireNonNull(client.player, "player")
+            AbstractContainerScreen<?> screen = currentHandled(capture.profile().resultsScreenTitle());
+            requireSlot(screen.getMenu(), capture.slotId());
+            client.gameMode.handleInventoryMouseClick(
+                    screen.getMenu().containerId, capture.slotId(), 0,
+                    ClickType.PICKUP, Objects.requireNonNull(client.player, "player")
             );
             return capture;
         }).thenCompose(capture -> awaitHandledScreen(capture.profile().purchaseConfirmationTitle())
@@ -231,7 +230,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             if (!authorization.getAsBoolean()) {
                 throw new IllegalStateException("Fishing session authorization expired before listing command.");
             }
-            client.getNetworkHandler().sendChatCommand(command);
+            client.getConnection().sendCommand(command);
             return capture;
         }).thenCompose(capture -> awaitHandledScreen(profile.listingCreatedTitle())
                 .thenCompose(ignored -> awaitClientValue(() ->
@@ -259,12 +258,12 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             ItemStack expected, int expectedCount, AuctionInteractionProfile profile
     ) {
         requireConnection();
-        if (client.currentScreen != null) {
+        if (client.screen != null) {
             throw new IllegalStateException("Close the current screen before automatic fishing sale.");
         }
         int sourceIndex = -1;
-        for (int index = 0; index < client.player.getInventory().size(); index++) {
-            ItemStack current = client.player.getInventory().getStack(index);
+        for (int index = 0; index < client.player.getInventory().getContainerSize(); index++) {
+            ItemStack current = client.player.getInventory().getItem(index);
             if (current.getCount() == expectedCount && sameIntrinsicStack(expected, current, profile)) {
                 sourceIndex = index;
                 break;
@@ -278,19 +277,19 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
         boolean swapped = sourceIndex >= 9;
         int sourceSlotId = playerHandlerSlotForInventoryIndex(sourceIndex);
         if (swapped) {
-            client.interactionManager.clickSlot(
-                    client.player.playerScreenHandler.syncId, sourceSlotId, selectedHotbar,
-                    SlotActionType.SWAP, client.player
+            client.gameMode.handleInventoryMouseClick(
+                    client.player.inventoryMenu.containerId, sourceSlotId, selectedHotbar,
+                    ClickType.SWAP, client.player
             );
         } else {
             client.player.getInventory().setSelectedSlot(sourceIndex);
         }
-        ItemStack held = client.player.getMainHandStack();
+        ItemStack held = client.player.getMainHandItem();
         if (held.getCount() != expectedCount || !sameIntrinsicStack(expected, held, profile)) {
             if (swapped) {
-                client.interactionManager.clickSlot(
-                        client.player.playerScreenHandler.syncId, sourceSlotId, selectedHotbar,
-                        SlotActionType.SWAP, client.player
+                client.gameMode.handleInventoryMouseClick(
+                        client.player.inventoryMenu.containerId, sourceSlotId, selectedHotbar,
+                        ClickType.SWAP, client.player
                 );
             } else {
                 client.player.getInventory().setSelectedSlot(selectedHotbar);
@@ -302,16 +301,16 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     }
 
     private void restoreFishingInventory(FishingListingCapture capture) {
-        if (client.player == null || client.interactionManager == null) {
+        if (client.player == null || client.gameMode == null) {
             return;
         }
-        if (client.currentScreen instanceof HandledScreen<?>) {
-            client.player.closeHandledScreen();
+        if (client.screen instanceof AbstractContainerScreen<?>) {
+            client.player.closeContainer();
         }
         if (capture.swapped()) {
-            client.interactionManager.clickSlot(
-                    client.player.playerScreenHandler.syncId, capture.sourceSlotId(), capture.selectedHotbar(),
-                    SlotActionType.SWAP, client.player
+            client.gameMode.handleInventoryMouseClick(
+                    client.player.inventoryMenu.containerId, capture.sourceSlotId(), capture.selectedHotbar(),
+                    ClickType.SWAP, client.player
             );
         }
         client.player.getInventory().setSelectedSlot(capture.selectedHotbar());
@@ -364,7 +363,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
         captures.clear();
         return onClient(() -> {
             if (client.player != null) {
-                client.player.closeHandledScreen();
+                client.player.closeContainer();
             } else {
                 client.setScreen(null);
             }
@@ -395,19 +394,19 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             int pageIndex
     ) {
         return onClient(() -> {
-            HandledScreen<?> screen = currentHandled(profile.resultsScreenTitle());
+            AbstractContainerScreen<?> screen = currentHandled(profile.resultsScreenTitle());
             pages.add(snapshots(screen, profile));
             if (pageIndex + 1 >= profile.maximumPages()) {
                 return Optional.<String>empty();
             }
-            ScreenHandler handler = screen.getScreenHandler();
+            AbstractContainerMenu handler = screen.getMenu();
             requireSlot(handler, profile.nextPageSlot());
             if (handler.getSlot(profile.nextPageSlot()).getStack().isEmpty()) {
                 return Optional.<String>empty();
             }
             String before = pageSignature(screen, profile);
-            client.interactionManager.clickSlot(
-                    handler.syncId, profile.nextPageSlot(), 0, SlotActionType.PICKUP,
+            client.gameMode.handleInventoryMouseClick(
+                    handler.containerId, profile.nextPageSlot(), 0, ClickType.PICKUP,
                     Objects.requireNonNull(client.player, "player")
             );
             return Optional.of(before);
@@ -427,15 +426,15 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             return CompletableFuture.completedFuture(null);
         }
         return onClient(() -> {
-            HandledScreen<?> screen = currentHandled(profile.resultsScreenTitle());
-            ScreenHandler handler = screen.getScreenHandler();
+            AbstractContainerScreen<?> screen = currentHandled(profile.resultsScreenTitle());
+            AbstractContainerMenu handler = screen.getMenu();
             requireSlot(handler, profile.previousPageSlot());
             if (handler.getSlot(profile.previousPageSlot()).getStack().isEmpty()) {
                 throw new IllegalStateException("Configured previous-page control is unavailable.");
             }
             String before = pageSignature(screen, profile);
-            client.interactionManager.clickSlot(
-                    handler.syncId, profile.previousPageSlot(), 0, SlotActionType.PICKUP,
+            client.gameMode.handleInventoryMouseClick(
+                    handler.containerId, profile.previousPageSlot(), 0, ClickType.PICKUP,
                     Objects.requireNonNull(client.player, "player")
             );
             return before;
@@ -443,11 +442,11 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
                 .thenCompose(ignored -> navigateBackward(profile, remaining - 1));
     }
 
-    private CompletableFuture<HandledScreen<?>> awaitPageChanged(
+    private CompletableFuture<AbstractContainerScreen<?>> awaitPageChanged(
             AuctionInteractionProfile profile, String previousSignature
     ) {
         return awaitClientValue(() -> {
-            if (client.currentScreen instanceof HandledScreen<?> screen
+            if (client.screen instanceof AbstractContainerScreen<?> screen
                     && profile.resultsScreenTitle().equals(screen.getTitle().getString())
                     && !previousSignature.equals(pageSignature(screen, profile))) {
                 return Optional.of(screen);
@@ -459,13 +458,13 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     private AuctionLocateResult captureExactListing(
             TradeExecutionRequest request, AuctionInteractionProfile profile, int expectedSlot
     ) {
-        HandledScreen<?> screen = currentHandled(profile.resultsScreenTitle());
+        AbstractContainerScreen<?> screen = currentHandled(profile.resultsScreenTitle());
         StrictAuctionListingMatcher.Match match = matcher.match(request, profile, snapshots(screen, profile));
         if (match.slot().isEmpty() || match.slot().orElseThrow().slotId() != expectedSlot) {
             return AuctionLocateResult.missing(match.message());
         }
         int slotId = match.slot().orElseThrow().slotId();
-        ItemStack visible = screen.getScreenHandler().getSlot(slotId).getStack();
+        ItemStack visible = screen.getMenu().getSlot(slotId).getItem();
         ItemStack intrinsic = fingerprintFactory.intrinsicCopy(visible, profile);
         int baseline = inventoryCount(intrinsic, profile);
         if (baseline != 0) {
@@ -478,18 +477,18 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     }
 
     private List<AuctionSlotSnapshot> snapshots(
-            HandledScreen<?> screen, AuctionInteractionProfile profile
+            AbstractContainerScreen<?> screen, AuctionInteractionProfile profile
     ) {
-        ScreenHandler handler = screen.getScreenHandler();
+        AbstractContainerMenu handler = screen.getMenu();
         List<AuctionSlotSnapshot> result = new ArrayList<>();
         int last = Math.min(handler.slots.size() - 1, profile.lastResultSlot());
         int first = profile.firstResultSlot();
         for (int slotId = Math.max(0, first); slotId <= last; slotId++) {
             Slot slot = handler.getSlot(slotId);
-            ItemStack stack = slot.getStack();
+            ItemStack stack = slot.getItem();
             if (!stack.isEmpty()) {
                 result.add(new AuctionSlotSnapshot(
-                        slotId, Registries.ITEM.getId(stack.getItem()).toString(), stack.getCount(),
+                        slotId, BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(), stack.getCount(),
                         fingerprintFactory.fingerprint(stack, profile), fingerprintFactory.visibleLore(stack)
                 ));
             }
@@ -497,15 +496,15 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
         return List.copyOf(result);
     }
 
-    private String pageSignature(HandledScreen<?> screen, AuctionInteractionProfile profile) {
+    private String pageSignature(AbstractContainerScreen<?> screen, AuctionInteractionProfile profile) {
         StringBuilder result = new StringBuilder();
-        for (Slot slot : screen.getScreenHandler().slots) {
-            ItemStack stack = slot.getStack();
-            result.append(slot.id).append(':');
+        for (Slot slot : screen.getMenu().slots) {
+            ItemStack stack = slot.getItem();
+            result.append(slot.index).append(':');
             if (!stack.isEmpty()) {
-                result.append(Registries.ITEM.getId(stack.getItem())).append(':')
+                result.append(BuiltInRegistries.ITEM.getKey(stack.getItem())).append(':')
                         .append(stack.getCount()).append(':')
-                        .append(stack.getName().getString()).append(':')
+                        .append(stack.getHoverName().getString()).append(':')
                         .append(fingerprintFactory.visibleLore(stack));
             }
             result.append('|');
@@ -518,8 +517,8 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             return 0;
         }
         int total = 0;
-        for (int index = 0; index < client.player.getInventory().size(); index++) {
-            ItemStack candidate = client.player.getInventory().getStack(index);
+        for (int index = 0; index < client.player.getInventory().getContainerSize(); index++) {
+            ItemStack candidate = client.player.getInventory().getItem(index);
             if (sameIntrinsicStack(intrinsic, candidate, profile)) {
                 total += candidate.getCount();
             }
@@ -531,8 +530,8 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             ItemStack intrinsic, AuctionInteractionProfile profile
     ) {
         List<PurchasedStackPlacementPlanner.InventorySlotState> result = new ArrayList<>();
-        for (int index = 0; index < client.player.getInventory().size(); index++) {
-            ItemStack candidate = client.player.getInventory().getStack(index);
+        for (int index = 0; index < client.player.getInventory().getContainerSize(); index++) {
+            ItemStack candidate = client.player.getInventory().getItem(index);
             result.add(new PurchasedStackPlacementPlanner.InventorySlotState(
                     index, candidate.isEmpty() ? 0 : candidate.getCount(),
                     sameIntrinsicStack(intrinsic, candidate, profile)
@@ -545,7 +544,7 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             ItemStack expected, ItemStack candidate, AuctionInteractionProfile profile
     ) {
         return !candidate.isEmpty()
-                && ItemStack.areItemsAndComponentsEqual(
+                && ItemStack.isSameItemSameComponents(
                 expected, fingerprintFactory.intrinsicCopy(candidate, profile)
         );
     }
@@ -555,8 +554,8 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     ) {
         return onClient(() -> {
             requireConnection();
-            if (client.currentScreen instanceof HandledScreen<?>) {
-                client.player.closeHandledScreen();
+            if (client.screen instanceof AbstractContainerScreen<?>) {
+                client.player.closeContainer();
             }
             PurchasedStackPlacementPlanner.Plan plan = placementPlanner.plan(
                     inventoryState(capture.intrinsicStack(), capture.profile()),
@@ -568,32 +567,32 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             int source = plan.sourceInventoryIndex().orElseThrow();
             int hotbar = plan.targetHotbarSlot().orElseThrow();
             if (plan.swapRequired()) {
-                client.interactionManager.clickSlot(
-                        client.player.playerScreenHandler.syncId, source, hotbar,
-                        SlotActionType.SWAP, client.player
+                client.gameMode.handleInventoryMouseClick(
+                        client.player.inventoryMenu.containerId, source, hotbar,
+                        ClickType.SWAP, client.player
                 );
             }
             client.player.getInventory().setSelectedSlot(hotbar);
             return hotbar;
         }).thenCompose(hotbar -> awaitClientValue(() -> {
-            ItemStack held = client.player == null ? ItemStack.EMPTY : client.player.getMainHandStack();
+            ItemStack held = client.player == null ? ItemStack.EMPTY : client.player.getMainHandItem();
             return held.getCount() == request.expectedItemCount()
                     && sameIntrinsicStack(capture.intrinsicStack(), held, capture.profile())
                     ? Optional.of(Boolean.TRUE) : Optional.empty();
         }, SCREEN_TIMEOUT)).thenApply(ignored -> null);
     }
 
-    private HandledScreen<?> currentHandled(String exactTitle) {
-        if (!(client.currentScreen instanceof HandledScreen<?> screen)
+    private AbstractContainerScreen<?> currentHandled(String exactTitle) {
+        if (!(client.screen instanceof AbstractContainerScreen<?> screen)
                 || !exactTitle.equals(screen.getTitle().getString())) {
             throw new IllegalStateException("Expected exact auction screen is not open: " + exactTitle);
         }
         return screen;
     }
 
-    private CompletableFuture<HandledScreen<?>> awaitHandledScreen(String exactTitle) {
+    private CompletableFuture<AbstractContainerScreen<?>> awaitHandledScreen(String exactTitle) {
         return awaitClientValue(() -> {
-            if (client.currentScreen instanceof HandledScreen<?> screen
+            if (client.screen instanceof AbstractContainerScreen<?> screen
                     && exactTitle.equals(screen.getTitle().getString())) {
                 return Optional.of(screen);
             }
@@ -648,13 +647,13 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     }
 
     private void requireConnection() {
-        if (client.getNetworkHandler() == null || client.player == null || client.interactionManager == null) {
+        if (client.getConnection() == null || client.player == null || client.gameMode == null) {
             throw new IllegalStateException("Minecraft is not connected to an interactive server session.");
         }
     }
 
-    private static void requireSlot(ScreenHandler handler, int slotId) {
-        if (slotId < 0 || slotId >= handler.slots.size() || !handler.getSlot(slotId).isEnabled()) {
+    private static void requireSlot(AbstractContainerMenu handler, int slotId) {
+        if (slotId < 0 || slotId >= handler.slots.size() || !handler.getSlot(slotId).isActive()) {
             throw new IllegalStateException("Configured auction slot is absent or disabled.");
         }
     }

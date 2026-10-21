@@ -1,17 +1,16 @@
 package com.scmarket.data.provider;
 
 import com.scmarket.data.ItemSearchResult;
-import net.minecraft.registry.Registries;
-
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /** Builds the Minecraft item index once; search calls never rebuild registry data. */
 public final class RegistryItemSearchProvider implements ItemSearchProvider {
     private final List<ItemSearchResult> index;
 
     public RegistryItemSearchProvider() {
-        index = Registries.ITEM.getIds().stream()
+        index = BuiltInRegistries.ITEM.keySet().stream()
                 .map(id -> new ItemSearchResult(id.toString(), ClientDataFormat.itemName(id.toString())))
                 .sorted(java.util.Comparator.comparing(ItemSearchResult::displayName))
                 .toList();

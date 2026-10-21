@@ -56,8 +56,6 @@ import com.scmarket.profit.PlayerIdentity;
 import com.scmarket.service.MarketRetentionPolicy;
 import com.scmarket.service.RepositoryMarketAnalysisService;
 import com.scmarket.service.RepositoryMarketDataIngestionService;
-import net.minecraft.client.MinecraftClient;
-
 import java.nio.file.Path;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -69,6 +67,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import net.minecraft.client.Minecraft;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -136,7 +135,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         this.packetCapture = packetCapture;
         this.gameplayActionGate = Objects.requireNonNull(gameplayActionGate, "gameplayActionGate");
         this.fishingController = new FishingAutomationController(
-                MinecraftClient.getInstance(), this::fishingAuthorized,
+                Minecraft.getInstance(), this::fishingAuthorized,
                 () -> configuration.get().automation().interactionProfile(),
                 this::estimateFishingPrice, authorizedAuctionAdapter,
                 () -> configuration.get().automation().actionDelayMillis(), gameplayActionGate
@@ -243,7 +242,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
     }
 
     private CompletableFuture<Optional<BigDecimal>> estimateFishingPrice(
-            net.minecraft.item.ItemStack caughtStack
+            net.minecraft.world.item.ItemStack caughtStack
     ) {
         Optional<AuctionInteractionProfile> profile = configuration.get().automation().interactionProfile();
         if (profile.isEmpty() || caughtStack.isEmpty()) {
@@ -398,7 +397,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             GameplayActionGate gameplayActionGate = new GameplayActionGate();
             MinecraftAuctionInteractionAdapter authorizedAuctionAdapter =
                     new MinecraftAuctionInteractionAdapter(
-                            MinecraftClient.getInstance(),
+                            Minecraft.getInstance(),
                             () -> configuration.get().automation().interactionProfile()
                     );
             TradeAutomationCoordinator automation = new TradeAutomationCoordinator(
@@ -515,7 +514,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             GameplayActionGate gameplayActionGate = new GameplayActionGate();
             MinecraftAuctionInteractionAdapter authorizedAuctionAdapter =
                     new MinecraftAuctionInteractionAdapter(
-                            MinecraftClient.getInstance(),
+                            Minecraft.getInstance(),
                             () -> configuration.get().automation().interactionProfile()
                     );
             TradeAutomationCoordinator automation = new TradeAutomationCoordinator(
