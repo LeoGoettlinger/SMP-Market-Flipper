@@ -34,13 +34,14 @@ class OrderAutomationCoordinatorTest {
         assertEquals("order-a", port.collectedOrderIds.getFirst());
         assertEquals(16, port.priceRefreshes);
         assertEquals(16, port.listedPrices.size());
-        assertEquals(16, port.recordedOrderIds.size());
+        assertEquals(List.of("order-a"), port.recordedOrderIds);
         assertEquals(new BigDecimal("99"), port.listedPrices.getFirst());
         assertEquals(new BigDecimal("84"), port.listedPrices.getLast());
 
         OrderCycleResult second = coordinator.runCycle().join();
         assertTrue(second.succeeded());
         assertEquals(List.of("order-a", "order-b"), port.collectedOrderIds);
+        assertEquals(List.of("order-a", "order-b"), port.recordedOrderIds);
         assertEquals(32, port.priceRefreshes);
     }
 

@@ -21,7 +21,7 @@ class DatabaseManagerTest {
             database.ready().join();
 
             assertTrue(Files.isRegularFile(databasePath));
-            assertEquals(5, database.schemaVersion().join());
+            assertEquals(6, database.schemaVersion().join());
             assertEquals("ok", database.integrityCheck().join());
         }
     }

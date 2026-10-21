@@ -89,7 +89,7 @@ class SaleRepositoryTest {
             SaleEntity restored = new SaleRepository(reopenedDatabase)
                     .find("persistent-sale").join().orElseThrow();
             assertEquals(new BigDecimal("123456789"), restored.salePrice());
-            assertEquals(5, reopenedDatabase.schemaVersion().join());
+            assertEquals(6, reopenedDatabase.schemaVersion().join());
         }
     }
 

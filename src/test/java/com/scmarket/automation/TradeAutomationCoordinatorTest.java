@@ -75,7 +75,7 @@ class TradeAutomationCoordinatorTest {
                 request("listing-2", AutomationMode.AUTOMATIC_AUTHORIZED_SERVER)
         ).join();
         assertFalse(disarmed.successful());
-        assertTrue(disarmed.message().contains("allowlisted and armed"));
+        assertTrue(disarmed.message().contains("not allowlisted and armed"));
 
         assertTrue(coordinator.armSession("EXAMPLE.TEST", TradeAutomationCoordinator.ARM_CONFIRMATION));
         TradeExecutionResult completed = coordinator.submit(
