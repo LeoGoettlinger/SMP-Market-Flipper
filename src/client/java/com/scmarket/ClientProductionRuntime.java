@@ -49,7 +49,7 @@ import com.scmarket.market.scanner.MarketScannerConfig;
 import com.scmarket.market.statistics.RepositoryMarketStatisticsService;
 import com.scmarket.packet.AuctionHouseDataCapture;
 import com.scmarket.packet.PacketMarketScanWork;
-import com.scmarket.mixin.AuctionHousePacketListener;
+import com.scmarket.packet.AuctionHouseCaptureRegistry;
 import com.scmarket.provider.LiveMarketSnapshotService;
 import com.scmarket.profit.PersonalProfitTracker;
 import com.scmarket.profit.PlayerIdentity;
@@ -498,7 +498,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             AuctionHouseDataCapture capture = new AuctionHouseDataCapture(
                     () -> configuration.get().automation().interactionProfile()
             );
-            AuctionHousePacketListener.setCapture(capture);
+            AuctionHouseCaptureRegistry.install(capture);
 
             PacketMarketScanWork work = new PacketMarketScanWork(capture, ingestion);
             MarketScannerConfig scannerConfig = MarketScannerConfig.defaults(true)
@@ -710,7 +710,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         }
         fishingController.stop();
         if (packetCapture != null) {
-            AuctionHousePacketListener.setCapture(null);
+            AuctionHouseCaptureRegistry.clear(packetCapture);
         }
         snapshotSubscription.run();
         automaticDispatcher.close();

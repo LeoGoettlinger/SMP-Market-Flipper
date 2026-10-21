@@ -1,8 +1,8 @@
 package com.scmarket.mixin;
 
 import com.scmarket.packet.AuctionHouseDataCapture;
+import com.scmarket.packet.AuctionHouseCaptureRegistry;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -25,20 +25,13 @@ import net.minecraft.world.item.ItemStack;
  */
 @Mixin(ClientPacketListener.class)
 public abstract class AuctionHousePacketListener extends ClientCommonPacketListenerImpl {
-    @Unique
-    private static volatile AuctionHouseDataCapture scmarket$capture;
-
     protected AuctionHousePacketListener(Minecraft client, Connection connection, CommonListenerCookie connectionState) {
         super(client, connection, connectionState);
     }
 
-    public static void setCapture(AuctionHouseDataCapture capture) {
-        scmarket$capture = capture;
-    }
-
     @Inject(method = "handleOpenScreen", at = @At("TAIL"))
     private void scmarket$onOpenScreen(ClientboundOpenScreenPacket packet, CallbackInfo ci) {
-        AuctionHouseDataCapture capture = scmarket$capture;
+        AuctionHouseDataCapture capture = AuctionHouseCaptureRegistry.current();
         if (capture == null) {
             return;
         }
@@ -49,7 +42,7 @@ public abstract class AuctionHousePacketListener extends ClientCommonPacketListe
 
     @Inject(method = "handleContainerContent", at = @At("TAIL"))
     private void scmarket$onInventory(ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
-        AuctionHouseDataCapture capture = scmarket$capture;
+        AuctionHouseDataCapture capture = AuctionHouseCaptureRegistry.current();
         if (capture == null) {
             return;
         }
@@ -60,7 +53,7 @@ public abstract class AuctionHousePacketListener extends ClientCommonPacketListe
 
     @Inject(method = "handleContainerSetSlot", at = @At("TAIL"))
     private void scmarket$onSlotUpdate(ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {
-        AuctionHouseDataCapture capture = scmarket$capture;
+        AuctionHouseDataCapture capture = AuctionHouseCaptureRegistry.current();
         if (capture == null) {
             return;
         }
@@ -72,7 +65,7 @@ public abstract class AuctionHousePacketListener extends ClientCommonPacketListe
 
     @Inject(method = "handleContainerClose", at = @At("TAIL"))
     private void scmarket$onCloseScreen(ClientboundContainerClosePacket packet, CallbackInfo ci) {
-        AuctionHouseDataCapture capture = scmarket$capture;
+        AuctionHouseDataCapture capture = AuctionHouseCaptureRegistry.current();
         if (capture == null) {
             return;
         }
