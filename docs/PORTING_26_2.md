@@ -1,6 +1,6 @@
 # Minecraft 26.2 port status and migration notes
 
-**Status: 26.2 build/test passes; client GUI startup/render was observed, but CI shutdown smoke is being hardened. Private-server gameplay validation remains outstanding.** Both source sets use Mojang names and the build targets Minecraft 26.2, Java 25, non-remapping Loom, Fabric Loader 0.19.5, and Fabric API 0.161.0+26.2. CI run `39655321822` passed `test build` and the headless client GUI smoke. A later run still opened/rendered the GUI but hit a native FreeType crash while shutting down during font loading; shutdown has been delayed and made one-shot, and the invalidly packaged font license has been moved out of the resource-pack assets. Retest is pending. No private-server gameplay, order execution, packet capture from a live AH, or user-driven recorder behavior has been verified on 26.2.
+**Status: 26.2 build/test and headless GUI smoke pass; private-server gameplay validation remains outstanding.** Both source sets use Mojang names and the build targets Minecraft 26.2, Java 25, non-remapping Loom, Fabric Loader 0.19.5, and Fabric API 0.161.0+26.2. CI run `39656592568` passed `test build`, launched the 26.2 client, opened/rendered SC-Market's GUI for 100 ticks, and shut down cleanly. It also passes the updated test that isolates concurrent scanner jobs. No private-server gameplay, order execution, packet capture from a live AH, or user-driven recorder behavior has been verified on 26.2.
 
 ## Findings from the 26.2 research
 
