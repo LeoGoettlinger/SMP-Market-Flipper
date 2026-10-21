@@ -6,7 +6,6 @@
     "AuctionHousePacketListener",
     "FishingBobberAccessor",
     "HandledScreenActionRecorder",
-    "ScreenActionRecorder",
     "ClientPlayerInteractionRecorder"
   ],
   "injectors": {

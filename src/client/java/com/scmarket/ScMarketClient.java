@@ -20,10 +20,13 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
@@ -102,6 +105,20 @@ public final class ScMarketClient implements ClientModInitializer {
                 Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, "opportunity_alerts"),
                 HUD_OVERLAY::extractRenderState
         );
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            if (screen instanceof AbstractContainerScreen<?>) {
+                return; // Slot-aware recorder below captures these clicks with item metadata.
+            }
+            ScreenMouseEvents.beforeMouseClick(screen).register((clickedScreen, mouseX, mouseY, button) -> {
+                LocalActionRecorder recorder = actionRecorder;
+                if (recorder == null || !recorder.isRecording()) {
+                    return;
+                }
+                int containerId = client.player == null ? -1 : client.player.containerMenu.containerId;
+                recorder.recordGuiClick(screen.getTitle().getString(), containerId, -1, "", 0,
+                        button, (int) Math.round(mouseX), (int) Math.round(mouseY));
+            });
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             net.minecraft.client.multiplayer.ServerData server = client.getCurrentServer();
