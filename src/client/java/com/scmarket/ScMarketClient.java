@@ -47,6 +47,7 @@ public final class ScMarketClient implements ClientModInitializer {
     private static volatile ClientProductionRuntime productionRuntime;
     private static volatile CompletableFuture<Optional<ClientProductionRuntime>> productionStartup;
     private static final AtomicBoolean clientStopping = new AtomicBoolean();
+    private static final AtomicBoolean smokeTestStopRequested = new AtomicBoolean();
     private static final AtomicLong detectionModeGeneration = new AtomicLong();
     private static final OpportunityHudOverlay HUD_OVERLAY = new OpportunityHudOverlay();
     private static volatile String currentServerAddress = "";
@@ -117,6 +118,11 @@ public final class ScMarketClient implements ClientModInitializer {
             ClientProductionRuntime runtime = productionRuntime;
             if (runtime != null) {
                 runtime.tickFishing();
+            }
+            if (Boolean.parseBoolean(System.getenv("SCMARKET_CI_SMOKE_TEST"))
+                    && smokeTestStopRequested.compareAndSet(false, true)) {
+                LOGGER.info("26.2 client smoke test reached the first client tick; shutting down cleanly.");
+                client.stop();
             }
         });
 

@@ -1,6 +1,6 @@
 # Minecraft 26.2 port status and migration notes
 
-**Status: 26.2 port in progress; not verified or ready to advertise.** Both main/client sources have been migrated from Yarn to Mojang names, and the project build coordinates now target Minecraft 26.2, Java 25, non-remapping Loom, and Fabric API 0.161.0+26.2. The first 26.2 compile/test/build has not yet completed, and no 26.2 client launch has been verified.
+**Status: 26.2 build/test passes; runtime port is still in progress and not ready to advertise.** Both source sets use Mojang names and the build targets Minecraft 26.2, Java 25, non-remapping Loom, Fabric Loader 0.19.5, and Fabric API 0.161.0+26.2. The first 26.2 `test build` passed in CI run `39651667908`. A headless client startup check through its first tick has been added to CI to validate Mixin target application; that check has not yet run. No private-server gameplay, GUI-interaction, order, or recorder behavior has been verified on 26.2.
 
 ## Findings from the 26.2 research
 
@@ -22,9 +22,9 @@ The current Fabric 26.2 example uses the non-remapping `net.fabricmc.fabric-loom
 
 The local sandbox still cannot run Gradle: it currently has no `java` executable on PATH, and earlier TLS attempts to the Gradle distribution/Fabric Maven endpoints failed. GitHub Actions is the available verification path; it can download Gradle and game dependencies and run tests/builds remotely.
 
-Loom's `migrateMappings` and `migrateClientMappings` completed on the active branch. Commit `f68ce21` migrated both source sets to Mojang names; follow-up CI fixes resolved the remaining 1.21.11 Mojang-mapped compile and test failures. The full 277-test suite and build passed on commit `832a1c4` (CI run `39650200570`). The build has now been changed to the 26.2 unobfuscated/non-remapping toolchain, but the first 26.2 CI verification is still pending.
+Loom's `migrateMappings` and `migrateClientMappings` completed on the active branch. Commit `f68ce21` migrated both source sets to Mojang names; follow-up CI fixes resolved the remaining 1.21.11 Mojang-mapped compile and test failures. The 277-test suite/build passed on commit `832a1c4` (CI run `39650200570`). After switching to the 26.2 toolchain, the first compile exposed old GUI, screen, input, key mapping, and container-content APIs. Those were ported, and `test build` passed on commit `d99770b` (CI run `39651667908`). A first-tick client smoke launch is now part of CI so the required Mixin configuration is actually applied at runtime; its result is pending.
 
-Next, resolve all compiler, test, Mixin, and packaging failures on 26.2. A clean `test build` is necessary but not sufficient: launch a dedicated 26.2 client and verify the UI, packet capture, action recorder, and order safeguards using an explicitly configured private-server profile before calling the port complete. Order→AH must remain fail-closed, require a confirmed private-server profile and explicit authorization, and never collect partial orders.
+After the smoke launch, address any runtime/Mixin issues and verify the UI, packet capture, action recorder, and order safeguards on 26.2 using an explicitly configured private-server profile. The smoke check does not connect to a server and does not prove gameplay or AH behavior. Order→AH must remain fail-closed, require a confirmed private-server profile and explicit authorization, and never collect partial orders.
 
 ## References
 
