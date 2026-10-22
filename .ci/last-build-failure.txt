@@ -1,23 +1,23 @@
+	at org.spongepowered.asm.mixin.transformer.TargetClassContext.applyMixins(TargetClassContext.java:418)
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:351)
+	... 20 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
 
 -- Head --
 Thread: Render thread
 Stacktrace:
-	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.getPostMixinClassByteArray(KnotClassDelegate.java:440)
-	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.tryLoadClass(KnotClassDelegate.java:336)
-	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.loadClass(KnotClassDelegate.java:231)
-	at net.fabricmc.loader.impl.launch.knot.KnotClassLoader.loadClass(KnotClassLoader.java:119)
-	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490)
-	at java.base/java.lang.Class.forName0(Native Method)
-	at java.base/java.lang.Class.forName(Class.java:547)
-	at knot//com.scmarket.ScMarketClient.lambda$onInitializeClient$2(ScMarketClient.java:148)
+	at knot//com.scmarket.ScMarketClient.lambda$onInitializeClient$2(ScMarketClient.java:156)
 	at knot//net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.lambda$static$3(ClientTickEvents.java:43)
-	at knot//net.minecraft.client.Minecraft.handler$bbj000$fabric-lifecycle-events-v1$onEndTick(Minecraft.java:4662)
+	at knot//net.minecraft.client.Minecraft.handler$znc000$fabric-lifecycle-events-v1$onEndTick(Minecraft.java:4662)
 
 -- Uptime --
 Details:
-	JVM uptime: 21.779s
-	Wall uptime: 11.213s
-	High-res time: 9.870s
+	JVM uptime: 15.757s
+	Wall uptime: 7.053s
+	High-res time: 5.875s
 	Client ticks: 1 ticks / 0.050s
 Stacktrace:
 	at knot//net.minecraft.client.Minecraft.fillReport(Minecraft.java:2496)
@@ -40,17 +40,17 @@ Details:
 Details:
 	Minecraft Version: 26.2
 	Minecraft Version ID: 26.2
-	Operating System: Linux (amd64) version 7.0.0-1017-azure
+	Operating System: Linux (amd64) version 6.17.0-1022-azure
 	Java Version: 25.0.4.1, Eclipse Adoptium
 	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Eclipse Adoptium
-	Memory: 44196976 bytes (42 MiB) / 373293056 bytes (356 MiB) up to 4190109696 bytes (3996 MiB)
-	Memory (heap): init: 250MiB, used: 312MiB, committed: 356MiB, max: 3996MiB
+	Memory: 42832160 bytes (40 MiB) / 373293056 bytes (356 MiB) up to 4192206848 bytes (3998 MiB)
+	Memory (heap): init: 250MiB, used: 314MiB, committed: 356MiB, max: 3998MiB
 	Memory (non-head): init: 007MiB, used: 139MiB, committed: 140MiB, max: 000MiB
 	CPUs: 4
-	Processor Vendor: AuthenticAMD
-	Processor Name: AMD EPYC 7763 64-Core Processor
-	Identifier: AuthenticAMD Family 25 Model 1 Stepping 1
-	Microarchitecture: Zen 3
+	Processor Vendor: GenuineIntel
+	Processor Name: INTEL(R) XEON(R) PLATINUM 8573C
+	Identifier: Intel64 Family 6 Model 207 Stepping 2
+	Microarchitecture: unknown
 	Frequency (GHz): -0.00
 	Number of physical packages: 1
 	Number of physical CPUs: 2
@@ -60,20 +60,20 @@ Details:
 	Graphics card #0 VRAM (MiB): 0.00
 	Graphics card #0 deviceId: unknown
 	Graphics card #0 versionInfo: unknown
-	Virtual memory max (MiB): 11063.95
-	Virtual memory used (MiB): 2323.25
+	Virtual memory max (MiB): 11066.35
+	Virtual memory used (MiB): 2479.48
 	Swap memory total (MiB): 3072.00
 	Swap memory used (MiB): 0.00
 	Space in storage for jna.tmpdir (MiB): <path not set>
 	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
 	Space in storage for io.netty.native.workdir (MiB): <path not set>
-	Space in storage for java.io.tmpdir (MiB): available: 85429.66, total: 147718.61
-	Space in storage for workdir (MiB): available: 85429.66, total: 147718.61
-	Operating System Version: GNU/Linux Ubuntu 24.04.5 LTS (Noble Numbat) build 7.0.0-1017-azure
+	Space in storage for java.io.tmpdir (MiB): available: 86536.45, total: 147718.61
+	Space in storage for workdir (MiB): available: 86536.45, total: 147718.61
+	Operating System Version: GNU/Linux Ubuntu 24.04.5 LTS (Noble Numbat) build 6.17.0-1022-azure
 	Process Elevated: false
-	Process Loads: Uptime: 22s, user: 41s (185.68%), kernel: 1s (5.61%), total: 42s (191.29%)
-	Process Virtual Size (MiB): 8352.21
-	Process Resident Size (MiB): 825.81
+	Process Loads: Uptime: 15s, user: 34s (227.94%), kernel: 1s (5.50%), total: 35s (233.45%)
+	Process Virtual Size (MiB): 8358.85
+	Process Resident Size (MiB): 875.51
 	JVM Flags: 1 total; -XX:StackShadowPages=32
 	Debug Flags: 0 total; 
 	Fabric Mods: 
@@ -158,11 +158,11 @@ Details:
 	Locale: en
 	System encoding: UTF-8
 	File encoding: UTF-8
-	CPU: 4x AMD EPYC 7763 64-Core Processor
-#@!@# Game crashed! Crash report saved to: #@!@# /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/run/crash-reports/crash-2026-10-22_15.45.03-client.txt
+	CPU: 4x INTEL(R) XEON(R) PLATINUM 8573C
+#@!@# Game crashed! Crash report saved to: #@!@# /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/run/crash-reports/crash-2026-10-22_15.48.15-client.txt
 
 > Task :runClient FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792683861709.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792684063971.json
 
 FAILURE: Build failed with an exception.
 
@@ -176,5 +176,5 @@ Execution failed for task ':runClient' (registered by plugin 'fabric-loom').
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 47s
+BUILD FAILED in 36s
 8 actionable tasks: 4 executed, 4 up-to-date
