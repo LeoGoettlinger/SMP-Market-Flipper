@@ -76,17 +76,6 @@ public final class LocalActionRecorder implements AutoCloseable {
                 mouseButton, screenX, screenY);
     }
 
-    public synchronized void recordPlayerAction(String action, String heldItemId) {
-        if (writer == null || recordsWritten >= maximumRecords) {
-            return;
-        }
-        String safeAction = switch (Objects.requireNonNullElse(action, "")) {
-            case "use_item", "interact_block", "attack_block", "attack_entity", "interact_entity" -> action;
-            default -> "other_action";
-        };
-        writeRecord("player_action:" + safeAction, "", -1, -1, heldItemId, 1, -1, -1, -1);
-    }
-
     public synchronized boolean isRecording() {
         return writer != null;
     }

@@ -22,7 +22,7 @@ Das reicht, um sichtbare Beschriftungen und mögliche Zustände zu dokumentieren
 
 Wenn du ihn einschaltest, legt SC-Market eine lokale UTF-8-Textdatei im **JSONL-Format** an. JSONL bedeutet: ein JSON-Objekt pro Zeile.
 
-Aufgezeichnet werden — soweit die jeweilige Ansicht es bereitstellt — Zeitstempel in UTC, Ereignistyp, Fenstertitel, Container-ID, angeklickter Slot, Item-Registry-ID und Stack-Anzahl sowie Maustaste und Bildschirmkoordinaten. Bei bestimmten Aktionen außerhalb von Containerfenstern kann zusätzlich eine grobe Aktionsart und die Registry-ID des gehaltenen Items erfasst werden.
+Aufgezeichnet werden — soweit die jeweilige Ansicht es bereitstellt — Zeitstempel in UTC, Ereignistyp, Fenstertitel, Container-ID, angeklickter Slot, Item-Registry-ID und Stack-Anzahl sowie Maustaste und Bildschirmkoordinaten. Es werden ausschließlich GUI-Klicks erfasst; Aktionen in der Spielwelt, gehaltene Items und Zielobjekte werden nicht aufgezeichnet.
 
 **Nicht aufgezeichnet** werden Chatnachrichten, getippter Text, Tastatureingaben, Zugangsdaten, Spielername, Weltkoordinaten, Netzwerkpakete, Hover-Bewegungen, Tooltip-/Lore-Text oder das Ergebnis einer Transaktion. Der Recorder macht auch keine Screenshots. Deshalb sind die JSONL-Datei **und** passende Screenshots/Notizen zusammen nützlicher als die Datei allein.
 

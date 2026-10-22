@@ -5,8 +5,7 @@
   "client": [
     "AuctionHousePacketListener",
     "FishingBobberAccessor",
-    "HandledScreenActionRecorder",
-    "ClientPlayerInteractionRecorder"
+    "HandledScreenActionRecorder"
   ],
   "injectors": {
     "defaultRequire": 1
