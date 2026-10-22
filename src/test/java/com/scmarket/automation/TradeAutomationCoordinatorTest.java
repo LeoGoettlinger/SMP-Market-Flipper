@@ -302,7 +302,7 @@ class TradeAutomationCoordinatorTest {
         VERIFY_LISTING_CREATED
     }
 
-    private static final class GateAdapter extends DelegatingAdapter {
+    private static class GateAdapter extends DelegatingAdapter {
         private final GateStage gatedStage;
         private final CompletableFuture<Void> reached = new CompletableFuture<>();
         private final CompletableFuture<Void> release = new CompletableFuture<>();
