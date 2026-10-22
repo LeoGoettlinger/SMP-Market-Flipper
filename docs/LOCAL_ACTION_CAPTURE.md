@@ -2,7 +2,7 @@
 
 > Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
 
-SC-Market has an **opt-in, local-only** diagnostic recorder for inspecting private-server Order/AH screens and manual GUI flows. It does not automate an action, read network packets, or upload the recording. In the current code the Order→AH adapter remains fail-closed; capture data is intended to help build and test a future exact screen/profile parser.
+SC-Market has an **opt-in, local-only** diagnostic recorder for inspecting private-server Order/AH screens and manual GUI flows. It does not automate an action, read network packets, or upload the recording. In the current code the Order→AH adapter remains fail-closed; capture data is intended to help build and test a future exact screen/profile parser. For the player-facing, step-by-step instructions (including the newest supplied screenshot observations), read [Developer function: local Order/AH capture](DEVELOPER_FUNCTION.md).
 
 ## Record a private test flow
 

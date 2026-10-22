@@ -29,7 +29,7 @@ After the current changes are pushed, `.github/workflows/verify.yml` runs tests 
 - **Detection source** switches between `API Detection` and `Packet Scan`.
 - **API credential** can be saved or removed in the panel. It is stored separately in `config/sc-market/api-key.txt`, not in `config.json`. Saving a credential while API Detection is selected reconnects the client live.
 - **Order→AH limits and item whitelist** are editable under **Item Filters → Order → AH Settings**. The default size is 1,024; the UI allows up to the screenshot-supported 2,048-item size, while total and per-item order limits never exceed the server-observed 10/2 ceilings.
-- **Local action capture** is an explicit opt-in in that same panel. It saves a bounded JSONL file under `config/sc-market/diagnostics/`; chat and typed text are excluded. Review [Local action capture](docs/LOCAL_ACTION_CAPTURE.md) before sharing a file.
+- **Local action capture** is an explicit opt-in in that same panel. It saves a bounded JSONL file under `config/sc-market/diagnostics/`; chat and typed text are excluded. Review [Local action capture](docs/LOCAL_ACTION_CAPTURE.md) before sharing a file. The exact player-facing steps are in [Developer function: local Order/AH capture](docs/DEVELOPER_FUNCTION.md).
 
 ### AH Deals
 
