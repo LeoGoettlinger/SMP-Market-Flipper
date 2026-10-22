@@ -149,7 +149,7 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
     private Validation revalidate(QueuedOpportunity queued) {
         if (!acceptingAutomaticWork()) {
             return Validation.rejected(
-                    "Automatic mode was disabled or disarmed while this opportunity was queued."
+                    "Automatic mode was disabled or the current server is no longer allowlisted."
             );
         }
         LiveMarketSnapshot current = latestSnapshot.get();
@@ -195,7 +195,7 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
         var execution = coordinator.snapshot();
         return config.enabled()
                 && config.mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER
-                && execution.sessionArmed()
+                && coordinator.currentServerAllowed()
                 && !execution.emergencyStopped();
     }
 

@@ -146,13 +146,8 @@ public final class ClientUiDataSourceRouter {
             }
 
             @Override
-            public boolean armCurrentServer(String exactConfirmation) {
-                return selected.get().automationSettings().armCurrentServer(exactConfirmation);
-            }
-
-            @Override
-            public void disarm() {
-                selected.get().automationSettings().disarm();
+            public void cancelActiveExecution() {
+                selected.get().automationSettings().cancelActiveExecution();
             }
 
             @Override

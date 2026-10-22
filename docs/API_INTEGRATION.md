@@ -1,5 +1,7 @@
 # DonutSMP API integration notes
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Verified on 2026-08-03 against the official Swagger document at
 <https://api.donutsmp.net/doc.json>.
 

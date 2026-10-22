@@ -1,18 +1,24 @@
 # SC-Market
 
+> Project-wide agent guidance, user requirements, architecture, safety invariants, and the current verification boundary are in [Agent.md](Agent.md).
+
 **Author:** SampleCraft
 
 A client-side market scanner and opt-in automation toolkit for Minecraft Java Edition. SC-Market records observed listings and completed sales, estimates conservative values, reports opportunities, and provides independently switchable Fishing/AH Deals workflows plus a fail-closed Order→AH strategy core for authorized private/test servers.
 
-> **Compatibility / port status:** the working build is still **Minecraft 1.21.11**, Yarn mappings, Fabric Loader 0.19.x and Java 21. Minecraft 26.2 is **not yet supported**. The 26.2 mapping/API migration has been researched, but this checkout has not been migrated; do not install it on 26.2. The current sandbox lacks an accessible Gradle distribution and Fabric Maven host, so the requested 26.2 build could not be executed here. See the [26.2 port report](docs/PORTING_26_2.md).
+> **Compatibility / verification status:** the current build configuration targets **Minecraft 26.2**, Java 25, Fabric Loader 0.19.5, Fabric API 0.161.0+26.2, non-remapping Loom, and Mojang names. The latest passing CI run (39656997407) tested the earlier committed baseline, not the extensive uncommitted working-tree changes present at the 2026-10-22 snapshot. Therefore this snapshot is **not confirmed as working** until the current diff passes `test build` and the client smoke. No live private-server integration is claimed. See [Agent.md](Agent.md) and the [26.2 port report](docs/PORTING_26_2.md) for the exact boundary.
 
 ## Start here
 
-1. Install Fabric Loader and Fabric API for Minecraft 1.21.11.
-2. Build with Java 21 using `./gradlew build`.
-3. Put the remapped JAR from `build/libs/` into `.minecraft/mods` and start the game.
+1. Install Fabric Loader and Fabric API versions compatible with Minecraft 26.2.
+2. Build with Java 25 using `./gradlew test build --no-daemon`.
+3. Put the mod JAR from `build/libs/` into `.minecraft/mods` and start the matching 26.2 game.
 4. Press **Right Shift** to open or close the ClickGUI; press **Escape** to close it.
-5. In Settings, independently toggle Fishing, AH Deals, and Order→AH, and choose the data source. Changes apply live; toggling modules invalidates the current session authorization and requires re-arming.
+5. In Settings, independently toggle Fishing, AH Deals, and Order→AH, and choose the data source. Changes apply live; disabling automation or changing modules cancels pending/in-flight work.
+
+## Download the built mod from GitHub Actions
+
+After the current changes are pushed, `.github/workflows/verify.yml` runs tests and builds the mod. When `test build` succeeds, it uploads the installable JAR as the artifact `sc-market-<commit SHA>` (sources JAR excluded; 14-day retention). Open the repository's **Actions → Verify**, select the run for your commit, download the ZIP under **Artifacts**, and copy the `.jar` into the matching Minecraft 26.2 `mods` folder. The workflow uploads after the build step and before its GUI smoke, so check the GUI-smoke result separately; a downloadable build is not proof of live-server behavior. The workflow can also be run manually from Actions using **Run workflow**.
 
 ## ClickGUI controls
 
@@ -45,9 +51,9 @@ To run Fishing automatically, all of the following must be true:
 
 1. Select **Fishing** and keep the global **Mod** switch enabled.
 2. In Automation, enable the authorized execution setting and choose `AUTOMATIC_AUTHORIZED_SERVER`.
-3. Configure the private-server auction profile, add the exact current server using **ALLOW CURRENT SERVER**, then explicitly arm the session by typing `I HAVE AUTHORIZATION`.
+3. Configure the private-server auction profile and add the exact current server using **ALLOW CURRENT SERVER**. The exact allowlist is the server-access gate; no ARM SESSION button or typed phrase is required.
 4. Put a fishing rod in the hotbar, leave an empty inventory slot, and close other screens.
-5. Use **Emergency Stop** or **Disarm** to stop further actions.
+5. Use **CANCEL EXECUTION** to cancel the active trade, switch Automation off to prevent new actions, or use **EMERGENCY STOP** to block execution immediately.
 
 The profile's `listingCommandTemplate` must describe a legitimate sale command for your own private test server, and `listingCreatedTitle` must exactly match its successful listing confirmation screen. Automatic selling remains off when those requirements or safe market evidence are missing.
 
@@ -66,9 +72,9 @@ Real gameplay actions require all of these gates:
 
 - The **exact connected address** is on the explicit server allowlist; wildcard addresses are rejected.
 - A valid private-server interaction profile is configured. Before a listing, the item fingerprint and count are rechecked; completion requires the exact configured confirmation screen and inventory delta.
-- The automation setting is enabled and the user arms the current session with the exact phrase `I HAVE AUTHORIZATION`. Authorization is memory-only and clears on disconnect, server change, restart, workflow/mode change, allowlist change, disarm or emergency stop.
+- Automation is explicitly enabled, the selected mode and module are correct, and the current exact server address is on the allowlist. No typed session-arm phrase is required. Disconnects/server changes cancel active work; the exact allowlist, private profile, configured limits, safety checks, and emergency stop still apply.
 
-The initial configuration is disabled, dry-run, and has no allowlisted server or interaction profile. Fishing and Flipper use the same exact-server/profile/session protections. This mod does not bypass anti-cheat, CAPTCHAs, rate limits or server restrictions. Transparent action pacing is only a user-configurable delay; it is not anti-cheat evasion.
+The initial configuration is disabled, dry-run, and has no allowlisted server or interaction profile. Fishing and AH Deals use the same exact-server/profile safety gates. This mod does not bypass anti-cheat, CAPTCHAs, rate limits or server restrictions. Transparent action pacing is only a user-configurable delay; it is not anti-cheat evasion.
 
 ## Configuration and local data
 

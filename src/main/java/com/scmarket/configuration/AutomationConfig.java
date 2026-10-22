@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Optional;
 
-/** Persisted limits only. Session arming and active executions are deliberately excluded. */
+/** Persisted automation settings; active execution state remains in the runtime coordinator. */
 public record AutomationConfig(
         boolean enabled,
         AutomationMode mode,

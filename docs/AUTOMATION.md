@@ -1,5 +1,7 @@
 # Authorization-gated automation
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 ## Scope and permission
 
 The automation framework is for a private/test server you control or a server whose operator
@@ -9,8 +11,7 @@ included.
 
 The shipped configuration cannot execute a purchase: automation is disabled, dry-run is selected,
 the server allowlist is empty, all monetary/session limits are zero, and no interaction profile
-exists. Arming is memory-only and is cleared on restart, disconnect, server change, mode change,
-allowlist change, disarm, or emergency stop.
+exists. The exact current-server allowlist is the server-access gate; there is no separate ARM SESSION control or typed authorization phrase. Live actions still require the relevant module, enabled mode, private interaction profile, bounded nonzero limits, and all verification checks. Disconnect/server or allowlist changes cancel active work; the emergency stop remains available.
 
 ## State flow
 
@@ -90,15 +91,13 @@ decrease.
    of a purchase debit, so it deliberately does not satisfy `requireBalanceVerification`.
    A future private-server provider must verify the pre/post debit atomically before that gate can
    be satisfied. Server addresses are not brand-restricted; execution still requires an exact
-   allowlist entry, a configured private-server interaction profile, and explicit per-session arming.
-3. Connect to the exact server and use **ALLOW CURRENT SERVER**.
-4. Select `CONFIRM EACH` for the first live tests and enable automation.
-5. Select **ARM SESSION** and type exactly `I HAVE AUTHORIZATION`.
-6. Press **RUN** on one opportunity, inspect the waiting state, then press **CONFIRM TRADE**.
-7. Use **DISARM** after the test. **EMERGENCY STOP** cancels the active workflow and blocks new work.
-   Once idle, the same control becomes **CLEAR STOP**; clearing it never rearms the session.
+   allowlist entry, and a configured private-server interaction profile.
+3. Connect to the exact server and use **ALLOW CURRENT SERVER**. This saves that exact address; no separate ARM SESSION action or typed phrase is required.
+4. Select `CONFIRM EACH` and enable automation for the first controlled test.
+5. Press **RUN** on one opportunity, inspect the pending state, then press **CONFIRM TRADE** only after reviewing it.
+6. Use **CANCEL EXECUTION** to cancel pending work or **EMERGENCY STOP** to block all new work and cancel the active workflow. Once idle, the emergency-stop control becomes **CLEAR STOP**; clearing it does not change your mode, server allowlist, profile, or other settings.
 
-After confirm-each testing, selecting `AUTOMATIC_AUTHORIZED_SERVER` and arming the session enables
+After confirm-each testing, selecting `AUTOMATIC_AUTHORIZED_SERVER` with Automation enabled and the current exact server allowlisted enables
 provider-driven submission. No GUI needs to be open: the next successful live snapshot publication
 immediately queues new actionable opportunities. `RUN` remains available for explicit execution.
 
@@ -108,11 +107,12 @@ server restrictions.
 
 ## Fishing workflow
 
-Fishing shares the global switch, exact-server allowlist, private interaction profile, and the
-same memory-only per-session authorization. Select the `FISHING` workflow, enable Automation,
-choose `AUTOMATIC_AUTHORIZED_SERVER`, add the exact current server, and arm the session with
-`I HAVE AUTHORIZATION`. Changing workflow or server disarms the session. Flipper's market-opportunity
-dispatcher is disabled while Fishing is selected, so queued buy opportunities cannot run in Fishing.
+Fishing shares the global switch, exact-server allowlist, and private interaction profile. Select the
+`FISHING` workflow, enable Automation, choose `AUTOMATIC_AUTHORIZED_SERVER`, and add the exact
+current server. No separate ARM SESSION step or typed phrase is used. Changing workflow cancels
+active work; changing servers also cancels active work, and the new address must independently be
+allowlisted. Flipper's market-opportunity dispatcher is disabled while Fishing is selected, so
+queued buy opportunities cannot run in Fishing.
 
 The client casts only with a fishing rod in the hotbar and at least one free inventory slot. It reads
 the server-synchronised vanilla bobber bite flag, waits the configured action delay, reels, and then

@@ -1,5 +1,7 @@
 # Item normalization and fingerprinting
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 3 converts documented DonutSMP item data into deterministic internal
 identities. It does not estimate value or detect opportunities.
 

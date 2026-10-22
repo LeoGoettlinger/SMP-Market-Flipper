@@ -234,11 +234,10 @@ public final class ClientProductionRuntime implements AutoCloseable {
                 || config.interactionProfile().isEmpty() || server.isBlank() || !config.serverAllowed(server)) {
             return false;
         }
-        TradeExecutionSnapshot session = automationSettings.snapshot().execution();
+        TradeExecutionSnapshot execution = automationSettings.snapshot().execution();
         return gameplayActionGate.availableTo(GameplayActionGate.Owner.FISHING)
-                && session.activeExecutionId().isEmpty()
-                && session.sessionArmed() && !session.emergencyStopped()
-                && session.armedServer().filter(server::equals).isPresent();
+                && execution.activeExecutionId().isEmpty()
+                && !execution.emergencyStopped();
     }
 
     private CompletableFuture<Optional<BigDecimal>> estimateFishingPrice(
@@ -282,7 +281,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         boolean runMarketScanner = settings.enabled();
         scanner.updateConfiguration(scanner.configuration().withScannerEnabled(runMarketScanner));
         if (!settings.enabled() || !lastAppliedModules.equals(settings.activeModules())) {
-            automationSettings.disarm();
+            automationSettings.cancelActiveExecution();
         }
         lastAppliedModules = settings.activeModules();
     }

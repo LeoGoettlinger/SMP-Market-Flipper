@@ -31,7 +31,7 @@ class ClientAutomationSettingsControllerTest {
 
         controller.allowCurrentServer().join();
         assertEquals(java.util.Set.of("private.example:25565"), config.get().allowedServerAddresses());
-        assertFalse(controller.armCurrentServer(TradeAutomationCoordinator.ARM_CONFIRMATION));
+        assertTrue(coordinator.currentServerAllowed());
 
         FlipOpportunity value = new FlipOpportunity(
                 "opportunity", "minecraft:netherite_ingot", "Netherite Ingot", 4,
@@ -44,6 +44,7 @@ class ClientAutomationSettingsControllerTest {
 
         controller.setMode(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER).join();
         controller.setEnabled(true).join();
-        assertTrue(controller.armCurrentServer(TradeAutomationCoordinator.ARM_CONFIRMATION));
+        assertTrue(controller.snapshot().configuration().enabled());
+        assertTrue(coordinator.currentServerAllowed());
     }
 }

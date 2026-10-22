@@ -1,5 +1,7 @@
 # Fair-value calculation (Chunk 5)
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 5 adds a conservative, explainable fair-value estimate. It does not
 calculate profit, ROI, confidence, manipulation risk, or opportunities. The
 GUI remains on mock providers until the designated integration chunk.

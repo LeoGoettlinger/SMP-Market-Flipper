@@ -42,7 +42,7 @@ class AutomaticOpportunityDispatcherTest {
         AutomationConfig config = enabledConfig();
         CountingAdapter adapter = new CountingAdapter();
         TradeAutomationCoordinator coordinator = coordinator(config, adapter);
-        coordinator.armSession("example.test", TradeAutomationCoordinator.ARM_CONFIRMATION);
+        coordinator.onServerChanged("example.test");
         AtomicReference<LiveMarketSnapshot> latest = new AtomicReference<>(snapshot(opportunity("one", 100)));
         AutomaticOpportunityDispatcher dispatcher = new AutomaticOpportunityDispatcher(
                 () -> config, coordinator, latest::get, CLOCK
@@ -61,7 +61,7 @@ class AutomaticOpportunityDispatcherTest {
         AutomationConfig config = enabledConfig();
         BlockingFirstAdapter adapter = new BlockingFirstAdapter();
         TradeAutomationCoordinator coordinator = coordinator(config, adapter);
-        coordinator.armSession("example.test", TradeAutomationCoordinator.ARM_CONFIRMATION);
+        coordinator.onServerChanged("example.test");
         LiveMarketSnapshot published = snapshot(
                 opportunity("one", 100), opportunity("two", 101)
         );
@@ -82,7 +82,7 @@ class AutomaticOpportunityDispatcherTest {
     }
 
     @Test
-    void ignoresPublicationsUntilAutomaticModeIsArmed() {
+    void ignoresPublicationsUntilCurrentServerIsAllowlisted() {
         AutomationConfig config = enabledConfig();
         CountingAdapter adapter = new CountingAdapter();
         TradeAutomationCoordinator coordinator = coordinator(config, adapter);
@@ -95,7 +95,7 @@ class AutomaticOpportunityDispatcherTest {
         dispatcher.onSnapshotPublished(published);
         assertEquals(0, adapter.purchaseCount);
 
-        coordinator.armSession("example.test", TradeAutomationCoordinator.ARM_CONFIRMATION);
+        coordinator.onServerChanged("example.test");
         dispatcher.onSnapshotPublished(published);
         assertEquals(1, adapter.purchaseCount);
     }
@@ -105,7 +105,7 @@ class AutomaticOpportunityDispatcherTest {
         AutomationConfig config = enabledConfig();
         BlockingFirstAdapter adapter = new BlockingFirstAdapter();
         TradeAutomationCoordinator coordinator = coordinator(config, adapter);
-        coordinator.armSession("example.test", TradeAutomationCoordinator.ARM_CONFIRMATION);
+        coordinator.onServerChanged("example.test");
         MarketOpportunitySnapshot blocker = opportunity("blocker", 99);
         CompletableFuture<?> blockerResult = coordinator.submit(request(blocker));
 

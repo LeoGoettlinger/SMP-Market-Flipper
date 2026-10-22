@@ -1,35 +1,74 @@
 # Minecraft 26.2 port status and migration notes
 
-**Status: 26.2 build/test and headless GUI smoke pass; private-server gameplay validation remains outstanding.** Both source sets use Mojang names and the build targets Minecraft 26.2, Java 25, non-remapping Loom, Fabric Loader 0.19.5, and Fabric API 0.161.0+26.2. CI run `39656592568` passed `test build`, launched the 26.2 client, opened/rendered SC-Market's GUI for 100 ticks, and shut down cleanly. It also passes the updated test that isolates concurrent scanner jobs. No private-server gameplay, order execution, packet capture from a live AH, or user-driven recorder behavior has been verified on 26.2.
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
 
-## Findings from the 26.2 research
+## Status at the 2026-10-22 workspace snapshot
 
-Minecraft 26.2 is in the post-1.21.11 unobfuscated era. Fabric's porting guide requires a source/API migration, not just changing `minecraft_version`. The recommended sequence is to first migrate a 1.21.11 Yarn codebase to Mojang names, resolve the resulting source and Mixin descriptors, then switch to the non-remapping Loom plugin and remove the Yarn mapping dependency for 26.2.
+The current build files target Minecraft **26.2**, Java **25**, Fabric Loader **0.19.5**, Fabric API **0.161.0+26.2**, non-remapping Loom **1.18.4**, and Gradle **9.7.1**. The source layout is split into `main` and `client`, and the current uncommitted source tree uses `com.scmarket`.
 
-The official 26.2 Fabric example uses the `net.fabricmc.fabric-loom` plugin, Java 25, split main/client source sets, and ordinary `implementation` dependencies for libraries. A merged community port (`0Mattias/cheesecake` PR #10) follows the same Yarn→Mojang-first order and reports additional API and Mixin fixes after the name migration. A second example (`iluha168/MCAutoCrafters` PR #4) likewise removes Yarn mappings for the unobfuscated game. Fabric's 26.2 announcement also flags rendering changes, so direct rendering hooks need a specific review.
+**The present working-tree state is not yet verified.** The most recent passing CI run, `39656997407`, passed tests/build and the offline headless client/GUI smoke on the earlier committed baseline (`2c10d16`). The worktree now contains extensive uncommitted changes across build files, resources, and a broad source/test tree replacement. That CI result does not cover those changes. The exact current diff must pass `./gradlew test build --no-daemon` and the client smoke before it can be called build-verified. Live private-server behavior remains a separate, outstanding verification requirement even after CI passes.
 
-The current Fabric 26.2 example uses the non-remapping `net.fabricmc.fabric-loom` plugin, Java 25, Loader 0.19.5, and Fabric API 0.161.0+26.2. Its current Gradle example is 9.7.1; this branch pins the stable Loom 1.18.4 release and Gradle 9.7.1. Keep the Fabric API pinned to a release explicitly targeting 26.2 rather than selecting a numerically newer 26.3/26.4-only build.
+No client smoke can establish that all gameplay logic is correct or bug-free. In particular, no authorized private-server Order/AH operation, completed-order claim, live packet parsing, real API quote freshness, fishing sale, or world HUD interaction is claimed as verified here.
 
-## Remaining runtime validation
+## Porting research and decisions
 
-- CI successfully launches the 26.2 client, applies required mixins, opens SC-Market's custom screen, renders it, and exits cleanly. Mouse/key behavior and data presentation still need a hands-on session.
-- The HUD is only visible in-game; the smoke run starts offline at the title screen and does not validate the overlay against a live player/world.
-- Packet listener mixins and AH packet parsing have not been exercised against an actual server auction-house UI.
-- Order→AH, fresh price lookup/relisting, full-order gating, private-profile confirmation, and opt-in action recording have not been exercised on a configured private test server. No public server or unapproved partial order was used.
+Minecraft 26.2 is in the post-Yarn, unobfuscated game era. This is a source/API migration, not a `minecraft_version` edit. The researched migration sequence was:
 
-## Porting progress and verification
+1. Migrate the older Yarn-mapped source to Mojang names and resolve both main/client source and Mixin descriptors.
+2. Switch to non-remapping Loom and remove Yarn mapping dependencies.
+3. Adopt Java 25 and versions explicitly targeting 26.2.
+4. Review screens, rendering, input, key mappings, container contents, Fabric events, resources, and Mixin targets against the 26.2 API.
+5. Compile both source sets, test without launching Minecraft, then launch the client to find runtime-only linkage/Mixin failures.
+6. Separately validate actual screens, data flows, and guarded behavior on an authorized private/test server.
 
-The local sandbox still cannot run Gradle: it has no `java` executable on PATH, and earlier wrapper downloads failed with `SSL_ERROR_SYSCALL` while fetching the Gradle distribution; local requests to Fabric Maven also failed at TLS. The sandbox egress cause could not be changed here. The usable alternative was actually exercised: GitHub Actions downloaded the Gradle/game dependencies and passed test/build plus a headless GUI smoke in run `39655321822`. A separate CI attempt hit the wrapper's old 10-second read timeout; it is now set to 120 seconds, and the retry passed.
+The official Fabric 26.2 example uses `net.fabricmc.fabric-loom`, Java 25, split source sets, and normal library dependencies. The current build configuration follows that direction. Keep API versions pinned to a release targeting the exact Minecraft version; a numerically higher release for a different game version is not interchangeable.
 
-Loom's `migrateMappings` and `migrateClientMappings` completed on the active branch. Commit `f68ce21` migrated both source sets to Mojang names; follow-up CI fixes resolved the remaining 1.21.11 Mojang-mapped compile and test failures. The 277-test suite/build passed on commit `832a1c4` (CI run `39650200570`). After switching to the 26.2 toolchain, the first compile exposed old GUI, screen, input, key mapping, and container-content APIs. Those were ported, and `test build` passed on commit `d99770b` (CI run `39651667908`). The first-tick smoke launch exposed two runtime-only Mixin defects: `Screen.mouseClicked` is inherited in 26.2, and a public static helper was incorrectly declared on a mixin class. Generic non-container click capture has been moved to Fabric's per-screen `ScreenMouseEvents` API, and the packet capture bridge is now a standalone registry; handled-container clicks remain slot-aware. These corrections, `test build`, and opening/rendering SC-Market's GUI passed in headless CI run `39655321822`. A later attempt (`39655754785`) also opened and rendered the GUI, but the JVM crashed in native FreeType during shutdown while a font-loading worker was active; the CI-only stop is now one-shot and delayed to let resources settle. The test uses no server profile and does not simulate AH packets or order/recorder actions; private-server integration remains outstanding.
+### API/Mixin pitfalls found during earlier port work
 
-The remaining acceptance step is a hands-on session on an explicitly configured, authorized private-server profile: verify HUD, packet capture, AH parsing, pricing/relisting, full-order safeguards, and opt-in recorder behavior without submitting an unauthorized or partial order. No server address or credentials were added to the repository. Until that server-specific check is performed, this is a build- and GUI-smoke-verified 26.2 port, not a fully gameplay-verified release.
+- Generic, non-container GUI clicks use Fabric `ScreenMouseEvents` screen-scoped listeners. In the relevant 26.2 Javadocs, the click listener accepts `(Screen, MouseButtonEvent)`; button and coordinates come from the event.
+- `ScreenEvents.AfterInit` uses `(Minecraft, Screen, int, int)`.
+- Handled container screens need the slot-aware capture path; they must not be treated as ordinary generic GUI clicks.
+- `Screen.mouseClicked` is inherited in 26.2; a Mixin must not assume that method is declared on the `Screen` class.
+- Keep shared bridges/registries as ordinary classes rather than illegal static helpers on a Mixin class.
+- Font/resource loading and shutdown may expose native failures invisible in compilation. The earlier smoke was made one-shot and delayed after a FreeType shutdown crash; retain a clean-shutdown check.
+
+These are prior findings, not a substitute for recompiling and inspecting current descriptors after the workspace refactor.
+
+## Verification history (historical baseline only)
+
+- Earlier migration/build runs exposed old GUI, input, container, and key-mapping APIs. Those were corrected in the historical source line.
+- CI run `39655321822` passed tests/build and opened/rendered the GUI, but later work exposed a native FreeType crash during shutdown.
+- CI run `39655754785` rendered the GUI and then crashed in `libfreetype.so` while a font worker was active. Shutdown was changed to a single delayed stop.
+- CI run `39656235326` stopped before client smoke because `MarketScannerTest.temporaryApiFailureDoesNotImmediatelyKillScanner()` failed with `NoSuchElementException`: concurrent successful fake scanner tasks could clear the error under test. The test was isolated from those other successes.
+- CI run `39656592568` passed tests/build and the client/GUI smoke after the test isolation and shutdown changes.
+- CI run `39656997407` also passed tests/build and the client/GUI smoke after the documentation/diagnostic cleanup.
+
+The passing runs were for committed historical snapshots before the extensive uncommitted current worktree changes. Do not reuse them as proof that the current diff passes. For the exact current checkout, read workflow results after running verification on that exact source revision.
+
+The GUI smoke is headless/offline. It verifies startup, configured Mixin application, opening/rendering the mod screen, and shutdown according to the workflow. It does not interact with a server, validate HUD in a world, exercise the player's settings or all input events, or validate order/action semantics.
+
+## Local build/network constraint
+
+The sandbox previously had no `java` executable on `PATH`. Direct Gradle wrapper downloads from `services.gradle.org` and local Fabric Maven requests failed with `SSL_ERROR_SYSCALL`; those download hosts were outside the sandbox's permitted egress host list. No TLS verification was disabled. GitHub Actions successfully downloaded dependencies for the earlier baseline and provided the usable verification route. For the current diff, run the workflow again; if blocked, report the exact host and error rather than implying verification or weakening TLS.
+
+## Remaining acceptance checks
+
+On an explicitly authorized private/test server only:
+
+- verify GUI input and data presentation, HUD in a world, and each active screen/Mixin path;
+- validate the exact configured auction-house screen and packet-derived listing parsing;
+- confirm prices are fresh immediately before order placement and each stack sale;
+- verify Order ID, completion state, delivered count, exact claim control, displayed deposit/fee/total, and safe handling of partial fulfillment;
+- test full-order safeguards, capacity, whitelist, failure, disconnect, restart, and duplicate prevention without claiming or selling an unapproved partial order;
+- validate opt-in action capture against actual private test screens; inspect output for privacy before sharing.
+
+Do not add real server addresses, credentials, player identifiers, or private profiles to the repository. Keep automatic live actions disabled until the exact server-specific path is proven and explicitly permitted.
 
 ## References
 
 - [Fabric porting guide](https://docs.fabricmc.net/develop/porting/)
 - [Fabric mappings migration guide](https://docs.fabricmc.net/develop/porting/mappings/)
-- [Official Fabric example mod, `26.2` branch](https://github.com/FabricMC/fabric-example-mod/tree/26.2)
-- [0Mattias/cheesecake PR #10: port to 26.2](https://github.com/0Mattias/cheesecake/pull/10)
-- [iluha168/MCAutoCrafters PR #4: 26.2 port](https://github.com/iluha168/MCAutoCrafters/pull/4)
+- [Official Fabric example mod, 26.2 branch](https://github.com/FabricMC/fabric-example-mod/tree/26.2)
+- [Fabric `ScreenMouseEvents.BeforeMouseClick` Javadocs](https://maven.fabricmc.net/docs/fabric-api-0.161.0+26.2/net/fabricmc/fabric/api/client/screen/v1/ScreenMouseEvents.BeforeMouseClick.html)
+- [Fabric `ScreenEvents.AfterInit` Javadocs](https://maven.fabricmc.net/docs/fabric-api-0.161.0+26.2/net/fabricmc/fabric/api/client/screen/v1/ScreenEvents.AfterInit.html)
 - [Fabric 26.2 announcement](https://fabricmc.net/2026/06/15/262.html)

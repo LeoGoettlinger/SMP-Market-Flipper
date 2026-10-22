@@ -25,7 +25,6 @@ import java.util.function.Supplier;
 
 /** Single-flight, fail-closed execution state machine. It never depends on GUI classes. */
 public final class TradeAutomationCoordinator implements TradeExecutionProvider {
-    public static final String ARM_CONFIRMATION = "I HAVE AUTHORIZATION";
     private static final long STEP_TIMEOUT_SECONDS = 60;
 
     private final Supplier<AutomationConfig> configuration;
@@ -41,12 +40,11 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
     private ActiveExecution active;
     private CompletableFuture<Void> idleSignal = CompletableFuture.completedFuture(null);
     private String currentServer = "";
-    private String armedServer = "";
     private boolean emergencyStopped;
     private int purchasesThisSession;
     private BigDecimal openExposure = BigDecimal.ZERO;
     private Instant lastPurchaseAt = Instant.EPOCH;
-    private String statusMessage = "Automation is disarmed.";
+    private String statusMessage = "Automation is idle; live actions require the current server to be allowlisted.";
 
     public TradeAutomationCoordinator(Supplier<AutomationConfig> configuration) {
         this(configuration, new DryRunAuctionInteractionAdapter(), new RejectingAuctionInteractionAdapter(),
@@ -83,37 +81,18 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
         this.gameplayActionGate = Objects.requireNonNull(gameplayActionGate, "gameplayActionGate");
     }
 
-    public synchronized boolean armSession(String serverAddress, String confirmation) {
-        AutomationConfig config = configuration.get();
-        String normalized = normalizeServer(serverAddress);
-        if (!AutomationServerPolicy.permitsGameplayAutomation(normalized)) {
-            statusMessage = "The current server address is invalid for authorized automation.";
-            return false;
-        }
-        if (normalized.isEmpty() || !ARM_CONFIRMATION.equals(confirmation) || emergencyStopped || !config.enabled()
-                || config.mode() == AutomationMode.DISABLED || config.mode() == AutomationMode.DRY_RUN
-                || !config.serverAllowed(normalized)) {
-            statusMessage = "Session arming rejected by authorization gates.";
-            return false;
-        }
-        currentServer = normalized;
-        armedServer = normalized;
-        statusMessage = "Automation armed for this session on an explicitly allowlisted server.";
-        return true;
-    }
-
     public synchronized void onServerChanged(String serverAddress) {
         String normalized = serverAddress == null || serverAddress.isBlank() ? "" : normalizeServer(serverAddress);
         if (!normalized.equals(currentServer)) {
-            disarm("Server changed or disconnected.");
             currentServer = normalized;
+            cancelActiveExecution("Server changed or disconnected; active work was cancelled.");
         }
     }
 
-    public synchronized void disarm(String reason) {
-        armedServer = "";
-        statusMessage = Objects.requireNonNullElse(reason, "Automation disarmed.");
-        if (active != null && active.request.requestedMode() != AutomationMode.DRY_RUN) {
+    /** Cancels pending/in-flight work without granting or revoking server access. */
+    public synchronized void cancelActiveExecution(String reason) {
+        statusMessage = Objects.requireNonNullElse(reason, "Active execution cancelled.");
+        if (active != null) {
             active.cancelled = true;
             if (active.state == TradeExecutionState.WAITING_FOR_CONFIRMATION
                     || active.state == TradeExecutionState.PRECHECK) {
@@ -125,10 +104,17 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
         }
     }
 
+    public synchronized boolean currentServerAllowed() {
+        AutomationConfig config = configuration.get();
+        return !currentServer.isEmpty()
+                && AutomationServerPolicy.permitsGameplayAutomation(currentServer)
+                && config.serverAllowed(currentServer);
+    }
+
     public synchronized void clearEmergencyStop() {
         if (active == null) {
             emergencyStopped = false;
-            statusMessage = "Emergency stop cleared; automation remains disarmed.";
+            statusMessage = "Emergency stop cleared; live actions still require enabled settings and an allowlisted server.";
         }
     }
 
@@ -214,9 +200,7 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
     @Override
     public synchronized TradeExecutionSnapshot snapshot() {
         return new TradeExecutionSnapshot(
-                !armedServer.isEmpty(), armedServer.isEmpty() ? Optional.empty() : Optional.of(armedServer),
-                emergencyStopped, purchasesThisSession,
-                openExposure,
+                emergencyStopped, purchasesThisSession, openExposure,
                 active == null ? Optional.empty() : Optional.of(active.request.executionId()),
                 active == null ? Optional.empty() : Optional.of(active.state), statusMessage
         );
@@ -259,7 +243,6 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
     @Override
     public synchronized void emergencyStop(String reason) {
         emergencyStopped = true;
-        armedServer = "";
         statusMessage = Objects.requireNonNullElse(reason, "Emergency stop activated.");
         if (active != null) {
             active.cancelled = true;
@@ -420,9 +403,8 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
             return Optional.of("Balance verification requires a transactional private-server provider; "
                     + "the API stats balance is read-only.");
         }
-        if (currentServer.isEmpty() || !config.serverAllowed(currentServer)
-                || !currentServer.equals(armedServer)) {
-            return Optional.of("Current server is not allowlisted and armed for this session.");
+        if (currentServer.isEmpty() || !config.serverAllowed(currentServer)) {
+            return Optional.of("Current server is not on the exact server allowlist.");
         }
         if (config.maximumPurchasesPerSession() < 1
                 || purchasesThisSession >= config.maximumPurchasesPerSession()) {
@@ -443,16 +425,33 @@ public final class TradeAutomationCoordinator implements TradeExecutionProvider 
         return Optional.empty();
     }
 
+    private boolean executionStillPermitted(ActiveExecution execution) {
+        if (execution.request.requestedMode() == AutomationMode.DRY_RUN) {
+            return true;
+        }
+        AutomationConfig current = configuration.get();
+        return current.enabled()
+                && current.mode() == execution.request.requestedMode()
+                && current.mode() != AutomationMode.DISABLED
+                && current.mode() != AutomationMode.DRY_RUN
+                && !current.requireBalanceVerification()
+                && !currentServer.isEmpty()
+                && current.serverAllowed(currentServer)
+                && AutomationServerPolicy.permitsGameplayAutomation(currentServer);
+    }
+
     private <T> CompletableFuture<T> checked(ActiveExecution execution, CompletableFuture<T> future) {
         synchronized (this) {
-            if (execution.cancelled || emergencyStopped) {
-                return CompletableFuture.failedFuture(new ExecutionFailure("Execution was cancelled."));
+            if (execution.cancelled || emergencyStopped || !executionStillPermitted(execution)) {
+                return CompletableFuture.failedFuture(new ExecutionFailure(
+                        "Execution was cancelled or the current allowlist/settings no longer permit it."));
             }
         }
         return future.orTimeout(STEP_TIMEOUT_SECONDS, TimeUnit.SECONDS).thenApply(value -> {
             synchronized (this) {
-                if (execution.cancelled || emergencyStopped) {
-                    throw new CompletionException(new ExecutionFailure("Execution was cancelled."));
+                if (execution.cancelled || emergencyStopped || !executionStillPermitted(execution)) {
+                    throw new CompletionException(new ExecutionFailure(
+                            "Execution was cancelled or the current allowlist/settings no longer permit it."));
                 }
             }
             return value;

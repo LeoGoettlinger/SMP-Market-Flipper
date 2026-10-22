@@ -72,7 +72,7 @@ public final class FishingAutomationController {
         }
         Optional<AuctionInteractionProfile> profile = profileSupplier.get();
         if (!authorized.getAsBoolean()) {
-            status = "Fishing paused: enable Fishing, allowlist this exact server, and arm the authorized session.";
+            status = "Fishing paused: enable Fishing and allowlist this exact server.";
             return;
         }
         if (profile.isEmpty()) {
@@ -300,7 +300,7 @@ public final class FishingAutomationController {
         quote.whenComplete((price, error) -> client.execute(() -> {
             if (!authorized.getAsBoolean()) {
                 saleInFlight = false;
-                status = "Sale cancelled before interaction because the authorized session was disarmed.";
+                status = "Sale cancelled because the current server or automation safety gates changed.";
                 return;
             }
             if (error != null || price == null || price.isEmpty()) {

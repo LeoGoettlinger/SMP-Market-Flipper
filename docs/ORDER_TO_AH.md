@@ -1,5 +1,7 @@
 # Order → AH workflow
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 This document records the confirmed market rules and the currently implemented, testable Order→AH core. The server-specific GUI port remains opt-in and must not be treated as live until it can identify the order-row lore, the current player's order detail/claim action, and the confirmation amounts exactly.
 
 ## Confirmed rules
@@ -26,4 +28,4 @@ The Order settings page provides a separately selectable item whitelist and conf
 
 ## Live-safety boundary
 
-The current GUI evidence does not yet expose enough data to safely automate the server-specific Order row and collection interaction: the actual tooltip/lore fields for an Order (especially order identity, per-item price, fill state, and delivery time) and the player's completed-order detail/claim screen are not shown. The order core therefore fails closed until a private profile adapter can verify those fields and the exact confirmation amounts. Do not populate a public-server profile or bypass the existing exact-server allowlist, private profile, explicit session confirmation, or action pacing.
+The current GUI evidence does not yet expose enough data to safely automate the server-specific Order row and collection interaction: the actual tooltip/lore fields for an Order (especially order identity, per-item price, fill state, and delivery time) and the player's completed-order detail/claim screen are not shown. The order core therefore fails closed until a private profile adapter can verify those fields and the exact confirmation amounts. Do not populate a public-server profile or bypass the exact-server allowlist, private profile, per-trade confirmation mode, or action pacing. There is no separate ARM SESSION phrase; the allowlist is the server-access gate, while all other safety and verification checks remain mandatory.

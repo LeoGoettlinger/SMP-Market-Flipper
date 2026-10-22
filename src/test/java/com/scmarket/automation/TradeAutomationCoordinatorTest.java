@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +42,7 @@ class TradeAutomationCoordinatorTest {
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
     @Test
-    void dryRunCompletesWithoutArmingOrMinecraftInteraction() {
+    void dryRunCompletesWithoutMinecraftInteraction() {
         AtomicInteger authorizedCalls = new AtomicInteger();
         AuctionInteractionAdapter authorized = new DelegatingAdapter() {
             @Override
@@ -59,31 +60,77 @@ class TradeAutomationCoordinatorTest {
 
         assertTrue(result.successful());
         assertEquals(TradeExecutionState.COMPLETED, result.state());
-        assertFalse(coordinator.snapshot().sessionArmed());
         assertEquals(0, coordinator.snapshot().purchasesThisSession());
         assertEquals(0, authorizedCalls.get());
     }
 
     @Test
-    void realModeRequiresExactAllowlistAndSessionPhrase() {
-        AutomationConfig config = enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
-        TradeAutomationCoordinator coordinator = coordinator(config, new DryRunAuctionInteractionAdapter());
-        coordinator.onServerChanged("example.test");
+    void realModeRequiresExactAllowlistButNoSessionPhrase() {
+        AutomationConfig allowedConfig = enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
+        TradeAutomationCoordinator allowed = coordinator(allowedConfig, new DryRunAuctionInteractionAdapter());
+        allowed.onServerChanged("EXAMPLE.TEST");
 
-        assertFalse(coordinator.armSession("example.test", "I have authorization"));
-        assertFalse(coordinator.armSession("other.test", TradeAutomationCoordinator.ARM_CONFIRMATION));
-        TradeExecutionResult disarmed = coordinator.submit(
-                request("listing-2", AutomationMode.AUTOMATIC_AUTHORIZED_SERVER)
-        ).join();
-        assertFalse(disarmed.successful());
-        assertTrue(disarmed.message().contains("not allowlisted and armed"));
-
-        assertTrue(coordinator.armSession("EXAMPLE.TEST", TradeAutomationCoordinator.ARM_CONFIRMATION));
-        TradeExecutionResult completed = coordinator.submit(
+        TradeExecutionResult completed = allowed.submit(
                 request("listing-3", AutomationMode.AUTOMATIC_AUTHORIZED_SERVER)
         ).join();
         assertTrue(completed.successful());
-        assertEquals(1, coordinator.snapshot().purchasesThisSession());
+        assertTrue(allowed.currentServerAllowed());
+        assertEquals(1, allowed.snapshot().purchasesThisSession());
+
+        AutomationConfig blockedConfig = new AutomationConfig(
+                true, AutomationMode.AUTOMATIC_AUTHORIZED_SERVER, Set.of(),
+                new BigDecimal("100000"), new BigDecimal("200000"), 3,
+                30, 8, new BigDecimal("1000"), new BigDecimal("10"),
+                30, 0, RelistPricingStrategy.CONSERVATIVE_FAIR_VALUE,
+                new BigDecimal("30"), new BigDecimal("20"),
+                true, false, true, true
+        );
+        TradeAutomationCoordinator blocked = coordinator(blockedConfig, new DryRunAuctionInteractionAdapter());
+        blocked.onServerChanged("example.test");
+        TradeExecutionResult rejected = blocked.submit(
+                request("listing-4", AutomationMode.AUTOMATIC_AUTHORIZED_SERVER)
+        ).join();
+        assertFalse(rejected.successful());
+        assertTrue(rejected.message().contains("not on the exact server allowlist"));
+    }
+
+    @Test
+    void removingAllowlistDuringAsyncLookupStopsBeforePurchase() {
+        AtomicReference<AutomationConfig> config = new AtomicReference<>(
+                enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER));
+        AtomicInteger purchases = new AtomicInteger();
+        GateAdapter gated = new GateAdapter(GateStage.LOCATE) {
+            @Override
+            public CompletableFuture<PurchaseResult> purchase(
+                    TradeExecutionRequest request, AuctionListingCandidate candidate
+            ) {
+                purchases.incrementAndGet();
+                return super.purchase(request, candidate);
+            }
+        };
+        TradeAutomationCoordinator coordinator = new TradeAutomationCoordinator(
+                config::get, gated, gated, new RelistPricingService(), TradeExecutionObserver.noOp(), CLOCK
+        );
+        coordinator.onServerChanged("example.test");
+
+        CompletableFuture<TradeExecutionResult> execution = coordinator.submit(
+                request("allowlist-revoked", AutomationMode.AUTOMATIC_AUTHORIZED_SERVER));
+        gated.reached.join();
+        AutomationConfig allowed = config.get();
+        config.set(new AutomationConfig(
+                allowed.enabled(), allowed.mode(), Set.of(), allowed.maximumPurchasePrice(),
+                allowed.maximumOpenExposure(), allowed.maximumPurchasesPerSession(),
+                allowed.minimumConfidence(), allowed.minimumComparableSales(), allowed.minimumNetProfit(),
+                allowed.minimumRoi(), allowed.maximumListingAgeSeconds(), allowed.purchaseCooldownSeconds(),
+                allowed.relistPricingStrategy(), allowed.targetRoi(), allowed.fixedMarkupPercent(),
+                allowed.requireInventoryVerification(), allowed.requireBalanceVerification(),
+                allowed.requireListingVerification(), allowed.showExecutionNotifications(),
+                allowed.interactionProfile(), allowed.actionDelayMillis()
+        ));
+        gated.release.complete(null);
+
+        assertFalse(execution.join().successful());
+        assertEquals(0, purchases.get());
     }
 
     @Test
@@ -139,9 +186,7 @@ class TradeAutomationCoordinatorTest {
             TradeAutomationCoordinator coordinator = coordinator(
                     enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER), adapter
             );
-            assertTrue(coordinator.armSession(
-                    "example.test", TradeAutomationCoordinator.ARM_CONFIRMATION
-            ));
+            coordinator.onServerChanged("example.test");
 
             CompletableFuture<TradeExecutionResult> execution = coordinator.submit(request(
                     "emergency-" + stage.name().toLowerCase(),

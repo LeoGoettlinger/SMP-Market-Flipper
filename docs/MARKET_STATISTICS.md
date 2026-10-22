@@ -1,5 +1,7 @@
 # Market statistics (Chunk 4)
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 4 adds completed-sale comparison and descriptive market statistics. It
 does **not** calculate fair value, profit, ROI, confidence, manipulation risk,
 or opportunities. Active asks remain separate supporting evidence and never

@@ -1,5 +1,7 @@
 # Profit, ROI, and capital risk (Chunk 6)
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 6 evaluates the conservative value from Chunk 5 against a listing's
 purchase price. It does not calculate confidence, manipulation risk, or final
 opportunities, and it performs no auction action.

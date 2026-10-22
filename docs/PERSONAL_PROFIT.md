@@ -1,5 +1,7 @@
 # Personal profit tracking
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 The live dashboard chart shows **tracked realized profit (gross)** rather than a static market
 index. It deliberately does not infer profit from the player's current balance or from estimated
 opportunity values.

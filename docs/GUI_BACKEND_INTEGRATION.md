@@ -1,5 +1,7 @@
 # Chunk 11: Live backend and ClickGUI integration
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 11 connects the provider-driven ClickGUI shell to immutable production-provider
 snapshots. Rendering does not query SQLite, wait for futures, call the auction API, or evaluate
 market data.
@@ -30,7 +32,7 @@ snapshot is retained and marked unavailable with a nonintrusive warning.
 
 Snapshot publication listeners are isolated from refresh failures. The production runtime uses one
 listener to feed the bounded `AutomaticOpportunityDispatcher`; rendering never initiates automatic
-work. The dispatcher accepts only armed authorized-automatic sessions, deduplicates opportunity and
+work. The dispatcher accepts only enabled automatic mode on the current exact allowlisted server, deduplicates opportunity and
 listing identities, and revalidates queued entries against the latest snapshot before calling the
 existing coordinator.
 
@@ -85,8 +87,8 @@ opportunity count, combined potential profit, and a cumulative tracked realized-
 Displays compact live cards with item/count, listing price, conservative fair value, profit, ROI,
 confidence, age, and guarded `BOUGHT`/`RUN`/dismiss controls. `BOUGHT` opens a confirmation and
 records the exact listing cost basis only after the user confirms a manual purchase. `RUN` delegates to the automation provider;
-the default disabled mode rejects it, while dry-run uses a non-Minecraft adapter. In an armed
-`AUTOMATIC_AUTHORIZED_SERVER` session, newly published `NEW` opportunities are also submitted from
+the default disabled mode rejects it, while dry-run uses a non-Minecraft adapter. In enabled
+`AUTOMATIC_AUTHORIZED_SERVER` mode with the current server allowlisted, newly published `NEW` opportunities are also submitted from
 the provider layer without requiring the ClickGUI to be open.
 
 ### Item Filters
@@ -107,30 +109,31 @@ data mode, and sanitized API/scanner warnings. The master scanner toggle remains
 
 ### Automation
 
-Displays persisted mode/limits/allowlist summary and volatile session state. It exposes exact-current-
-server allowlisting, a typed per-session authorization modal, confirm-each continuation, disarm, and
-emergency stop. GUI code only calls `AutomationSettingsController`; the coordinator and interaction
-adapters contain the execution logic.
+Displays persisted mode/limits/allowlist summary and current execution state. It exposes exact-current-
+server allowlisting, confirm-each continuation, cancellation, and emergency stop. There is no typed
+ARM SESSION modal: the exact allowlist is the server-access gate. GUI code only calls
+`AutomationSettingsController`; the coordinator and interaction adapters contain execution logic.
 
 ## Safe auction behavior
 
 The shipped defaults cannot perform auction interaction. A real adapter is available only through
 a custom private-server profile and requires exact semantic screen matching, an exact allowlist,
-nonzero limits, and volatile per-session arming. No public-server profile is included. See
+nonzero limits, enabled settings, and current allowlist verification. No public-server profile is included. See
 `AUTOMATION.md` for the complete contract.
 
 ## Current limitations
 
-- The workspace did not contain the full component library and detailed GUI panels described by
-  the original phase summary; it contained the compact styled shell. Integration therefore uses
-  compact provider-driven panels in that existing architecture.
-- Stored `OpportunityEntity` rows do not currently retain separately queryable comparable-sale,
-  liquidity, enchantment, and risk-detail columns. Cards show the persisted evaluation text where
-  available; richer expansion awaits an evaluation-serialization migration.
-- API-key editing is deliberately file-based so the key is not retained inside a vanilla text
-  widget. Complete threshold/fee forms are not present in the compact GUI source.
+- The GUI is a compact, custom provider-driven shell rather than a general widget framework. Keep
+  business rules in providers/services and avoid database/network work from render methods.
+- Opportunity details are persisted as a versioned evaluation JSON blob rather than separate
+  normalized columns for every comparable-sale, liquidity, enchantment, and risk detail. UI cards
+  should show the persisted explainability available; do not infer missing detail.
+- Settings can save/remove the API key through a transient text field, but the persisted credential
+  remains in its separate file and is not stored in normal config. The compact GUI does not expose
+  every threshold/fee field; those remain config-backed.
 - Automation monetary limits and custom screen-profile fields remain JSON-configured; the ClickGUI
-  exposes modes and session controls but does not guess server-specific commands.
+  exposes modes, exact-current-server allowlisting, per-trade confirmation, cancellation, and emergency stop,
+  but does not guess server-specific commands.
 - Realized profit is the gross completed-sale price minus the user-confirmed purchase price. The
   public transaction schema does not document auction fees, so the client does not invent or
   subtract a fee. It tracks confirmed scanner flips, not every source of account wealth.

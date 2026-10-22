@@ -24,9 +24,7 @@ public interface AutomationSettingsController {
 
     CompletableFuture<Void> allowCurrentServer();
 
-    boolean armCurrentServer(String exactConfirmation);
-
-    void disarm();
+    void cancelActiveExecution();
 
     void emergencyStop();
 

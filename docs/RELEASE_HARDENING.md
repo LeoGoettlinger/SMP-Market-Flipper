@@ -1,4 +1,8 @@
-# Chunk 12 release hardening
+# Chunk 12 release hardening (historical review snapshot)
+
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
+This review and its fixture measurements describe a prior code snapshot; they are not a security audit or proof for the current uncommitted source refactor. Re-run the checks on current code before using these as release claims. The current configured toolchain is recorded in [Dependencies](DEPENDENCIES.md), not inferred from this historical report.
 
 ## Release scope
 
@@ -21,10 +25,7 @@ automation framework. No public-server interaction profile is included.
 - No telemetry, analytics, browser/Discord access, account/session token access,
   remote-code loading, dynamic JAR loading, reflection-based plugin loading, process
   execution, or runtime dependency download exists.
-- All runtime/build dependencies are version-pinned and documented. Gradle verifies
-  253 resolved components and metadata artifacts with SHA-256 checksums. The Gradle
-  9.4.0 distribution checksum is pinned, and the wrapper JAR matches Gradle's
-  published SHA-256.
+- Dependencies are intended to be pinned and checked by Gradle verification metadata. The historical count below is snapshot-specific; inspect the current metadata after dependency changes. The current Gradle distribution is checksum-pinned in the wrapper properties (Gradle 9.7.1 in this workspace snapshot).
 - Repositories use prepared statements for every value derived from runtime data.
   Fixed embedded schema DDL and fixed SQLite PRAGMAs use `Statement`; no untrusted
   value is concatenated into SQL.
@@ -36,7 +37,7 @@ automation framework. No public-server interaction profile is included.
 - API redirects are disabled. Retry count, exponential backoff, jitter, response
   size, request timeout, and shared request rate are bounded.
 - Automation is disabled by default with an empty exact-server allowlist, zero spending/exposure
-  limits, no interaction profile, and memory-only arming. Commands accept only bounded safe
+  limits, no interaction profile, and exact server allowlisting. Commands accept only bounded safe
   substitution values. Listing selection requires one exact semantic match before a slot click.
 
 The credential file is protected by local filesystem permissions, not encrypted by
@@ -81,7 +82,7 @@ The full integration test emits the measured values for the current machine unde
 `CHUNK12_PERFORMANCE` in its JUnit XML. These are fixture-scale engineering timings,
 not production API or large-database benchmarks.
 
-Final clean-build fixture measurement (2026-08-03):
+Historical clean-build fixture measurement (2026-08-03; previous source snapshot, not a benchmark of the current worktree):
 
 | Measurement | Average/result |
 |---|---:|
@@ -171,7 +172,7 @@ insufficient-history items are suppressed by default.
 ## Known limitations
 
 - The Fabric initializer boots mock mode and asynchronously composes the live service graph
-  only when the separate credential file is present. API-key editing remains file-based.
+  only when the separate credential file is present. The ClickGUI can save/remove a key, but its persisted storage remains the separate file.
 - Diagnostics export is a backend API, not yet a visible ClickGUI button.
 - The credential file uses filesystem permissions instead of OS keychain encryption.
 - Performance values are fixture-scale; production API/database load testing needs a
@@ -182,7 +183,7 @@ insufficient-history items are suppressed by default.
 
 The project now contains a generic private-server interaction adapter. It has no public-server
 profile and is unreachable under shipped defaults. It can send only profile-defined commands and
-bounded slot clicks after exact allowlisting, nonzero limits, a typed session authorization, and
-semantic listing verification. It does not manipulate packets, evade anti-cheat, accept remote
+bounded slot clicks after exact allowlisting, enabled settings, nonzero limits, and semantic
+listing verification. It does not manipulate packets, evade anti-cheat, accept remote
 control, or bypass server restrictions. Use is restricted to servers the user owns or has explicit
 permission to automate.

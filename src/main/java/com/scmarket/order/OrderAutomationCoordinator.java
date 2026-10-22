@@ -87,8 +87,7 @@ public final class OrderAutomationCoordinator {
         }
         if (!stillAuthorized()) {
             return CompletableFuture.completedFuture(OrderCycleResult.idle(
-                    "Order→AH is paused until the global switch, module, private-server profile, allowlist, "
-                            + "and session authorization are all valid."));
+                    "Order→AH is paused until the global switch, module, private-server profile, and exact allowlist are valid."));
         }
         if (!cycleInFlight.compareAndSet(false, true)) {
             return CompletableFuture.completedFuture(OrderCycleResult.idle("A market GUI action is already in progress."));
@@ -122,7 +121,7 @@ public final class OrderAutomationCoordinator {
 
     private CompletableFuture<OrderCycleResult> afterOrderRefresh(List<TrackedOrder> orders) {
         if (!stillAuthorized()) {
-            return CompletableFuture.completedFuture(OrderCycleResult.idle("Authorization changed; no GUI action taken."));
+            return CompletableFuture.completedFuture(OrderCycleResult.idle("Allowlist, profile, or settings changed; no GUI action taken."));
         }
         Optional<TrackedOrder> expiringPartial = orders.stream()
                 .filter(order -> order.state() == TrackedOrderState.PARTIALLY_FILLED)
@@ -148,7 +147,7 @@ public final class OrderAutomationCoordinator {
 
     private CompletableFuture<OrderCycleResult> placeOneFreshOrder(List<TrackedOrder> orders) {
         if (!stillAuthorized()) {
-            return CompletableFuture.completedFuture(OrderCycleResult.idle("Authorization changed before quote refresh."));
+            return CompletableFuture.completedFuture(OrderCycleResult.idle("Allowlist, profile, or settings changed before quote refresh."));
         }
         List<OrderMarketQuote> quotes = new ArrayList<>();
         return port.refreshMarketQuotes().thenCompose(freshQuotes -> {
@@ -180,7 +179,7 @@ public final class OrderAutomationCoordinator {
             }
             if (!stillAuthorized()) {
                 return CompletableFuture.completedFuture(OrderCycleResult.idle(
-                        "Authorization changed before order confirmation; no order was created."));
+                        "Allowlist, profile, or settings changed before order confirmation; no order was created."));
             }
             if (plan.orderQuantity() != submissionSettings.orderQuantity()
                     || plan.expectedProfitPerItem().compareTo(submissionSettings.minimumProfitPerItem()) < 0
@@ -207,7 +206,7 @@ public final class OrderAutomationCoordinator {
 
     private CompletableFuture<OrderCycleResult> processOneCompletedOrder(TrackedOrder order) {
         if (!stillAuthorized()) {
-            return CompletableFuture.completedFuture(OrderCycleResult.idle("Authorization changed before collection."));
+            return CompletableFuture.completedFuture(OrderCycleResult.idle("Allowlist, profile, or settings changed before collection."));
         }
         OrderCompletionObservation observation = new OrderCompletionObservation(
                 order.orderId(), order.itemId(), order.totalQuantity(),
@@ -217,7 +216,7 @@ public final class OrderAutomationCoordinator {
             observations.markRecorded(order.orderId());
             if (!stillAuthorized()) {
                 return CompletableFuture.completedFuture(OrderCycleResult.idle(
-                        "Authorization changed before collection; completed order remains unclaimed."));
+                        "Allowlist, profile, or settings changed before collection; completed order remains unclaimed."));
             }
             return port.collectOrder(order).thenCompose(collected -> {
                 if (collected.isEmpty()) {

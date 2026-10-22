@@ -1,4 +1,8 @@
-# Chunk 12 file manifest
+# Chunk 12 file manifest (historical implementation snapshot)
+
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
+This manifest records files from the original Chunk 12 integration work; it is not a canonical current tree or a statement that the current uncommitted refactor has been tested. Names and paths may have moved. For current package boundaries see [Project tree](PROJECT_TREE.md), and for current verification status see [26.2 port status](PORTING_26_2.md).
 
 ## New production source
 

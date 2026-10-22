@@ -1,12 +1,11 @@
 package com.scmarket.automation.model;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
-import java.math.BigDecimal;
 
+/** Immutable view of execution status; server access is evaluated from the current exact allowlist. */
 public record TradeExecutionSnapshot(
-        boolean sessionArmed,
-        Optional<String> armedServer,
         boolean emergencyStopped,
         int purchasesThisSession,
         BigDecimal openExposure,
@@ -15,7 +14,6 @@ public record TradeExecutionSnapshot(
         String statusMessage
 ) {
     public TradeExecutionSnapshot {
-        armedServer = Objects.requireNonNullElse(armedServer, Optional.empty());
         activeExecutionId = Objects.requireNonNullElse(activeExecutionId, Optional.empty());
         activeState = Objects.requireNonNullElse(activeState, Optional.empty());
         Objects.requireNonNull(openExposure, "openExposure");
@@ -23,9 +21,7 @@ public record TradeExecutionSnapshot(
     }
 
     public static TradeExecutionSnapshot idle() {
-        return new TradeExecutionSnapshot(
-                false, Optional.empty(), false, 0, BigDecimal.ZERO,
-                Optional.empty(), Optional.empty(), "Automation is disarmed."
-        );
+        return new TradeExecutionSnapshot(false, 0, BigDecimal.ZERO,
+                Optional.empty(), Optional.empty(), "Automation is idle.");
     }
 }

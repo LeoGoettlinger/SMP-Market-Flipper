@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * Allows operation on explicitly configured servers without hard-coding a network brand.
- * The coordinator still requires an exact server allowlist entry and explicit session arming.
+ * The coordinator requires an exact server allowlist entry; allowlisting is the server-access gate.
  */
 public final class AutomationServerPolicy {
     private AutomationServerPolicy() {

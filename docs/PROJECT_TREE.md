@@ -1,509 +1,86 @@
-# Complete project tree
+# Project tree and architecture map
 
-Generated from the current SC-Market workspace. Git metadata, Gradle caches, and build output are excluded.
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
+This is a conceptual map of the current working-tree layout as observed on 2026-10-22. It intentionally groups Java files by subsystem rather than duplicating a generated line-by-line inventory that becomes stale after every rename. The current tree includes extensive uncommitted changes; use `find`/IDE and `git status` for exact file-level detail.
 
 ```text
-.github\workflows\verify.yml
-.gitignore
-LICENSE
-README.md
-build.gradle
-docs\ANOMALY_PROTECTION.md
-docs\API_INTEGRATION.md
-docs\AUTOMATION.md
-docs\CHUNK12_CHANGES.md
-docs\CONFIDENCE.md
-docs\DATABASE.md
-docs\DEPENDENCIES.md
-docs\FAIR_VALUE.md
-docs\FEATURES_AND_SAFETY.md
-docs\GUI_BACKEND_INTEGRATION.md
-docs\ITEM_NORMALIZATION.md
-docs\LOCAL_ACTION_CAPTURE.md
-docs\MARKET_STATISTICS.md
-docs\OPPORTUNITY_DETECTION.md
-docs\ORDER_TO_AH.md
-docs\PERSONAL_PROFIT.md
-docs\PORTING_26_2.md
-docs\PROFIT_AND_RISK.md
-docs\PROJECT_TREE.md
-docs\RELEASE_HARDENING.md
-docs\SCANNER_LIFECYCLE.md
-docs\config.example.json
-docs\filter-export.example.json
-docs\grafik.png
-docs\order-module.example.properties
-docs\screenshots\01-ah-list.png
-docs\screenshots\02-ah-filters.png
-docs\screenshots\03-ah-view.png
-docs\screenshots\04-order-list.png
-docs\screenshots\05-order-sort.png
-docs\screenshots\06-order-status-filter.png
-docs\screenshots\07-order-create.png
-docs\screenshots\08-order-item-picker.png
-docs\screenshots\09-order-item-search.png
-docs\screenshots\10-order-item-details.png
-docs\screenshots\11-order-quantity-sign.png
-docs\screenshots\12-order-price-sign.png
-docs\screenshots\13-order-confirmation.png
-docs\screenshots\14-order-fee-tooltip.png
-docs\screenshots\15-order-confirmation-fee.png
-docs\screenshots\16-order-completed-filter.png
-docs\screenshots\17-order-filled-list.png
-docs\screenshots\18-order-collect-items-reference.png
-gradle.properties
-gradle\verification-metadata.xml
-gradle\wrapper\gradle-wrapper.jar
-gradle\wrapper\gradle-wrapper.properties
-gradlew
-gradlew.bat
-settings.gradle
-src\client\java\com\scmarket\ClientProductionRuntime.java
-src\client\java\com\scmarket\ScMarketClient.java
-src\client\java\com\scmarket\automation\FishingAutomationController.java
-src\client\java\com\scmarket\automation\MinecraftAuctionInteractionAdapter.java
-src\client\java\com\scmarket\automation\MinecraftStackFingerprintFactory.java
-src\client\java\com\scmarket\command\AuctionSearchCommand.java
-src\client\java\com\scmarket\command\OpportunityClipboardTracker.java
-src\client\java\com\scmarket\data\ApiConnectionStatus.java
-src\client\java\com\scmarket\data\AutomationSettingsSnapshot.java
-src\client\java\com\scmarket\data\ClientUiDataSourceRouter.java
-src\client\java\com\scmarket\data\ClientUiDataSources.java
-src\client\java\com\scmarket\data\FlipOpportunity.java
-src\client\java\com\scmarket\data\ItemFilterSnapshot.java
-src\client\java\com\scmarket\data\ItemSearchResult.java
-src\client\java\com\scmarket\data\LiveClientDataIntegration.java
-src\client\java\com\scmarket\data\MarketChartPoint.java
-src\client\java\com\scmarket\data\MarketChartSnapshot.java
-src\client\java\com\scmarket\data\MarketStatistics.java
-src\client\java\com\scmarket\data\NotificationSettings.java
-src\client\java\com\scmarket\data\OpportunityActionResult.java
-src\client\java\com\scmarket\data\OpportunityHistoryEntry.java
-src\client\java\com\scmarket\data\ScannerStatus.java
-src\client\java\com\scmarket\data\mock\MockApiConnectionStatusProvider.java
-src\client\java\com\scmarket\data\mock\MockAutomationSettingsController.java
-src\client\java\com\scmarket\data\mock\MockItemFilterController.java
-src\client\java\com\scmarket\data\mock\MockItemSearchProvider.java
-src\client\java\com\scmarket\data\mock\MockMarketChartProvider.java
-src\client\java\com\scmarket\data\mock\MockMarketStatisticsProvider.java
-src\client\java\com\scmarket\data\mock\MockNotificationSettingsController.java
-src\client\java\com\scmarket\data\mock\MockOpportunityHistoryProvider.java
-src\client\java\com\scmarket\data\mock\MockOpportunityProvider.java
-src\client\java\com\scmarket\data\mock\MockScannerStatusProvider.java
-src\client\java\com\scmarket\data\provider\ApiConnectionStatusProvider.java
-src\client\java\com\scmarket\data\provider\AutomationSettingsController.java
-src\client\java\com\scmarket\data\provider\ClientAutomationSettingsController.java
-src\client\java\com\scmarket\data\provider\ClientDataFormat.java
-src\client\java\com\scmarket\data\provider\DatabaseOpportunityHistoryProvider.java
-src\client\java\com\scmarket\data\provider\ItemFilterController.java
-src\client\java\com\scmarket\data\provider\ItemSearchProvider.java
-src\client\java\com\scmarket\data\provider\LiveApiConnectionStatusProvider.java
-src\client\java\com\scmarket\data\provider\LiveItemFilterController.java
-src\client\java\com\scmarket\data\provider\LiveMarketStatisticsProvider.java
-src\client\java\com\scmarket\data\provider\LiveNotificationSettingsController.java
-src\client\java\com\scmarket\data\provider\LivePersonalProfitChartProvider.java
-src\client\java\com\scmarket\data\provider\LiveScannerStatusProvider.java
-src\client\java\com\scmarket\data\provider\MarketChartProvider.java
-src\client\java\com\scmarket\data\provider\MarketOpportunityProvider.java
-src\client\java\com\scmarket\data\provider\MarketStatisticsProvider.java
-src\client\java\com\scmarket\data\provider\NotificationSettingsController.java
-src\client\java\com\scmarket\data\provider\OpportunityHistoryProvider.java
-src\client\java\com\scmarket\data\provider\OpportunityProvider.java
-src\client\java\com\scmarket\data\provider\RegistryItemSearchProvider.java
-src\client\java\com\scmarket\data\provider\ScannerStatusController.java
-src\client\java\com\scmarket\data\provider\ScannerStatusProvider.java
-src\client\java\com\scmarket\gui\ClickGuiScreen.java
-src\client\java\com\scmarket\gui\GuiLayout.java
-src\client\java\com\scmarket\gui\GuiTab.java
-src\client\java\com\scmarket\gui\hud\OpportunityAlertQueue.java
-src\client\java\com\scmarket\gui\hud\OpportunityHudOverlay.java
-src\client\java\com\scmarket\gui\navigation\SidebarNavigation.java
-src\client\java\com\scmarket\gui\panel\ShellTabPanel.java
-src\client\java\com\scmarket\gui\panel\TabContentPanel.java
-src\client\java\com\scmarket\gui\render\GuiDraw.java
-src\client\java\com\scmarket\gui\theme\GuiColors.java
-src\client\java\com\scmarket\gui\theme\GuiTypography.java
-src\client\java\com\scmarket\mixin\AuctionHousePacketListener.java
-src\client\java\com\scmarket\mixin\ClientPlayerInteractionRecorder.java
-src\client\java\com\scmarket\mixin\FishingBobberAccessor.java
-src\client\java\com\scmarket\mixin\HandledScreenActionRecorder.java
-src\client\java\com\scmarket\mixin\ScreenActionRecorder.java
-src\client\java\com\scmarket\packet\AuctionHouseDataCapture.java
-src\client\java\com\scmarket\packet\PacketMarketScanWork.java
-src\client\resources\sc_market.client.mixins.json
-src\main\java\com\scmarket\ModConstants.java
-src\main\java\com\scmarket\api\ApiAuthenticationException.java
-src\main\java\com\scmarket\api\ApiClientConfig.java
-src\main\java\com\scmarket\api\ApiConnectionSnapshot.java
-src\main\java\com\scmarket\api\ApiConnectionState.java
-src\main\java\com\scmarket\api\ApiConnectionStateTracker.java
-src\main\java\com\scmarket\api\ApiCredentialsProvider.java
-src\main\java\com\scmarket\api\ApiException.java
-src\main\java\com\scmarket\api\ApiHttpResponse.java
-src\main\java\com\scmarket\api\ApiHttpTransport.java
-src\main\java\com\scmarket\api\ApiRateLimitException.java
-src\main\java\com\scmarket\api\ApiRateLimiter.java
-src\main\java\com\scmarket\api\ApiRequestScheduler.java
-src\main\java\com\scmarket\api\ApiResponseException.java
-src\main\java\com\scmarket\api\ApiResponseValidator.java
-src\main\java\com\scmarket\api\ApiRetryPolicy.java
-src\main\java\com\scmarket\api\DonutApiClient.java
-src\main\java\com\scmarket\api\DonutApiEndpoints.java
-src\main\java\com\scmarket\api\FileApiCredentialsStore.java
-src\main\java\com\scmarket\api\JdkApiHttpTransport.java
-src\main\java\com\scmarket\api\model\ApiArmorTrim.java
-src\main\java\com\scmarket\api\model\ApiAuctionItem.java
-src\main\java\com\scmarket\api\model\ApiAuctionListing.java
-src\main\java\com\scmarket\api\model\ApiAuctionPage.java
-src\main\java\com\scmarket\api\model\ApiCompletedTransaction.java
-src\main\java\com\scmarket\api\model\ApiContainerItem.java
-src\main\java\com\scmarket\api\model\ApiEnchantment.java
-src\main\java\com\scmarket\api\model\ApiItemData.java
-src\main\java\com\scmarket\api\model\ApiPaginationMetadata.java
-src\main\java\com\scmarket\api\model\ApiPlayerStats.java
-src\main\java\com\scmarket\api\model\ApiSeller.java
-src\main\java\com\scmarket\api\model\ApiTransactionPage.java
-src\main\java\com\scmarket\automation\model\AuctionInteractionProfile.java
-src\main\java\com\scmarket\automation\model\AuctionListingCandidate.java
-src\main\java\com\scmarket\automation\model\AuctionLocateResult.java
-src\main\java\com\scmarket\automation\model\AuctionSlotSnapshot.java
-src\main\java\com\scmarket\automation\model\AuctionVerificationResult.java
-src\main\java\com\scmarket\automation\model\AutomationMode.java
-src\main\java\com\scmarket\automation\model\FishingMarketEvidence.java
-src\main\java\com\scmarket\automation\model\InventoryVerificationResult.java
-src\main\java\com\scmarket\automation\model\ListingResult.java
-src\main\java\com\scmarket\automation\model\ListingVerificationResult.java
-src\main\java\com\scmarket\automation\model\PurchaseResult.java
-src\main\java\com\scmarket\automation\model\RelistPlan.java
-src\main\java\com\scmarket\automation\model\RelistPricingStrategy.java
-src\main\java\com\scmarket\automation\model\TradeExecutionRequest.java
-src\main\java\com\scmarket\automation\model\TradeExecutionResult.java
-src\main\java\com\scmarket\automation\model\TradeExecutionSnapshot.java
-src\main\java\com\scmarket\automation\model\TradeExecutionState.java
-src\main\java\com\scmarket\automation\service\ActionPacingAuctionInteractionAdapter.java
-src\main\java\com\scmarket\automation\service\AuctionCommandRenderer.java
-src\main\java\com\scmarket\automation\service\AuctionInteractionAdapter.java
-src\main\java\com\scmarket\automation\service\AutomaticOpportunityDispatcher.java
-src\main\java\com\scmarket\automation\service\AutomationServerPolicy.java
-src\main\java\com\scmarket\automation\service\DatabaseTradeExecutionObserver.java
-src\main\java\com\scmarket\automation\service\DryRunAuctionInteractionAdapter.java
-src\main\java\com\scmarket\automation\service\FishingPricePolicy.java
-src\main\java\com\scmarket\automation\service\GameplayActionGate.java
-src\main\java\com\scmarket\automation\service\PurchasedStackPlacementPlanner.java
-src\main\java\com\scmarket\automation\service\RejectingAuctionInteractionAdapter.java
-src\main\java\com\scmarket\automation\service\RelistPricingService.java
-src\main\java\com\scmarket\automation\service\StrictAuctionListingMatcher.java
-src\main\java\com\scmarket\automation\service\TradeAutomationCoordinator.java
-src\main\java\com\scmarket\automation\service\TradeExecutionObserver.java
-src\main\java\com\scmarket\automation\service\TradeExecutionProvider.java
-src\main\java\com\scmarket\balance\ApiPlayerBalanceProvider.java
-src\main\java\com\scmarket\balance\BalanceAmountParser.java
-src\main\java\com\scmarket\balance\BalanceProvider.java
-src\main\java\com\scmarket\balance\BalanceSnapshot.java
-src\main\java\com\scmarket\balance\BalanceStatus.java
-src\main\java\com\scmarket\configuration\AppConfig.java
-src\main\java\com\scmarket\configuration\AutomationConfig.java
-src\main\java\com\scmarket\configuration\ConfigDirectoryMigrator.java
-src\main\java\com\scmarket\configuration\ConfigurationCodec.java
-src\main\java\com\scmarket\configuration\ConfigurationException.java
-src\main\java\com\scmarket\configuration\ConfigurationLoadResult.java
-src\main\java\com\scmarket\configuration\ConfigurationManager.java
-src\main\java\com\scmarket\configuration\DebouncedConfigurationStore.java
-src\main\java\com\scmarket\configuration\FilterConfigurationIO.java
-src\main\java\com\scmarket\configuration\ItemThresholdConfig.java
-src\main\java\com\scmarket\configuration\MarketDetectionMode.java
-src\main\java\com\scmarket\configuration\MarketDetectionModeStore.java
-src\main\java\com\scmarket\configuration\MarketModule.java
-src\main\java\com\scmarket\configuration\ModRuntimeSettings.java
-src\main\java\com\scmarket\configuration\ModRuntimeSettingsStore.java
-src\main\java\com\scmarket\configuration\OperatingMode.java
-src\main\java\com\scmarket\configuration\OrderModuleSettings.java
-src\main\java\com\scmarket\configuration\OrderModuleSettingsStore.java
-src\main\java\com\scmarket\database\BatchWriteResult.java
-src\main\java\com\scmarket\database\DatabaseException.java
-src\main\java\com\scmarket\database\DatabaseManager.java
-src\main\java\com\scmarket\database\DatabaseMigrationManager.java
-src\main\java\com\scmarket\database\DatabaseRecoveryException.java
-src\main\java\com\scmarket\database\DatabaseRecoveryManager.java
-src\main\java\com\scmarket\database\DatabaseTransactionManager.java
-src\main\java\com\scmarket\database\DatabaseValues.java
-src\main\java\com\scmarket\database\FingerprintRepository.java
-src\main\java\com\scmarket\database\ListingRepository.java
-src\main\java\com\scmarket\database\MarketStatisticsRepository.java
-src\main\java\com\scmarket\database\OpportunityRepository.java
-src\main\java\com\scmarket\database\OrderCompletionRepository.java
-src\main\java\com\scmarket\database\PersonalProfitRepository.java
-src\main\java\com\scmarket\database\RepositorySupport.java
-src\main\java\com\scmarket\database\SaleRepository.java
-src\main\java\com\scmarket\database\ScannerMetadataRepository.java
-src\main\java\com\scmarket\database\StableMarketKeyFactory.java
-src\main\java\com\scmarket\database\TradeExecutionRepository.java
-src\main\java\com\scmarket\database\entity\EntityChecks.java
-src\main\java\com\scmarket\database\entity\ItemFingerprintEntity.java
-src\main\java\com\scmarket\database\entity\ListingEntity.java
-src\main\java\com\scmarket\database\entity\ListingState.java
-src\main\java\com\scmarket\database\entity\MarketStatisticsEntity.java
-src\main\java\com\scmarket\database\entity\OpportunityEntity.java
-src\main\java\com\scmarket\database\entity\OpportunityListingView.java
-src\main\java\com\scmarket\database\entity\OpportunityStateChangeEntity.java
-src\main\java\com\scmarket\database\entity\SaleEntity.java
-src\main\java\com\scmarket\database\entity\ScannerMetadataEntity.java
-src\main\java\com\scmarket\database\entity\TradeExecutionEntity.java
-src\main\java\com\scmarket\database\entity\TradeExecutionTransitionEntity.java
-src\main\java\com\scmarket\diagnostics\CacheStatistics.java
-src\main\java\com\scmarket\diagnostics\DatabaseRecordCounts.java
-src\main\java\com\scmarket\diagnostics\DiagnosticsExporter.java
-src\main\java\com\scmarket\diagnostics\DiagnosticsService.java
-src\main\java\com\scmarket\diagnostics\DiagnosticsSnapshot.java
-src\main\java\com\scmarket\diagnostics\DiagnosticsVersions.java
-src\main\java\com\scmarket\diagnostics\LocalActionRecorder.java
-src\main\java\com\scmarket\diagnostics\PerformanceMetrics.java
-src\main\java\com\scmarket\diagnostics\PerformanceOperation.java
-src\main\java\com\scmarket\diagnostics\PerformanceSnapshot.java
-src\main\java\com\scmarket\diagnostics\TimingMetricSnapshot.java
-src\main\java\com\scmarket\market\confidence\AppliedConfidenceAdjustment.java
-src\main\java\com\scmarket\market\confidence\AppliedConfidenceCap.java
-src\main\java\com\scmarket\market\confidence\ConfidenceBreakdown.java
-src\main\java\com\scmarket\market\confidence\ConfidenceCalculationRequest.java
-src\main\java\com\scmarket\market\confidence\ConfidenceCalculator.java
-src\main\java\com\scmarket\market\confidence\ConfidenceCapReason.java
-src\main\java\com\scmarket\market\confidence\ConfidenceCategory.java
-src\main\java\com\scmarket\market\confidence\ConfidenceCategoryDetail.java
-src\main\java\com\scmarket\market\confidence\ConfidenceConfig.java
-src\main\java\com\scmarket\market\confidence\ConfidenceTooltipFormatter.java
-src\main\java\com\scmarket\market\confidence\ConfidenceWarning.java
-src\main\java\com\scmarket\market\confidence\ConfidenceWarningCode.java
-src\main\java\com\scmarket\market\confidence\ConfidenceWeights.java
-src\main\java\com\scmarket\market\confidence\ExternalConfidenceCap.java
-src\main\java\com\scmarket\market\item\ApiItemDescriptorMapper.java
-src\main\java\com\scmarket\market\item\CanonicalTextNormalizer.java
-src\main\java\com\scmarket\market\item\ItemFingerprintFactory.java
-src\main\java\com\scmarket\market\item\ItemFingerprintPersistenceMapper.java
-src\main\java\com\scmarket\market\item\ItemNormalizer.java
-src\main\java\com\scmarket\market\item\MarketItemFamilyPolicy.java
-src\main\java\com\scmarket\market\item\NamespacedIdNormalizer.java
-src\main\java\com\scmarket\market\item\NormalizedItemPersistenceMapper.java
-src\main\java\com\scmarket\market\item\SafeItemCategoryRegistry.java
-src\main\java\com\scmarket\market\item\StackPriceNormalizer.java
-src\main\java\com\scmarket\market\item\model\ArmorTrimDescriptor.java
-src\main\java\com\scmarket\market\item\model\ItemDescriptor.java
-src\main\java\com\scmarket\market\item\model\ItemEnchantmentDescriptor.java
-src\main\java\com\scmarket\market\item\model\ItemFingerprint.java
-src\main\java\com\scmarket\market\item\model\ItemMatchQuality.java
-src\main\java\com\scmarket\market\item\model\ItemMatchType.java
-src\main\java\com\scmarket\market\item\model\ItemNormalizationIssue.java
-src\main\java\com\scmarket\market\item\model\NormalizedArmorTrim.java
-src\main\java\com\scmarket\market\item\model\NormalizedContainedItem.java
-src\main\java\com\scmarket\market\item\model\NormalizedEnchantment.java
-src\main\java\com\scmarket\market\item\model\NormalizedItem.java
-src\main\java\com\scmarket\market\opportunity\AlertSuppressionReason.java
-src\main\java\com\scmarket\market\opportunity\FilterDecision.java
-src\main\java\com\scmarket\market\opportunity\ItemEvaluationProfile.java
-src\main\java\com\scmarket\market\opportunity\ItemFilterMode.java
-src\main\java\com\scmarket\market\opportunity\ItemFilterPolicy.java
-src\main\java\com\scmarket\market\opportunity\OpportunityDetectionResult.java
-src\main\java\com\scmarket\market\opportunity\OpportunityDetector.java
-src\main\java\com\scmarket\market\opportunity\OpportunityEvaluation.java
-src\main\java\com\scmarket\market\opportunity\OpportunityEvaluationConfig.java
-src\main\java\com\scmarket\market\opportunity\OpportunityEvaluationRequest.java
-src\main\java\com\scmarket\market\opportunity\OpportunityEvaluator.java
-src\main\java\com\scmarket\market\opportunity\OpportunityExplanation.java
-src\main\java\com\scmarket\market\opportunity\OpportunityIdFactory.java
-src\main\java\com\scmarket\market\opportunity\OpportunityPersistenceMapper.java
-src\main\java\com\scmarket\market\opportunity\OpportunityReevaluationPolicy.java
-src\main\java\com\scmarket\market\opportunity\OpportunityRejection.java
-src\main\java\com\scmarket\market\opportunity\OpportunityRejectionCode.java
-src\main\java\com\scmarket\market\opportunity\OpportunityRevision.java
-src\main\java\com\scmarket\market\opportunity\OpportunityState.java
-src\main\java\com\scmarket\market\opportunity\OpportunityThresholds.java
-src\main\java\com\scmarket\market\opportunity\OpportunityTrackingSnapshot.java
-src\main\java\com\scmarket\market\opportunity\ReevaluationDecision.java
-src\main\java\com\scmarket\market\opportunity\ReevaluationReason.java
-src\main\java\com\scmarket\market\opportunity\SupportedItemPolicy.java
-src\main\java\com\scmarket\market\profit\CapitalLimits.java
-src\main\java\com\scmarket\market\profit\EffectiveProfitThresholds.java
-src\main\java\com\scmarket\market\profit\ItemProfitThresholds.java
-src\main\java\com\scmarket\market\profit\ProfitBreakdown.java
-src\main\java\com\scmarket\market\profit\ProfitCalculator.java
-src\main\java\com\scmarket\market\profit\ProfitEvaluation.java
-src\main\java\com\scmarket\market\profit\ProfitEvaluationConfig.java
-src\main\java\com\scmarket\market\profit\ProfitEvaluationRequest.java
-src\main\java\com\scmarket\market\profit\ProfitRejection.java
-src\main\java\com\scmarket\market\profit\ProfitRejectionCode.java
-src\main\java\com\scmarket\market\profit\ProfitThresholds.java
-src\main\java\com\scmarket\market\profit\TradingCostConfig.java
-src\main\java\com\scmarket\market\risk\ManipulationRiskAssessment.java
-src\main\java\com\scmarket\market\risk\ManipulationRiskConfig.java
-src\main\java\com\scmarket\market\risk\ManipulationRiskDetector.java
-src\main\java\com\scmarket\market\risk\ManipulationRiskRequest.java
-src\main\java\com\scmarket\market\risk\MarketAnomalyIndicator.java
-src\main\java\com\scmarket\market\risk\MarketAnomalySeverity.java
-src\main\java\com\scmarket\market\risk\MarketAnomalyType.java
-src\main\java\com\scmarket\market\risk\MarketRiskLevel.java
-src\main\java\com\scmarket\market\scanner\ApiMarketScanWork.java
-src\main\java\com\scmarket\market\scanner\MarketScanWork.java
-src\main\java\com\scmarket\market\scanner\MarketScanner.java
-src\main\java\com\scmarket\market\scanner\MarketScannerConfig.java
-src\main\java\com\scmarket\market\scanner\MarketScannerSnapshot.java
-src\main\java\com\scmarket\market\scanner\MarketScannerState.java
-src\main\java\com\scmarket\market\scanner\ScanBatchResult.java
-src\main\java\com\scmarket\market\scanner\ScannerActivity.java
-src\main\java\com\scmarket\market\scanner\ScannerDataVersions.java
-src\main\java\com\scmarket\market\scanner\ScannerPauseReason.java
-src\main\java\com\scmarket\market\statistics\ActiveAskCalculator.java
-src\main\java\com\scmarket\market\statistics\ComparableSaleFinder.java
-src\main\java\com\scmarket\market\statistics\MarketLookbackPeriod.java
-src\main\java\com\scmarket\market\statistics\MarketStatisticsCalculator.java
-src\main\java\com\scmarket\market\statistics\MarketStatisticsConfig.java
-src\main\java\com\scmarket\market\statistics\MarketStatisticsProvider.java
-src\main\java\com\scmarket\market\statistics\OutlierFilter.java
-src\main\java\com\scmarket\market\statistics\RecencyWeightPolicy.java
-src\main\java\com\scmarket\market\statistics\RepositoryMarketStatisticsService.java
-src\main\java\com\scmarket\market\statistics\StatisticalMath.java
-src\main\java\com\scmarket\market\statistics\model\ActiveAskStatistics.java
-src\main\java\com\scmarket\market\statistics\model\ComparableSale.java
-src\main\java\com\scmarket\market\statistics\model\ComparableSaleRejectionReason.java
-src\main\java\com\scmarket\market\statistics\model\ComparableSaleSet.java
-src\main\java\com\scmarket\market\statistics\model\ItemMarketStatistics.java
-src\main\java\com\scmarket\market\statistics\model\MarketDataStatus.java
-src\main\java\com\scmarket\market\statistics\model\RejectedComparableSale.java
-src\main\java\com\scmarket\market\value\ActiveAskEvidenceStatus.java
-src\main\java\com\scmarket\market\value\FairValueAdjustment.java
-src\main\java\com\scmarket\market\value\FairValueConfig.java
-src\main\java\com\scmarket\market\value\FairValueEstimate.java
-src\main\java\com\scmarket\market\value\FairValueEstimator.java
-src\main\java\com\scmarket\market\value\FairValueExplanation.java
-src\main\java\com\scmarket\market\value\FairValueMarketContext.java
-src\main\java\com\scmarket\market\value\FairValueProvider.java
-src\main\java\com\scmarket\market\value\FairValueWarning.java
-src\main\java\com\scmarket\market\value\MarketTrend.java
-src\main\java\com\scmarket\market\value\StatisticsBackedFairValueService.java
-src\main\java\com\scmarket\order\CollectedOrderItems.java
-src\main\java\com\scmarket\order\OrderAutomationCoordinator.java
-src\main\java\com\scmarket\order\OrderCapacityPolicy.java
-src\main\java\com\scmarket\order\OrderCompletionObservation.java
-src\main\java\com\scmarket\order\OrderCompletionObservationRegistry.java
-src\main\java\com\scmarket\order\OrderCycleResult.java
-src\main\java\com\scmarket\order\OrderExecutionPort.java
-src\main\java\com\scmarket\order\OrderMarketQuote.java
-src\main\java\com\scmarket\order\OrderOpportunitySelector.java
-src\main\java\com\scmarket\order\OrderSaleReceipt.java
-src\main\java\com\scmarket\order\OrderSaleStack.java
-src\main\java\com\scmarket\order\OrderTradePlan.java
-src\main\java\com\scmarket\order\OrderTradePlanner.java
-src\main\java\com\scmarket\order\TrackedOrder.java
-src\main\java\com\scmarket\order\TrackedOrderState.java
-src\main\java\com\scmarket\profit\CompletedSalesObserver.java
-src\main\java\com\scmarket\profit\PersonalProfitPoint.java
-src\main\java\com\scmarket\profit\PersonalProfitSnapshot.java
-src\main\java\com\scmarket\profit\PersonalProfitTracker.java
-src\main\java\com\scmarket\profit\PlayerIdentity.java
-src\main\java\com\scmarket\provider\LiveMarketSnapshot.java
-src\main\java\com\scmarket\provider\LiveMarketSnapshotService.java
-src\main\java\com\scmarket\provider\MarketOpportunitySnapshot.java
-src\main\java\com\scmarket\security\JsonSafety.java
-src\main\java\com\scmarket\security\SensitiveDataSanitizer.java
-src\main\java\com\scmarket\service\ConfigurationSaveService.java
-src\main\java\com\scmarket\service\MarketDataIngestionService.java
-src\main\java\com\scmarket\service\MarketRetentionPolicy.java
-src\main\java\com\scmarket\service\MarketStatisticsRefreshService.java
-src\main\java\com\scmarket\service\RepositoryMarketAnalysisService.java
-src\main\java\com\scmarket\service\RepositoryMarketDataIngestionService.java
-src\main\java\com\scmarket\util\HashingUtil.java
-src\main\resources\assets\sc_market\font\GEIST_LICENSE.txt
-src\main\resources\assets\sc_market\font\geist_regular.ttf
-src\main\resources\assets\sc_market\font\interface.json
-src\main\resources\assets\sc_market\lang\en_us.json
-src\main\resources\assets\sc_market\textures\gui\sc_market_logo.png
-src\main\resources\db\migration\V001__market_records.sql
-src\main\resources\db\migration\V002__market_statistics.sql
-src\main\resources\db\migration\V003__opportunities.sql
-src\main\resources\db\migration\V004__trade_execution_journal.sql
-src\main\resources\db\migration\V005__personal_profit_ledger.sql
-src\main\resources\db\migration\V006__order_completion_observations.sql
-src\main\resources\fabric.mod.json
-src\test\java\com\scmarket\ClientProductionRuntimeTest.java
-src\test\java\com\scmarket\api\ApiResponseValidatorTest.java
-src\test\java\com\scmarket\api\DonutApiClientTest.java
-src\test\java\com\scmarket\api\FileApiCredentialsStoreTest.java
-src\test\java\com\scmarket\api\FixtureLoader.java
-src\test\java\com\scmarket\automation\ActionPacingAuctionInteractionAdapterTest.java
-src\test\java\com\scmarket\automation\AuctionCommandRendererTest.java
-src\test\java\com\scmarket\automation\AutomationServerPolicyTest.java
-src\test\java\com\scmarket\automation\FishingPricePolicyTest.java
-src\test\java\com\scmarket\automation\GameplayActionGateTest.java
-src\test\java\com\scmarket\automation\PurchasedStackPlacementPlannerTest.java
-src\test\java\com\scmarket\automation\RelistPricingServiceTest.java
-src\test\java\com\scmarket\automation\StrictAuctionListingMatcherTest.java
-src\test\java\com\scmarket\automation\TradeAutomationCoordinatorTest.java
-src\test\java\com\scmarket\automation\service\AutomaticOpportunityDispatcherTest.java
-src\test\java\com\scmarket\balance\ApiPlayerBalanceProviderTest.java
-src\test\java\com\scmarket\balance\BalanceAmountParserTest.java
-src\test\java\com\scmarket\client\ClientProviderIntegrationTest.java
-src\test\java\com\scmarket\client\OpportunityAlertQueueTest.java
-src\test\java\com\scmarket\command\AuctionSearchCommandTest.java
-src\test\java\com\scmarket\configuration\ConfigDirectoryMigratorTest.java
-src\test\java\com\scmarket\configuration\ConfigurationManagerTest.java
-src\test\java\com\scmarket\configuration\MarketDetectionModeStoreTest.java
-src\test\java\com\scmarket\configuration\ModRuntimeSettingsStoreTest.java
-src\test\java\com\scmarket\configuration\OrderModuleSettingsStoreTest.java
-src\test\java\com\scmarket\data\provider\ClientAutomationSettingsControllerTest.java
-src\test\java\com\scmarket\data\provider\ClientDataFormatTest.java
-src\test\java\com\scmarket\database\DatabaseCorruptionRecoveryTest.java
-src\test\java\com\scmarket\database\DatabaseManagerTest.java
-src\test\java\com\scmarket\database\DatabaseTestFixtures.java
-src\test\java\com\scmarket\database\ListingRepositoryTest.java
-src\test\java\com\scmarket\database\OpportunityRepositoryTest.java
-src\test\java\com\scmarket\database\OrderCompletionRepositoryTest.java
-src\test\java\com\scmarket\database\PersonalProfitRepositoryTest.java
-src\test\java\com\scmarket\database\SaleRepositoryTest.java
-src\test\java\com\scmarket\database\StableMarketKeyFactoryTest.java
-src\test\java\com\scmarket\database\TradeExecutionRepositoryTest.java
-src\test\java\com\scmarket\diagnostics\DiagnosticsExporterTest.java
-src\test\java\com\scmarket\diagnostics\LocalActionRecorderTest.java
-src\test\java\com\scmarket\integration\FullOpportunityPipelineIntegrationTest.java
-src\test\java\com\scmarket\integration\RepositoryMarketAnalysisServiceIntegrationTest.java
-src\test\java\com\scmarket\market\confidence\ConfidenceCalculatorTest.java
-src\test\java\com\scmarket\market\confidence\ConfidenceTestFixtures.java
-src\test\java\com\scmarket\market\item\ItemFingerprintPersistenceMapperTest.java
-src\test\java\com\scmarket\market\item\ItemNormalizerTest.java
-src\test\java\com\scmarket\market\item\NormalizedItemPersistenceMapperTest.java
-src\test\java\com\scmarket\market\item\StackPriceNormalizerTest.java
-src\test\java\com\scmarket\market\opportunity\OpportunityDetectorTest.java
-src\test\java\com\scmarket\market\opportunity\OpportunityEvaluatorTest.java
-src\test\java\com\scmarket\market\opportunity\OpportunityTestFixtures.java
-src\test\java\com\scmarket\market\opportunity\OpportunityThresholdsTest.java
-src\test\java\com\scmarket\market\opportunity\SupportedItemPolicyTest.java
-src\test\java\com\scmarket\market\profit\ProfitCalculatorTest.java
-src\test\java\com\scmarket\market\profit\ProfitTestFixtures.java
-src\test\java\com\scmarket\market\risk\ManipulationRiskDetectorTest.java
-src\test\java\com\scmarket\market\risk\ManipulationRiskTestFixtures.java
-src\test\java\com\scmarket\market\scanner\ApiMarketScanWorkPageStrategyTest.java
-src\test\java\com\scmarket\market\scanner\MarketScannerTest.java
-src\test\java\com\scmarket\market\statistics\ComparableSaleFinderTest.java
-src\test\java\com\scmarket\market\statistics\MarketStatisticsCalculatorTest.java
-src\test\java\com\scmarket\market\statistics\MarketStatisticsTestFixtures.java
-src\test\java\com\scmarket\market\statistics\RecencyWeightPolicyTest.java
-src\test\java\com\scmarket\market\statistics\RepositoryMarketStatisticsServiceTest.java
-src\test\java\com\scmarket\market\statistics\StatisticalMathTest.java
-src\test\java\com\scmarket\market\value\FairValueEstimatorTest.java
-src\test\java\com\scmarket\market\value\FairValueTestFixtures.java
-src\test\java\com\scmarket\market\value\StatisticsBackedFairValueServiceTest.java
-src\test\java\com\scmarket\order\OrderAutomationCoordinatorTest.java
-src\test\java\com\scmarket\order\OrderCapacityPolicyTest.java
-src\test\java\com\scmarket\order\OrderCompletionObservationRegistryTest.java
-src\test\java\com\scmarket\order\OrderOpportunitySelectorTest.java
-src\test\java\com\scmarket\order\OrderTradePlannerTest.java
-src\test\java\com\scmarket\provider\LiveMarketSnapshotServiceTest.java
-src\test\java\com\scmarket\security\SecurityHardeningTest.java
-src\test\java\com\scmarket\service\RepositoryMarketDataIngestionServiceTest.java
-src\test\resources\fixtures\auction-empty-trim.json
-src\test\resources\fixtures\auction-large-price.json
-src\test\resources\fixtures\auction-missing-optional.json
-src\test\resources\fixtures\auction-unknown-item-metadata.json
-src\test\resources\fixtures\auction-valid.json
-src\test\resources\fixtures\invalid.json
-src\test\resources\fixtures\pipeline-listing.json
-src\test\resources\fixtures\pipeline-transactions.json
-src\test\resources\fixtures\transaction-valid.json
+.
+├── Agent.md                         # project-owner requirements and agent handoff
+├── README.md                        # user setup, features, safety and current support boundary
+├── build.gradle                     # Loom, split source sets, dependencies and tasks
+├── gradle.properties                # Minecraft/Fabric/Java/project version pins
+├── settings.gradle                  # plugin repositories and Gradle project name
+├── gradle/
+│   ├── wrapper/                     # Gradle 9.7.1 wrapper and checksum
+│   └── verification-metadata.xml    # artifact verification metadata
+├── .github/workflows/verify.yml     # tests/build and offline client/GUI smoke
+├── docs/
+│   ├── config.example.json          # sanitized example configuration
+│   ├── filter-export.example.json   # filter import/export example
+│   ├── order-module.example.properties
+│   ├── screenshots/                 # screenshot evidence for Order/AH rules
+│   └── *.md                        # subsystem design, testing and port notes
+├── src/
+│   ├── main/
+│   │   ├── java/com/scmarket/       # game-independent domain and services
+│   │   │   ├── api/                 # HTTP/API transport, auth, validation, DTOs
+│   │   │   ├── automation/          # provider-neutral automation models/services
+│   │   │   ├── balance/             # balance provider and parsing
+│   │   │   ├── configuration/       # validated settings, persistence and migration
+│   │   │   ├── database/            # migrations, repositories and transactions
+│   │   │   ├── diagnostics/          # metrics, exports and local action capture
+│   │   │   ├── market/              # item, scanner, stats, value, risk, confidence,
+│   │   │   │                        # opportunity and profit domain logic
+│   │   │   ├── order/               # order planning, capacity and completion core
+│   │   │   ├── profit/              # personal profit tracking
+│   │   │   ├── provider/            # immutable market snapshots
+│   │   │   ├── security/            # bounded JSON and sensitive-data sanitization
+│   │   │   ├── service/             # ingestion, retention, statistics and analysis
+│   │   │   └── util/                # shared utilities
+│   │   └── resources/
+│   │       ├── assets/sc_market/    # fonts, language and client assets
+│   │       ├── db/migration/        # ordered SQL schema migrations V001 onward
+│   │       ├── META-INF/licenses/   # bundled asset/dependency notices
+│   │       └── fabric.mod.json      # Fabric metadata and client entrypoint
+│   ├── client/
+│   │   ├── java/com/scmarket/       # Fabric/Minecraft-only adapters and UI
+│   │   │   ├── automation/          # Fishing + Minecraft interaction adapters
+│   │   │   ├── command/             # client commands and clipboard integration
+│   │   │   ├── data/                # immutable UI models and provider routing
+│   │   │   ├── gui/                 # screens, HUD, panels, rendering, theme
+│   │   │   ├── mixin/               # screen/player/container/Minecraft event hooks
+│   │   │   └── packet/              # AH packet capture and packet-scan work
+│   │   └── resources/               # client Mixin configuration
+│   └── test/java/com/scmarket/      # JUnit tests; unit and integration coverage
+│       ├── api/ automation/ balance/ configuration/ database/
+│       ├── diagnostics/ integration/ market/ order/ security/ service/
+│       └── client/ data/ command/ provider/
+└── config/                          # runtime user data; never commit private contents
 ```
+
+## Runtime boundaries
+
+- `main` should remain independent of Minecraft classes and directly testable with ordinary Java/JUnit.
+- `client` owns the integration boundary: Fabric lifecycle, screen and packet events, player/inventory state, GUI rendering, live user settings, and server-specific interaction adapters.
+- Core services use ports/interfaces; the client supplies production adapters and tests supply fakes. Keep GUI rendering separate from business decisions.
+- Provider/UI objects should be immutable snapshots. UI reads data; it should not become the authority for market state, authorization, or database writes.
+- Repositories own persistence details. Money/fee calculations, item identity, evidence validation, authorization, and trade decisions stay in domain/services where focused tests can exercise them.
+
+## Key concepts by subsystem
+
+| Subsystem | Main responsibility | Further reading |
+| --- | --- | --- |
+| API and scanner | Documented read-only API access, retries/rate limits, scan scheduling, sanitized status | `API_INTEGRATION.md`, `SCANNER_LIFECYCLE.md` |
+| Packet scan | Capture the configured visible AH screen, ingest active listing snapshots only | `README.md`, `PORTING_26_2.md` |
+| Item/evidence | Normalize and fingerprint items; keep asks distinct from completed sales | `ITEM_NORMALIZATION.md`, `MARKET_STATISTICS.md` |
+| Pricing and opportunities | Statistics, fair value, confidence, risk, anomaly checks and alert gating | `FAIR_VALUE.md`, `CONFIDENCE.md`, `PROFIT_AND_RISK.md`, `ANOMALY_PROTECTION.md`, `OPPORTUNITY_DETECTION.md` |
+| Database/history | Versioned SQLite migrations, repository operations, retention and recovery | `DATABASE.md`, `PERSONAL_PROFIT.md` |
+| AH Deals/Fishing | Gated profiles and verified game actions; disabled-by-default fail-closed operation | `AUTOMATION.md`, `FEATURES_AND_SAFETY.md` |
+| Order→AH | Provider-neutral plan/coordinator and separate whole-order completion ledger; server GUI remains fail-closed until verified | `ORDER_TO_AH.md` |
+| GUI/backend | Route live/mock providers into screen/HUD panels without coupling domain rules to UI | `GUI_BACKEND_INTEGRATION.md` |
+| Privacy/diagnostics | Explicit, bounded, local opt-in; no implicit upload | `LOCAL_ACTION_CAPTURE.md`, `RELEASE_HARDENING.md` |
+
+## Maintenance note
+
+This page is not a build manifest or proof of coverage. For exact files, run `find src -type f`; for all generated output exclude `.git`, `.gradle`, `build`, and IDE caches. Update this map after moving packages or source sets. Never check in local secrets, server addresses, private runtime profiles, market databases, or diagnostic captures.

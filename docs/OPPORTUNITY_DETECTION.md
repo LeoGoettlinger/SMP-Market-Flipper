@@ -1,5 +1,7 @@
 # Chunk 9: Opportunity detection
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 9 combines the completed local market-analysis domains into a deterministic opportunity
 evaluation pipeline. It does not poll the API, schedule scans, send Minecraft commands, click
 inventory slots, display alerts, or purchase items.

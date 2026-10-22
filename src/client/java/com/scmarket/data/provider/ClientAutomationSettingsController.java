@@ -78,7 +78,7 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
         AutomationConfig config = configuration.get();
         String warning = config.mode() == AutomationMode.DRY_RUN
                 ? "Dry run records a simulation and never clicks, buys, or lists."
-                : "Real modes require an exact allowlist entry and per-session authorization.";
+                : "Live actions require the exact current server on the allowlist and all other safety gates.";
         return new AutomationSettingsSnapshot(config, coordinator.snapshot(), balanceProvider.snapshot(),
                 server.isBlank() ? "Not connected" : server, warning);
     }
@@ -118,6 +118,9 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
     @Override
     public CompletableFuture<Void> setEnabled(boolean enabled) {
         AutomationConfig current = configuration.get();
+        if (!enabled) {
+            coordinator.cancelActiveExecution("Automation disabled; active work was cancelled.");
+        }
         return updateConfiguration.apply(copy(current, enabled, current.mode(), current.allowedServerAddresses(),
                 current.actionDelayMillis()));
     }
@@ -125,7 +128,7 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
     @Override
     public CompletableFuture<Void> setMode(AutomationMode mode) {
         AutomationConfig current = configuration.get();
-        coordinator.disarm("Mode changed; session authorization was cleared.");
+        coordinator.cancelActiveExecution("Mode changed; active work was cancelled.");
         return updateConfiguration.apply(copy(current, current.enabled(), Objects.requireNonNull(mode, "mode"),
                 current.allowedServerAddresses(), current.actionDelayMillis()));
     }
@@ -147,22 +150,18 @@ public class ClientAutomationSettingsController implements AutomationSettingsCon
         if (server.isBlank()) {
             return CompletableFuture.failedFuture(new IllegalStateException("Not connected to a server."));
         }
+        coordinator.onServerChanged(server);
         AutomationConfig current = configuration.get();
         Set<String> allowed = new HashSet<>(current.allowedServerAddresses());
         allowed.add(server);
-        coordinator.disarm("Allowlist changed; session authorization was cleared.");
+        coordinator.cancelActiveExecution("Allowlist changed; active work was cancelled.");
         return updateConfiguration.apply(copy(current, current.enabled(), current.mode(), allowed,
                 current.actionDelayMillis()));
     }
 
     @Override
-    public boolean armCurrentServer(String exactConfirmation) {
-        return coordinator.armSession(normalizedCurrentServer(), exactConfirmation);
-    }
-
-    @Override
-    public void disarm() {
-        coordinator.disarm("Disarmed by user.");
+    public void cancelActiveExecution() {
+        coordinator.cancelActiveExecution("Active execution cancelled by user.");
     }
 
     @Override

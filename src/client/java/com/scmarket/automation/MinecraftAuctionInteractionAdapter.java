@@ -221,14 +221,14 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
                 new java.util.concurrent.atomic.AtomicReference<>();
         CompletableFuture<ListingVerificationResult> operation = onClient(() -> {
             if (!authorization.getAsBoolean()) {
-                throw new IllegalStateException("Fishing session authorization expired before listing.");
+                throw new IllegalStateException("Fishing safety gates changed before listing.");
             }
             FishingListingCapture capture = prepareFishingListing(expected, expectedCount, profile);
             captureRef.set(capture);
             String command = commandRenderer.listing(profile, price);
             requireConnection();
             if (!authorization.getAsBoolean()) {
-                throw new IllegalStateException("Fishing session authorization expired before listing command.");
+                throw new IllegalStateException("Fishing safety gates changed before listing command.");
             }
             client.getConnection().sendCommand(command);
             return capture;

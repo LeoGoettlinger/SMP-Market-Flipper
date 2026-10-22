@@ -1,5 +1,7 @@
 # Confidence scoring (Chunk 7)
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 7 produces an explainable integer confidence score from 0 through 100.
 It does not detect manipulation, accept opportunities, or trigger alerts. The
 generic external cap is an input hook for Chunk 8; it performs no risk detection

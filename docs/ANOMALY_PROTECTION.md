@@ -1,5 +1,7 @@
 # Market-anomaly protection (Chunk 8)
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 Chunk 8 evaluates whether market evidence may be misleading. It uses neutral
 labels such as “unusual price movement” and “concentrated seller activity.” It
 does not accuse a player of manipulation, generate an opportunity, send an

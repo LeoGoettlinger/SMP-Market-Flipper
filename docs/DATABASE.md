@@ -1,5 +1,7 @@
 # Local market-history database
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 The local backend uses SQLite through Xerial SQLite JDBC 3.53.1.0. The intended runtime
 location is:
 

@@ -16,7 +16,6 @@ import com.scmarket.data.OpportunityHistoryEntry;
 import com.scmarket.data.ScannerStatus;
 import com.scmarket.data.AutomationSettingsSnapshot;
 import com.scmarket.automation.model.AutomationMode;
-import com.scmarket.automation.service.TradeAutomationCoordinator;
 import com.scmarket.gui.GuiLayout;
 import com.scmarket.gui.GuiTab;
 import com.scmarket.gui.render.GuiDraw;
@@ -63,20 +62,14 @@ public final class ShellTabPanel implements TabContentPanel {
     private final ClientUiDataSources dataSources;
     private volatile String notice = "";
     private int opportunityOffset;
-    private EditBox authorizationField;
     private EditBox apiKeyField;
     private EditBox tradeItemField;
     private int whitelistOffset;
-    private boolean authorizationModalVisible;
     private String pendingPurchaseId;
     private String pendingPurchaseLabel;
 
     private static final int AUTOMATION_LEFT_WIDTH = 225;
     private static final int AUTOMATION_RIGHT_X = CONTENT_X + AUTOMATION_LEFT_WIDTH + 7;
-    private static final int AUTH_MODAL_X = CONTENT_X + 72;
-    private static final int AUTH_MODAL_Y = CARD_TOP + 46;
-    private static final int AUTH_MODAL_WIDTH = 310;
-    private static final int AUTH_MODAL_HEIGHT = 116;
 
     public ShellTabPanel(GuiTab tab, ClientUiDataSources dataSources) {
         this.tab = Objects.requireNonNull(tab, "tab");
@@ -838,6 +831,9 @@ public final class ShellTabPanel implements TabContentPanel {
                 left + AUTOMATION_LEFT_WIDTH - 10
                         - GuiTypography.width(renderer, fit(renderer, value.currentServer(), 126)),
                 CARD_TOP + 81, GuiColors.PRIMARY_TEXT, false);
+        boolean serverAllowed = !value.currentServer().equals("Not connected")
+                && value.configuration().allowedServerAddresses().contains(
+                        value.currentServer().strip().toLowerCase(java.util.Locale.ROOT));
         lineAt(context, renderer, left + 10, left + AUTOMATION_LEFT_WIDTH - 10,
                 "Allowlist", value.configuration().allowedServerAddresses().size() + " exact",
                 CARD_TOP + 103);
@@ -857,14 +853,14 @@ public final class ShellTabPanel implements TabContentPanel {
                 value.balance().status() == com.scmarket.balance.BalanceStatus.ERROR
                         ? GuiColors.NEGATIVE_TEXT : GuiColors.MUTED_TEXT, false);
 
-        GuiTypography.draw(context, renderer, "SESSION", right + 10, CARD_TOP + 11,
+        GuiTypography.draw(context, renderer, "EXECUTION STATUS", right + 10, CARD_TOP + 11,
                 GuiColors.ACCENT_TEXT, false);
         lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
-                "Armed", value.execution().sessionArmed() ? "YES" : "NO", CARD_TOP + 34);
+                "Server access", serverAllowed ? "ALLOWLISTED" : "NOT ALLOWLISTED", CARD_TOP + 34);
         lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
                 "State", value.execution().activeState().map(Enum::name).orElse("IDLE"), CARD_TOP + 55);
         lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
-                "Session purchases", Integer.toString(value.execution().purchasesThisSession()), CARD_TOP + 76);
+                "Purchases", Integer.toString(value.execution().purchasesThisSession()), CARD_TOP + 76);
         context.fill(right + 10, CARD_TOP + 91, CONTENT_RIGHT - 10, CARD_TOP + 92,
                 GuiColors.SECONDARY_BORDER);
         drawWrapped(context, renderer,
@@ -873,82 +869,24 @@ public final class ShellTabPanel implements TabContentPanel {
                 value.execution().emergencyStopped() ? GuiColors.NEGATIVE_TEXT : GuiColors.MUTED_TEXT, 3);
 
         int half = (rightWidth - 27) / 2;
-        button(context, renderer, right + 10, CARD_TOP + 143, half, 18, "ARM SESSION",
+        button(context, renderer, right + 10, CARD_TOP + 143, half, 18, "CONFIRM TRADE",
                 contains(mouseX, mouseY, right + 10, CARD_TOP + 143, half, 18));
-        button(context, renderer, right + 17 + half, CARD_TOP + 143, half, 18, "CONFIRM TRADE",
+        button(context, renderer, right + 17 + half, CARD_TOP + 143, half, 18, "CANCEL EXECUTION",
                 contains(mouseX, mouseY, right + 17 + half, CARD_TOP + 143, half, 18));
-        button(context, renderer, right + 10, CARD_TOP + 168, half, 18, "DISARM",
-                contains(mouseX, mouseY, right + 10, CARD_TOP + 168, half, 18));
-        button(context, renderer, right + 17 + half, CARD_TOP + 168, half, 18,
+        button(context, renderer, right + 10, CARD_TOP + 168, rightWidth - 20, 18,
                 value.execution().emergencyStopped() ? "CLEAR STOP" : "EMERGENCY STOP",
-                contains(mouseX, mouseY, right + 17 + half, CARD_TOP + 168, half, 18));
+                contains(mouseX, mouseY, right + 10, CARD_TOP + 168, rightWidth - 20, 18));
         GuiTypography.draw(context, renderer, fit(renderer, value.warning(), rightWidth - 20),
                 right + 10, CARD_TOP + 195, GuiColors.MUTED_TEXT, false);
-
-        if (authorizationModalVisible) {
-            renderAuthorizationModal(context, renderer, mouseX, mouseY);
-        }
-    }
-
-    private void renderAuthorizationModal(
-            GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY
-    ) {
-        context.fill(CONTENT_X, CARD_TOP, CONTENT_RIGHT, CARD_TOP + 211, 0xB8121417);
-        panel(context, AUTH_MODAL_X, AUTH_MODAL_Y, AUTH_MODAL_WIDTH, AUTH_MODAL_HEIGHT);
-        GuiTypography.draw(context, renderer, "SESSION AUTHORIZATION", AUTH_MODAL_X + 12,
-                AUTH_MODAL_Y + 11, GuiColors.PRIMARY_TEXT, false);
-        GuiTypography.draw(context, renderer,
-                "Type exactly: " + TradeAutomationCoordinator.ARM_CONFIRMATION,
-                AUTH_MODAL_X + 12, AUTH_MODAL_Y + 29, GuiColors.MUTED_TEXT, false);
-        if (authorizationField == null) {
-            authorizationField = new EditBox(
-                    renderer, AUTH_MODAL_X + 12, AUTH_MODAL_Y + 47,
-                    AUTH_MODAL_WIDTH - 24, 18, Component.literal("Authorization confirmation")
-            );
-            authorizationField.setMaxLength(64);
-            authorizationField.setTextShadow(false);
-            authorizationField.setHint(Component.literal("Authorization phrase"));
-            authorizationField.setFocused(true);
-        }
-        authorizationField.extractRenderState(context, mouseX, mouseY, 0.0F);
-        int buttonY = AUTH_MODAL_Y + 82;
-        button(context, renderer, AUTH_MODAL_X + 12, buttonY, 134, 20, "AUTHORIZE SESSION",
-                contains(mouseX, mouseY, AUTH_MODAL_X + 12, buttonY, 134, 20));
-        button(context, renderer, AUTH_MODAL_X + 164, buttonY, 134, 20, "CANCEL",
-                contains(mouseX, mouseY, AUTH_MODAL_X + 164, buttonY, 134, 20));
     }
 
     private boolean clickAutomation(int mouseX, int mouseY) {
-        if (authorizationModalVisible) {
-            int buttonY = AUTH_MODAL_Y + 82;
-            if (contains(mouseX, mouseY, AUTH_MODAL_X + 12, buttonY, 134, 20)) {
-                boolean armed = dataSources.automationSettings().armCurrentServer(
-                        authorizationField == null ? "" : authorizationField.getValue()
-                );
-                notice = armed ? "Session armed for the exact current server."
-                        : "Authorization rejected; verify mode, allowlist, server, and exact phrase.";
-                closeAuthorizationModal();
-                return true;
-            }
-            if (contains(mouseX, mouseY, AUTH_MODAL_X + 164, buttonY, 134, 20)) {
-                closeAuthorizationModal();
-                notice = "Session authorization cancelled.";
-                return true;
-            }
-            if (authorizationField != null && contains(mouseX, mouseY,
-                    AUTH_MODAL_X + 12, AUTH_MODAL_Y + 47, AUTH_MODAL_WIDTH - 24, 18)) {
-                authorizationField.onClick(new MouseButtonEvent(mouseX, mouseY,
-                        new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
-            }
-            return true;
-        }
-
         AutomationSettingsSnapshot snapshot = dataSources.automationSettings().snapshot();
         if (contains(mouseX, mouseY, CONTENT_X + AUTOMATION_LEFT_WIDTH - 52, CARD_TOP + 28,
                 NOTIFICATION_TOGGLE_WIDTH, NOTIFICATION_TOGGLE_HEIGHT)) {
             dataSources.automationSettings().setEnabled(!snapshot.configuration().enabled())
                     .whenComplete((ignored, error) -> notice = error == null
-                            ? "Automation setting saved; session remains disarmed."
+                            ? "Automation setting saved."
                             : "Unable to save automation setting.");
             return true;
         }
@@ -956,7 +894,7 @@ public final class ShellTabPanel implements TabContentPanel {
             AutomationMode next = nextMode(snapshot.configuration().mode());
             dataSources.automationSettings().setMode(next)
                     .whenComplete((ignored, error) -> notice = error == null
-                            ? "Mode changed to " + shortMode(next) + "; session disarmed."
+                            ? "Mode changed to " + shortMode(next) + "."
                             : "Unable to save automation mode.");
             return true;
         }
@@ -964,7 +902,7 @@ public final class ShellTabPanel implements TabContentPanel {
                 AUTOMATION_LEFT_WIDTH - 20, 18)) {
             dataSources.automationSettings().allowCurrentServer()
                     .whenComplete((ignored, error) -> notice = error == null
-                            ? "Exact current server added to allowlist; session remains disarmed."
+                            ? "Exact current server added to allowlist."
                             : "Unable to allow current server.");
             return true;
         }
@@ -980,25 +918,20 @@ public final class ShellTabPanel implements TabContentPanel {
         int rightWidth = CONTENT_RIGHT - AUTOMATION_RIGHT_X;
         int half = (rightWidth - 27) / 2;
         if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 10, CARD_TOP + 143, half, 18)) {
-            authorizationModalVisible = true;
-            authorizationField = null;
-            return true;
-        }
-        if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 17 + half, CARD_TOP + 143, half, 18)) {
             dataSources.automationSettings().confirmPending()
                     .whenComplete((result, error) -> notice = error == null
                             ? result.message() : "Unable to confirm pending execution.");
             return true;
         }
-        if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 10, CARD_TOP + 168, half, 18)) {
-            dataSources.automationSettings().disarm();
-            notice = "Session disarmed.";
+        if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 17 + half, CARD_TOP + 143, half, 18)) {
+            dataSources.automationSettings().cancelActiveExecution();
+            notice = "Active or pending execution cancelled.";
             return true;
         }
-        if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 17 + half, CARD_TOP + 168, half, 18)) {
+        if (contains(mouseX, mouseY, AUTOMATION_RIGHT_X + 10, CARD_TOP + 168, rightWidth - 20, 18)) {
             if (snapshot.execution().emergencyStopped()) {
                 dataSources.automationSettings().clearEmergencyStop();
-                notice = "Emergency stop cleared; session remains disarmed.";
+                notice = "Emergency stop cleared; current settings and allowlist still apply.";
             } else {
                 dataSources.automationSettings().emergencyStop();
                 notice = "Emergency stop active; all execution is blocked.";
@@ -1016,14 +949,6 @@ public final class ShellTabPanel implements TabContentPanel {
             notice = "Purchase tracking cancelled.";
             return true;
         }
-        if (authorizationModalVisible) {
-            if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
-                closeAuthorizationModal();
-                notice = "Session authorization cancelled.";
-                return true;
-            }
-            return authorizationField != null && authorizationField.keyPressed(input);
-        }
         if (tab == GuiTab.ITEM_FILTERS && tradeItemField != null && tradeItemField.isFocused()) {
             return tradeItemField.keyPressed(input);
         }
@@ -1033,22 +958,11 @@ public final class ShellTabPanel implements TabContentPanel {
 
     @Override
     public boolean charTyped(CharacterEvent input) {
-        if (authorizationModalVisible && authorizationField != null) {
-            return authorizationField.charTyped(input);
-        }
         if (tab == GuiTab.ITEM_FILTERS && tradeItemField != null && tradeItemField.isFocused()) {
             return tradeItemField.charTyped(input);
         }
         return tab == GuiTab.SETTINGS && apiKeyField != null && apiKeyField.isFocused()
                 && apiKeyField.charTyped(input);
-    }
-
-    private void closeAuthorizationModal() {
-        authorizationModalVisible = false;
-        if (authorizationField != null) {
-            authorizationField.setValue("");
-            authorizationField.setFocused(false);
-        }
     }
 
     private static AutomationMode nextMode(AutomationMode current) {
@@ -1065,7 +979,7 @@ public final class ShellTabPanel implements TabContentPanel {
             case DISABLED -> "DISABLED";
             case DRY_RUN -> "DRY RUN";
             case CONFIRM_EACH -> "CONFIRM EACH";
-            case AUTOMATIC_AUTHORIZED_SERVER -> "AUTHORIZED AUTO";
+            case AUTOMATIC_AUTHORIZED_SERVER -> "ALLOWLIST AUTO";
         };
     }
 

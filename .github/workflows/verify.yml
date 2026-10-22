@@ -3,6 +3,7 @@ name: Verify
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,6 +30,17 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew --write-verification-metadata sha256 test build --no-daemon 2>&1 | tee "$RUNNER_TEMP/scmarket-gradle.log"
+
+      - name: Upload built mod JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sc-market-${{ github.sha }}
+          path: |
+            build/libs/sc-market-*.jar
+            !build/libs/*-sources.jar
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Launch the 26.2 client and render SC-Market GUI to validate mixins
         run: |

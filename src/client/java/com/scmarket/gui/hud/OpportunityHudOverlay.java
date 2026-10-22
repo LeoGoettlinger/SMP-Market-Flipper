@@ -81,7 +81,7 @@ public final class OpportunityHudOverlay {
             String statusKey = automation.execution().activeState().map(Enum::name).orElse("IDLE")
                     + "|" + automation.execution().statusMessage();
             if (!statusKey.equals(lastExecutionStatus)
-                    && !automation.execution().statusMessage().equals("Automation is disarmed.")) {
+                    && !automation.execution().statusMessage().startsWith("Automation is idle;")) {
                 Instant queuedAt = clock.instant();
                 executionNotice = new ExecutionNotice(
                         automation.execution().activeState().map(Enum::name).orElse("AUTOMATION"),

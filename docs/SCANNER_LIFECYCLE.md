@@ -1,5 +1,7 @@
 # Chunk 10: Scanner orchestration and lifecycle
 
+> Shared agent guidance, project invariants, and current verification limits: [Agent.md](../Agent.md). Treat this page as subsystem-specific documentation and verify implementation details against the current source and tests.
+
 The scanner orchestration is now composed by the production client runtime and feeds immutable
 live-provider snapshots to the ClickGUI.
 
