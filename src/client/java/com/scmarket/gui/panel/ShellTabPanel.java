@@ -65,7 +65,10 @@ public final class ShellTabPanel implements TabContentPanel {
     private int opportunityOffset;
     private EditBox apiKeyField;
     private EditBox tradeItemField;
+    private EditBox filterItemField;
     private int whitelistOffset;
+    private int filterWhitelistOffset;
+    private int filterBlacklistOffset;
     private String pendingPurchaseId;
     private String pendingPurchaseLabel;
 
@@ -86,6 +89,8 @@ public final class ShellTabPanel implements TabContentPanel {
         switch (tab) {
             case DASHBOARD -> renderDashboard(context, textRenderer);
             case FISHING -> renderFishing(context, textRenderer, mouseX, mouseY);
+            case AH_DEALS -> renderModuleTab(context, textRenderer, mouseX, mouseY, MarketModule.AH_DEALS);
+            case ORDER_TO_AH -> renderModuleTab(context, textRenderer, mouseX, mouseY, MarketModule.ORDER_TO_AH);
             case OPPORTUNITIES -> renderOpportunities(context, textRenderer, mouseX, mouseY);
             case ITEM_FILTERS -> renderFilters(context, textRenderer, mouseX, mouseY);
             case HISTORY -> renderHistory(context, textRenderer);
@@ -105,6 +110,15 @@ public final class ShellTabPanel implements TabContentPanel {
         if (tab == GuiTab.FISHING) {
             return clickFishing(mouseX, mouseY);
         }
+        if (tab == GuiTab.AH_DEALS) {
+            return clickModuleTab(mouseX, mouseY, MarketModule.AH_DEALS);
+        }
+        if (tab == GuiTab.ORDER_TO_AH && clickModuleTab(mouseX, mouseY, MarketModule.ORDER_TO_AH)) {
+            return true;
+        }
+        if (tab == GuiTab.ORDER_TO_AH && clickOrderSettings(mouseX, mouseY)) {
+            return true;
+        }
         if (tab == GuiTab.AUTOMATION) {
             return clickAutomation(mouseX, mouseY);
         }
@@ -120,24 +134,8 @@ public final class ShellTabPanel implements TabContentPanel {
                     return true;
                 }
             }
-        }
-        if (tab == GuiTab.ITEM_FILTERS && clickOrderSettings(mouseX, mouseY)) {
-            return true;
-        }
-        if (tab == GuiTab.SETTINGS) {
-            MarketModule[] modules = MarketModule.values();
-            for (int index = 0; index < modules.length; index++) {
-                int y = CARD_TOP + 73 + index * 22;
-                if (contains(mouseX, mouseY, CONTENT_X + 10, y, SETTINGS_PANEL_WIDTH - 20, 18)) {
-                    MarketModule module = modules[index];
-                    boolean enabled = !ScMarketClient.runtimeSettings().moduleEnabled(module);
-                    ScMarketClient.setModuleEnabled(module, enabled);
-                    notice = module.name() + (enabled ? " selected" : " paused")
-                            + (module == MarketModule.ORDER_TO_AH && enabled
-                                    ? "; no Order/AH action runs until its private GUI profile is verified."
-                                    : "; GUI actions remain serialized and authorization gates still apply.");
-                    return true;
-                }
+            if (clickFilters(mouseX, mouseY)) {
+                return true;
             }
         }
         if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
@@ -206,7 +204,7 @@ public final class ShellTabPanel implements TabContentPanel {
 
     @Override
     public boolean mouseScrolled(int mouseX, int mouseY, double verticalAmount) {
-        if (tab == GuiTab.ITEM_FILTERS
+        if (tab == GuiTab.ORDER_TO_AH
                 && contains(mouseX, mouseY, CONTENT_X + 237, CARD_TOP + 145,
                 CONTENT_RIGHT - CONTENT_X - 247, 36)) {
             int size = ScMarketClient.orderModuleSettings().itemWhitelist().size();
@@ -214,6 +212,23 @@ public final class ShellTabPanel implements TabContentPanel {
             int direction = verticalAmount < 0.0D ? 1 : verticalAmount > 0.0D ? -1 : 0;
             whitelistOffset = Math.max(0, Math.min(maximumOffset, whitelistOffset + direction));
             return true;
+        }
+        if (tab == GuiTab.ITEM_FILTERS && mouseY >= CARD_TOP + 71 && mouseY < CARD_TOP + 120) {
+            int direction = verticalAmount < 0.0D ? 1 : verticalAmount > 0.0D ? -1 : 0;
+            if (mouseX >= CONTENT_X + 237 && mouseX < CONTENT_X + 333) {
+                int maximum = Math.max(0,
+                        dataSources.itemFilters().getItemFilters().whitelistedItems().size() - 3);
+                filterWhitelistOffset = Math.max(0,
+                        Math.min(maximum, filterWhitelistOffset + direction));
+                return true;
+            }
+            if (mouseX >= CONTENT_X + 340 && mouseX < CONTENT_RIGHT - 10) {
+                int maximum = Math.max(0,
+                        dataSources.itemFilters().getItemFilters().blacklistedItems().size() - 3);
+                filterBlacklistOffset = Math.max(0,
+                        Math.min(maximum, filterBlacklistOffset + direction));
+                return true;
+            }
         }
         if (tab != GuiTab.OPPORTUNITIES
                 || !contains(mouseX, mouseY, CONTENT_X, OPPORTUNITY_GRID_TOP,
@@ -323,7 +338,7 @@ public final class ShellTabPanel implements TabContentPanel {
 
         boolean moduleOn = ScMarketClient.runtimeSettings().moduleEnabled(MarketModule.FISHING);
         boolean fishingArmed = moduleOn && snapshot.configuration().enabled()
-                && snapshot.configuration().mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER;
+                && snapshot.configuration().mode().isAutomatic();
         String address = ScMarketClient.currentServerAddress().strip();
         boolean connected = !address.isBlank();
         boolean allowed = connected && snapshot.configuration().serverAllowed(address);
@@ -375,12 +390,127 @@ public final class ShellTabPanel implements TabContentPanel {
                 rightWidth - 20, GuiColors.MUTED_TEXT, 3);
     }
 
+    private void renderModuleTab(
+            GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY, MarketModule module
+    ) {
+        AutomationSettingsSnapshot snapshot = dataSources.automationSettings().snapshot();
+        int right = CONTENT_X + 227;
+        int rightWidth = CONTENT_RIGHT - right;
+        panel(context, CONTENT_X, CARD_TOP, 220, 211);
+        panel(context, right, CARD_TOP, rightWidth, 211);
+        boolean moduleOn = ScMarketClient.runtimeSettings().moduleEnabled(module);
+        String address = ScMarketClient.currentServerAddress().strip();
+        boolean allowed = !address.isBlank() && snapshot.configuration().serverAllowed(address);
+        boolean hasProfile = snapshot.configuration().interactionProfile().isPresent();
+        boolean packetMode = ScMarketClient.selectedDetectionMode() == MarketDetectionMode.PACKET_SCAN;
+        boolean order = module == MarketModule.ORDER_TO_AH;
+
+        GuiTypography.draw(context, renderer, order ? "ORDER → AH WORKFLOW" : "AH DEALS WORKFLOW",
+                CONTENT_X + 10, CARD_TOP + 11, GuiColors.ACCENT_TEXT, false);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Module", order ? "LOCKED · parser unverified" : moduleOn ? "ACTIVE" : "STOPPED",
+                CARD_TOP + 34);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Mode", shortMode(snapshot.configuration().mode()), CARD_TOP + 55);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Server", allowed ? "EXACT SERVER ALLOWED" : "NOT ALLOWED", CARD_TOP + 76);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Private profile", hasProfile ? "CONFIGURED" : "NOT CONFIGURED", CARD_TOP + 97);
+        if (!order) {
+            button(context, renderer, CONTENT_X + 10, CARD_TOP + 119, 200, 18,
+                    allowed ? "CURRENT SERVER ALREADY ALLOWED" : "ALLOW CURRENT SERVER",
+                    contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 119, 200, 18));
+            button(context, renderer, CONTENT_X + 10, CARD_TOP + 145, 95, 18, "START AUTO",
+                    contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 145, 95, 18));
+            button(context, renderer, CONTENT_X + 115, CARD_TOP + 145, 95, 18, "START SMART",
+                    contains(mouseX, mouseY, CONTENT_X + 115, CARD_TOP + 145, 95, 18));
+            button(context, renderer, CONTENT_X + 10, CARD_TOP + 171, 200, 18, "STOP THIS MODULE",
+                    contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 171, 200, 18));
+            GuiTypography.draw(context, renderer, packetMode ? "Packet Scan works without an API key."
+                            : "API is optional; data-source choice is in Settings.",
+                    CONTENT_X + 10, CARD_TOP + 196, GuiColors.POSITIVE_TEXT, false);
+        } else {
+            lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                    "Execution", "SAFELY DISABLED", CARD_TOP + 119);
+            GuiTypography.draw(context, renderer, "API credentials do not unlock this parser.",
+                    CONTENT_X + 10, CARD_TOP + 149, GuiColors.MUTED_TEXT, false);
+            GuiTypography.draw(context, renderer, "No order will be collected or listed.",
+                    CONTENT_X + 10, CARD_TOP + 164, GuiColors.MUTED_TEXT, false);
+            renderOrderModuleSettings(context, renderer, mouseX, mouseY, right);
+            return;
+        }
+
+        GuiTypography.draw(context, renderer, "SMART SETUP & SAFETY", right + 10, CARD_TOP + 11,
+                GuiColors.ACCENT_TEXT, false);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Data source", packetMode ? "Packet Scan · no key" : "API mode", CARD_TOP + 34);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Filter policy", modeFilterLabel(snapshot.configuration().mode()), CARD_TOP + 55);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Balance gate", snapshot.configuration().requireBalanceVerification()
+                        ? "REQUIRED · no private provider" : "PROFILE POLICY", CARD_TOP + 76);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Execution", snapshot.execution().activeState().map(Enum::name).orElse("IDLE"), CARD_TOP + 97);
+        context.fill(right + 10, CARD_TOP + 115, CONTENT_RIGHT - 10, CARD_TOP + 116,
+                GuiColors.SECONDARY_BORDER);
+        String guidance;
+        if (!hasProfile) {
+            guidance = "Packet Scan needs the exact private AH screen profile to parse listing prices. Automatic buy/sell also stays gated by the profile and transaction checks.";
+        } else if (snapshot.configuration().requireBalanceVerification()) {
+            guidance = "A read-only listing scan can work without API. Live buys remain blocked until a transactional balance provider and private interaction profile are verified.";
+        } else {
+            guidance = modeFilterLabel(snapshot.configuration().mode())
+                    + " Fresh listing, item identity, price, server allowlist, and confirmation checks still apply.";
+        }
+        drawWrapped(context, renderer, guidance, right + 10, CARD_TOP + 126,
+                rightWidth - 20, GuiColors.MUTED_TEXT, 5);
+    }
+
+    private boolean clickModuleTab(int mouseX, int mouseY, MarketModule module) {
+        if (module == MarketModule.ORDER_TO_AH) {
+            return false;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 119, 200, 18)) {
+            if (ScMarketClient.currentServerAddress().isBlank()) {
+                notice = "Connect to the authorized private server before adding it to the allowlist.";
+            } else {
+                dataSources.automationSettings().allowCurrentServer()
+                        .whenComplete((ignored, error) -> notice = error == null
+                                ? "Exact current server added to the allowlist."
+                                : "Unable to allow the current server.");
+            }
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 145, 95, 18)) {
+            startModule(module, AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 115, CARD_TOP + 145, 95, 18)) {
+            startModule(module, AutomationMode.SMART_AUTHORIZED_SERVER);
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 171, 200, 18)) {
+            ScMarketClient.stopAuthorizedModule(module).whenComplete((ignored, error) -> notice = error == null
+                    ? "Module stopped; global automation is disabled."
+                    : "Module stopped, but settings could not be saved.");
+            return true;
+        }
+        return false;
+    }
+
+    private void startModule(MarketModule module, AutomationMode mode) {
+        notice = "Starting " + moduleLabel(module) + " in " + shortMode(mode) + " mode…";
+        ScMarketClient.startAuthorizedModule(module, mode).whenComplete((ignored, error) -> notice = error == null
+                ? moduleLabel(module) + " is armed; exact server, profile, and transaction checks still apply."
+                : "Module did not start: " + Objects.requireNonNullElse(error.getMessage(), "runtime unavailable"));
+    }
+
     private boolean clickFishing(int mouseX, int mouseY) {
         if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18)) {
             AutomationSettingsSnapshot snapshot = dataSources.automationSettings().snapshot();
             boolean armed = ScMarketClient.runtimeSettings().moduleEnabled(MarketModule.FISHING)
                     && snapshot.configuration().enabled()
-                    && snapshot.configuration().mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER;
+                    && snapshot.configuration().mode().isAutomatic();
             if (armed) {
                 notice = "Stopping Fishing and disabling automation…";
                 ScMarketClient.stopFishingOnly().whenComplete((ignored, error) -> notice = error == null
@@ -634,10 +764,9 @@ public final class ShellTabPanel implements TabContentPanel {
 
         GuiTypography.draw(context, textRenderer, "FILTER MODE", CONTENT_X + 9, CARD_TOP + 11,
                 GuiColors.ACCENT_TEXT, false);
-        String counts = filters.whitelistedItems().size() + " whitelisted  |  "
-                + filters.blacklistedItems().size() + " blacklisted";
-        GuiTypography.draw(context, textRenderer, counts, CONTENT_X + 9, CARD_TOP + 24,
-                GuiColors.MUTED_TEXT, false);
+        GuiTypography.draw(context, textRenderer,
+                filters.whitelistedItems().size() + " whitelist · " + filters.blacklistedItems().size() + " blacklist",
+                CONTENT_X + 9, CARD_TOP + 24, GuiColors.MUTED_TEXT, false);
 
         ItemFilterMode[] modes = ItemFilterMode.values();
         for (int index = 0; index < modes.length; index++) {
@@ -654,8 +783,131 @@ public final class ShellTabPanel implements TabContentPanel {
             GuiTypography.draw(context, textRenderer, modeName(modes[index]), CONTENT_X + 18, y + 11,
                     selected ? GuiColors.PRIMARY_TEXT : GuiColors.SECONDARY_TEXT, false);
         }
+        drawWrapped(context, textRenderer,
+                filters.reevaluationPending() ? "Applying filters to current listings…"
+                        : "Smart mode rechecks these rules immediately before an action.",
+                CONTENT_X + 9, CARD_TOP + 157, 202, GuiColors.MUTED_TEXT, 3);
 
-        renderOrderModuleSettings(context, textRenderer, mouseX, mouseY, CONTENT_X + 237);
+        int rightX = CONTENT_X + 237;
+        int rightEdge = CONTENT_RIGHT - 10;
+        int fieldWidth = rightEdge - rightX - 86;
+        GuiTypography.draw(context, textRenderer, "ITEM ID FILTERS", rightX, CARD_TOP + 11,
+                GuiColors.ACCENT_TEXT, false);
+        GuiTypography.draw(context, textRenderer, "Add or click an entry to remove it", rightX,
+                CARD_TOP + 24, GuiColors.MUTED_TEXT, false);
+        if (filterItemField == null) {
+            filterItemField = new EditBox(textRenderer, rightX, CARD_TOP + 35, fieldWidth, 16,
+                    Component.literal("Namespaced item ID"));
+            filterItemField.setMaxLength(256);
+            filterItemField.setTextShadow(false);
+            filterItemField.setHint(Component.literal("minecraft:diamond"));
+        }
+        filterItemField.extractRenderState(context, mouseX, mouseY, 0.0F);
+        button(context, textRenderer, rightX + fieldWidth + 4, CARD_TOP + 35, 38, 16, "WL +",
+                contains(mouseX, mouseY, rightX + fieldWidth + 4, CARD_TOP + 35, 38, 16));
+        button(context, textRenderer, rightX + fieldWidth + 46, CARD_TOP + 35, 38, 16, "BL +",
+                contains(mouseX, mouseY, rightX + fieldWidth + 46, CARD_TOP + 35, 38, 16));
+
+        GuiTypography.draw(context, textRenderer, "WHITELIST", rightX, CARD_TOP + 58,
+                GuiColors.SECONDARY_TEXT, false);
+        GuiTypography.draw(context, textRenderer, "BLACKLIST", rightX + 103, CARD_TOP + 58,
+                GuiColors.SECONDARY_TEXT, false);
+        filterWhitelistOffset = Math.max(0,
+                Math.min(filterWhitelistOffset, Math.max(0, filters.whitelistedItems().size() - 3)));
+        filterBlacklistOffset = Math.max(0,
+                Math.min(filterBlacklistOffset, Math.max(0, filters.blacklistedItems().size() - 3)));
+        drawFilterItems(context, textRenderer, filters.whitelistedItems().stream().sorted().toList(),
+                filterWhitelistOffset, rightX, CARD_TOP + 71, 96, mouseX, mouseY);
+        drawFilterItems(context, textRenderer, filters.blacklistedItems().stream().sorted().toList(),
+                filterBlacklistOffset, rightX + 103, CARD_TOP + 71, 96, mouseX, mouseY);
+        drawWrapped(context, textRenderer,
+                filters.mode() == ItemFilterMode.WHITELIST_ONLY && filters.whitelistedItems().isEmpty()
+                        ? "Whitelist-only with no items rejects all candidates (fail-closed)."
+                        : filters.mode() == ItemFilterMode.ALL_EXCEPT_BLACKLIST
+                                ? "Blacklisted IDs are excluded from market opportunities. Smart mode rechecks changes before execution."
+                                : "Auto acts on scanner candidates. Smart also rechecks the selected filter policy immediately before execution.",
+                rightX, CARD_TOP + 128, rightEdge - rightX, GuiColors.MUTED_TEXT, 4);
+        if (!notice.isBlank()) {
+            GuiTypography.draw(context, textRenderer, fit(textRenderer, notice, rightEdge - rightX),
+                    rightX, CARD_TOP + 197, GuiColors.SECONDARY_TEXT, false);
+        }
+    }
+
+    private void drawFilterItems(
+            GuiGraphicsExtractor context, Font renderer, List<String> values, int offset,
+            int x, int y, int width, int mouseX, int mouseY
+    ) {
+        if (values.isEmpty()) {
+            GuiTypography.draw(context, renderer, "(empty)", x + 3, y + 4, GuiColors.MUTED_TEXT, false);
+            return;
+        }
+        for (int row = 0; row < Math.min(3, values.size() - offset); row++) {
+            String itemId = values.get(offset + row);
+            button(context, renderer, x, y + row * 16, width, 14,
+                    fit(renderer, "− " + itemId, width - 8),
+                    contains(mouseX, mouseY, x, y + row * 16, width, 14));
+        }
+    }
+
+    private boolean clickFilters(int mouseX, int mouseY) {
+        ItemFilterSnapshot current = dataSources.itemFilters().getItemFilters();
+        int rightX = CONTENT_X + 237;
+        int rightEdge = CONTENT_RIGHT - 10;
+        int fieldWidth = rightEdge - rightX - 86;
+        int fieldY = CARD_TOP + 35;
+        if (contains(mouseX, mouseY, rightX, fieldY, fieldWidth, 16)) {
+            if (filterItemField != null) {
+                filterItemField.onClick(new MouseButtonEvent(mouseX, mouseY,
+                        new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0)), false);
+            }
+            return true;
+        }
+        String itemId = filterItemField == null ? "" : filterItemField.getValue().strip()
+                .toLowerCase(Locale.ROOT);
+        if (contains(mouseX, mouseY, rightX + fieldWidth + 4, fieldY, 38, 16)) {
+            updateItemFilter(itemId, true);
+            return true;
+        }
+        if (contains(mouseX, mouseY, rightX + fieldWidth + 46, fieldY, 38, 16)) {
+            updateItemFilter(itemId, false);
+            return true;
+        }
+        List<String> whitelist = current.whitelistedItems().stream().sorted().toList();
+        List<String> blacklist = current.blacklistedItems().stream().sorted().toList();
+        for (int row = 0; row < Math.min(3, whitelist.size() - filterWhitelistOffset); row++) {
+            if (contains(mouseX, mouseY, rightX, CARD_TOP + 71 + row * 16, 96, 14)) {
+                String selected = whitelist.get(filterWhitelistOffset + row);
+                dataSources.itemFilters().setWhitelisted(selected, false).whenComplete((ignored, error) ->
+                        notice = error == null ? "Whitelist entry removed." : "Unable to remove whitelist entry.");
+                return true;
+            }
+        }
+        for (int row = 0; row < Math.min(3, blacklist.size() - filterBlacklistOffset); row++) {
+            if (contains(mouseX, mouseY, rightX + 103, CARD_TOP + 71 + row * 16, 96, 14)) {
+                String selected = blacklist.get(filterBlacklistOffset + row);
+                dataSources.itemFilters().setBlacklisted(selected, false).whenComplete((ignored, error) ->
+                        notice = error == null ? "Blacklist entry removed." : "Unable to remove blacklist entry.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateItemFilter(String itemId, boolean whitelist) {
+        if (itemId.isBlank()) {
+            notice = "Enter a namespaced item ID, for example minecraft:diamond.";
+            return;
+        }
+        var update = whitelist
+                ? dataSources.itemFilters().setWhitelisted(itemId, true)
+                : dataSources.itemFilters().setBlacklisted(itemId, true);
+        update.whenComplete((ignored, error) -> {
+            notice = error == null ? (whitelist ? "Added to whitelist." : "Added to blacklist.")
+                    : "Invalid item ID or unable to save this filter.";
+            if (error == null && filterItemField != null) {
+                filterItemField.setValue("");
+            }
+        });
     }
 
     private void renderOrderModuleSettings(
@@ -1071,8 +1323,11 @@ public final class ShellTabPanel implements TabContentPanel {
             notice = "Purchase tracking cancelled.";
             return true;
         }
-        if (tab == GuiTab.ITEM_FILTERS && tradeItemField != null && tradeItemField.isFocused()) {
+        if (tab == GuiTab.ORDER_TO_AH && tradeItemField != null && tradeItemField.isFocused()) {
             return tradeItemField.keyPressed(input);
+        }
+        if (tab == GuiTab.ITEM_FILTERS && filterItemField != null && filterItemField.isFocused()) {
+            return filterItemField.keyPressed(input);
         }
         return tab == GuiTab.SETTINGS && apiKeyField != null && apiKeyField.isFocused()
                 && apiKeyField.keyPressed(input);
@@ -1080,8 +1335,11 @@ public final class ShellTabPanel implements TabContentPanel {
 
     @Override
     public boolean charTyped(CharacterEvent input) {
-        if (tab == GuiTab.ITEM_FILTERS && tradeItemField != null && tradeItemField.isFocused()) {
+        if (tab == GuiTab.ORDER_TO_AH && tradeItemField != null && tradeItemField.isFocused()) {
             return tradeItemField.charTyped(input);
+        }
+        if (tab == GuiTab.ITEM_FILTERS && filterItemField != null && filterItemField.isFocused()) {
+            return filterItemField.charTyped(input);
         }
         return tab == GuiTab.SETTINGS && apiKeyField != null && apiKeyField.isFocused()
                 && apiKeyField.charTyped(input);
@@ -1092,7 +1350,8 @@ public final class ShellTabPanel implements TabContentPanel {
             case DISABLED -> AutomationMode.DRY_RUN;
             case DRY_RUN -> AutomationMode.CONFIRM_EACH;
             case CONFIRM_EACH -> AutomationMode.AUTOMATIC_AUTHORIZED_SERVER;
-            case AUTOMATIC_AUTHORIZED_SERVER -> AutomationMode.DISABLED;
+            case AUTOMATIC_AUTHORIZED_SERVER -> AutomationMode.SMART_AUTHORIZED_SERVER;
+            case SMART_AUTHORIZED_SERVER -> AutomationMode.DISABLED;
         };
     }
 
@@ -1101,8 +1360,13 @@ public final class ShellTabPanel implements TabContentPanel {
             case DISABLED -> "DISABLED";
             case DRY_RUN -> "DRY RUN";
             case CONFIRM_EACH -> "CONFIRM EACH";
-            case AUTOMATIC_AUTHORIZED_SERVER -> "ALLOWLIST AUTO";
+            case AUTOMATIC_AUTHORIZED_SERVER -> "AUTO";
+            case SMART_AUTHORIZED_SERVER -> "SMART";
         };
+    }
+
+    private static String modeFilterLabel(AutomationMode mode) {
+        return mode.isSmart() ? "Live filters rechecked" : "Configured scan filters";
     }
 
     private static long nextActionDelay(long current) {
@@ -1137,18 +1401,13 @@ public final class ShellTabPanel implements TabContentPanel {
         button(context, textRenderer, CONTENT_X + 10, CARD_TOP + 50, panelWidth - 20, 18,
                 detectionModeLabel(ScMarketClient.selectedDetectionMode()),
                 contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 50, panelWidth - 20, 18));
-        MarketModule[] modules = MarketModule.values();
-        for (int index = 0; index < modules.length; index++) {
-            MarketModule module = modules[index];
-            int y = CARD_TOP + 73 + index * 22;
-            boolean active = ScMarketClient.runtimeSettings().moduleEnabled(module);
-            button(context, textRenderer, CONTENT_X + 10, y, panelWidth - 20, 18,
-                    moduleLabel(module) + (active ? "  ·  ON" : "  ·  OFF"),
-                    contains(mouseX, mouseY, CONTENT_X + 10, y, panelWidth - 20, 18));
-        }
-        context.fill(CONTENT_X + 10, CARD_TOP + 139, CONTENT_X + panelWidth - 10,
-                CARD_TOP + 140, GuiColors.SECONDARY_BORDER);
-        GuiTypography.draw(context, textRenderer, "HUD notifications", CONTENT_X + 10, CARD_TOP + 151,
+        GuiTypography.draw(context, textRenderer, "MODULE TABS", CONTENT_X + 10, CARD_TOP + 80,
+                GuiColors.MUTED_TEXT, false);
+        drawWrapped(context, textRenderer, "Fishing, AH Deals, and Order→AH each have a dedicated tab.",
+                CONTENT_X + 10, CARD_TOP + 96, panelWidth - 20, GuiColors.SECONDARY_TEXT, 2);
+        context.fill(CONTENT_X + 10, CARD_TOP + 129, CONTENT_X + panelWidth - 10,
+                CARD_TOP + 130, GuiColors.SECONDARY_BORDER);
+        GuiTypography.draw(context, textRenderer, "HUD notifications", CONTENT_X + 10, CARD_TOP + 141,
                 GuiColors.MUTED_TEXT, false);
         settingsToggle(context, textRenderer, notificationToggleX(), notificationToggleY(),
                 notifications, contains(mouseX, mouseY, notificationToggleX(), notificationToggleY(),

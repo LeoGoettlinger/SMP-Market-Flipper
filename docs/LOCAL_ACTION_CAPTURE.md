@@ -9,7 +9,7 @@ SC-Market has an **opt-in, local-only** diagnostic recorder for inspecting priva
 1. Use only a server you own or whose operator explicitly permits this testing. Prefer a disposable test profile. Do not test on a public/unapproved server.
 2. Start Minecraft with SC-Market and connect to that authorized test server. Do not enable live automation just to record clicks. Order→AH currently reports that no verified Order-ID/claim parser is connected and should remain idle.
 3. Open the ClickGUI with **Right Shift**.
-4. Select **Item Filters → Order → AH Settings**.
+4. Select the **Order→AH** tab.
 5. Set the action cap if desired, then toggle **LOCAL CAPTURE · OFF**. It should change to **LOCAL CAPTURE · ON** and the panel notice reports the local filename.
 6. Manually navigate the relevant Order/AH screens and click only what is safe to inspect. The recorder passively logs supported GUI clicks; it never clicks, claims, buys, or lists for you. Do not collect a partial order or submit an unapproved trade. If a screen requires a consequential confirmation, stop and capture the visible state instead.
 7. When finished, toggle **LOCAL CAPTURE · ON** off. The panel should show **LOCAL CAPTURE · OFF**. If the cap is reached, recording stops automatically; toggle off before starting a fresh file.

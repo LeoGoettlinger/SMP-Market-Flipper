@@ -1,10 +1,10 @@
 package com.scmarket.automation.service;
 
-import com.scmarket.automation.model.AutomationMode;
 import com.scmarket.automation.model.TradeExecutionRequest;
 import com.scmarket.automation.model.TradeExecutionResult;
 import com.scmarket.configuration.AutomationConfig;
 import com.scmarket.market.item.ItemFingerprintFactory;
+import com.scmarket.market.opportunity.ItemFilterPolicy;
 import com.scmarket.market.opportunity.OpportunityState;
 import com.scmarket.provider.LiveMarketSnapshot;
 import com.scmarket.provider.LiveMarketSnapshotService;
@@ -34,6 +34,7 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
     private final Supplier<AutomationConfig> configuration;
     private final TradeAutomationCoordinator coordinator;
     private final Supplier<LiveMarketSnapshot> latestSnapshot;
+    private final Supplier<ItemFilterPolicy> itemFilters;
     private final Clock clock;
     private final Deque<QueuedOpportunity> queue = new ArrayDeque<>();
     private final LinkedHashSet<String> seen = new LinkedHashSet<>();
@@ -45,7 +46,16 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
             TradeAutomationCoordinator coordinator,
             Supplier<LiveMarketSnapshot> latestSnapshot
     ) {
-        this(configuration, coordinator, latestSnapshot, Clock.systemUTC());
+        this(configuration, coordinator, latestSnapshot, ItemFilterPolicy::allowAll, Clock.systemUTC());
+    }
+
+    public AutomaticOpportunityDispatcher(
+            Supplier<AutomationConfig> configuration,
+            TradeAutomationCoordinator coordinator,
+            Supplier<LiveMarketSnapshot> latestSnapshot,
+            Supplier<ItemFilterPolicy> itemFilters
+    ) {
+        this(configuration, coordinator, latestSnapshot, itemFilters, Clock.systemUTC());
     }
 
     AutomaticOpportunityDispatcher(
@@ -54,9 +64,20 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
             Supplier<LiveMarketSnapshot> latestSnapshot,
             Clock clock
     ) {
+        this(configuration, coordinator, latestSnapshot, ItemFilterPolicy::allowAll, clock);
+    }
+
+    AutomaticOpportunityDispatcher(
+            Supplier<AutomationConfig> configuration,
+            TradeAutomationCoordinator coordinator,
+            Supplier<LiveMarketSnapshot> latestSnapshot,
+            Supplier<ItemFilterPolicy> itemFilters,
+            Clock clock
+    ) {
         this.configuration = Objects.requireNonNull(configuration, "configuration");
         this.coordinator = Objects.requireNonNull(coordinator, "coordinator");
         this.latestSnapshot = Objects.requireNonNull(latestSnapshot, "latestSnapshot");
+        this.itemFilters = Objects.requireNonNull(itemFilters, "itemFilters");
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
@@ -167,6 +188,18 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
         if (!OpportunityState.NEW.name().equals(latest.state())) {
             return Validation.rejected("The queued opportunity is no longer in the NEW state.");
         }
+        AutomationConfig currentConfig = configuration.get();
+        if (currentConfig.mode().isSmart()) {
+            try {
+                com.scmarket.market.opportunity.FilterDecision decision =
+                        itemFilters.get().evaluate(latest.itemId());
+                if (!decision.allowed()) {
+                    return Validation.rejected("Smart mode skipped this item: " + decision.explanation());
+                }
+            } catch (RuntimeException invalidFilterPolicy) {
+                return Validation.rejected("Smart filter settings are unavailable; execution was blocked.");
+            }
+        }
         if (!sameImmutableListing(queued.opportunity(), latest)) {
             return Validation.rejected("The queued opportunity changed before execution.");
         }
@@ -194,7 +227,7 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
         AutomationConfig config = configuration.get();
         var execution = coordinator.snapshot();
         return config.enabled()
-                && config.mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER
+                && config.mode().isAutomatic()
                 && coordinator.currentServerAllowed()
                 && !execution.emergencyStopped();
     }
@@ -236,7 +269,7 @@ public final class AutomaticOpportunityDispatcher implements AutoCloseable {
                 value.comparableSales(), value.riskLevel(),
                 value.listedAt().orElse(value.detectedAt()), price,
                 Math.max(1, config.maximumListingAgeSeconds()),
-                AutomationMode.AUTOMATIC_AUTHORIZED_SERVER,
+                config.mode(),
                 Optional.of(itemName(value.itemId())), value.normalizedItemMetadata()
         );
     }

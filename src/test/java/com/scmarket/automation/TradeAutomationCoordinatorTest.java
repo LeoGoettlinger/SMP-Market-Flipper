@@ -95,6 +95,20 @@ class TradeAutomationCoordinatorTest {
     }
 
     @Test
+    void smartModeUsesTheSameExecutionSafetyGatesAsAutoMode() {
+        AutomationConfig config = enabledConfig(AutomationMode.SMART_AUTHORIZED_SERVER);
+        TradeAutomationCoordinator coordinator = coordinator(config, new DryRunAuctionInteractionAdapter());
+        coordinator.onServerChanged("example.test");
+
+        TradeExecutionResult result = coordinator.submit(
+                request("smart-mode-listing", AutomationMode.SMART_AUTHORIZED_SERVER)
+        ).join();
+
+        assertTrue(result.successful());
+        assertEquals(1, coordinator.snapshot().purchasesThisSession());
+    }
+
+    @Test
     void removingAllowlistDuringAsyncLookupStopsBeforePurchase() {
         AtomicReference<AutomationConfig> config = new AtomicReference<>(
                 enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER));

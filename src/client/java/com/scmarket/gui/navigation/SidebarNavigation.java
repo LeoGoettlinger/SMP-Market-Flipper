@@ -12,8 +12,8 @@ public final class SidebarNavigation {
     private static final int START_X = 6;
     private static final int START_Y = GuiLayout.HEADER_HEIGHT + 12;
     private static final int BUTTON_WIDTH = GuiLayout.SIDEBAR_WIDTH - 12;
-    private static final int BUTTON_HEIGHT = 34;
-    private static final int BUTTON_GAP = 6;
+    private static final int BUTTON_HEIGHT = 27;
+    private static final int BUTTON_GAP = 3;
 
     public void render(
             GuiGraphicsExtractor context,
@@ -43,7 +43,7 @@ public final class SidebarNavigation {
                     textRenderer,
                     tab.displayName(),
                     START_X + 8,
-                    y + 13,
+                    y + 10,
                     selected ? GuiColors.PRIMARY_TEXT : hovered ? GuiColors.PRIMARY_TEXT : GuiColors.MUTED_TEXT,
                     false
             );

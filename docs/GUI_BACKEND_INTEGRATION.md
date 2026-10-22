@@ -88,7 +88,7 @@ Displays compact live cards with item/count, listing price, conservative fair va
 confidence, age, and guarded `BOUGHT`/`RUN`/dismiss controls. `BOUGHT` opens a confirmation and
 records the exact listing cost basis only after the user confirms a manual purchase. `RUN` delegates to the automation provider;
 the default disabled mode rejects it, while dry-run uses a non-Minecraft adapter. In enabled
-`AUTOMATIC_AUTHORIZED_SERVER` mode with the current server allowlisted, newly published `NEW` opportunities are also submitted from
+Auto (`AUTOMATIC_AUTHORIZED_SERVER`) or Smart (`SMART_AUTHORIZED_SERVER`) mode with the current server allowlisted, newly published `NEW` opportunities are also submitted from
 the provider layer without requiring the ClickGUI to be open.
 
 ### Item Filters

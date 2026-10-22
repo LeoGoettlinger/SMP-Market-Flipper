@@ -40,7 +40,7 @@ Die Aufzeichnung ist standardmäßig ausgeschaltet und wird nur lokal gespeicher
 
 1. Verbinde dich mit dem erlaubten privaten Testserver. **Schalte die Live-Order-Automatisierung nicht ein.** Der Recorder benötigt sie nicht.
 2. Öffne SC-Market mit **Rechts-Shift**.
-3. Öffne **Item Filters → Order → AH Settings**.
+3. Öffne den Tab **Order→AH**.
 4. Suche im Einstellungsbereich den Schalter **LOCAL CAPTURE · OFF**. Die Schaltfläche **CAP** daneben legt die Obergrenze der aufgezeichneten Aktionen fest. Standardmäßig sind es 5.000 Aktionen; die UI bietet 100, 500, 1.000, 2.500, 5.000 und 10.000 an. Für einen kurzen Durchlauf reichen normalerweise 1.000 oder 2.500.
 5. Klicke auf **LOCAL CAPTURE · OFF**. Der Status sollte zu **LOCAL CAPTURE · ON** wechseln und die Mitteilung den lokalen Dateinamen nennen. Wenn stattdessen `CAPTURE STOPPED · TOGGLE OFF` erscheint, läuft gerade keine Aufnahme; schalte den Schalter aus und wieder ein.
 6. Navigiere die relevanten Ansichten **manuell und langsam**. Notiere dir die Reihenfolge mit kurzen Nummern, zum Beispiel:

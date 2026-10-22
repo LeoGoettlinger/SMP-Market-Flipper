@@ -13,6 +13,8 @@ import com.scmarket.automation.model.RelistPricingStrategy;
 import com.scmarket.automation.model.TradeExecutionRequest;
 import com.scmarket.configuration.AutomationConfig;
 import com.scmarket.market.item.ItemFingerprintFactory;
+import com.scmarket.market.opportunity.ItemFilterMode;
+import com.scmarket.market.opportunity.ItemFilterPolicy;
 import com.scmarket.market.risk.MarketRiskLevel;
 import com.scmarket.provider.LiveMarketSnapshot;
 import com.scmarket.provider.MarketOpportunitySnapshot;
@@ -82,6 +84,27 @@ class AutomaticOpportunityDispatcherTest {
     }
 
     @Test
+    void smartModeRechecksCurrentWhitelistBeforeSubmittingQueuedWork() {
+        AutomationConfig config = enabledConfig(AutomationMode.SMART_AUTHORIZED_SERVER);
+        CountingAdapter adapter = new CountingAdapter();
+        TradeAutomationCoordinator coordinator = coordinator(config, adapter);
+        coordinator.onServerChanged("example.test");
+        LiveMarketSnapshot published = snapshot(opportunity("filtered", 100));
+        AtomicReference<LiveMarketSnapshot> latest = new AtomicReference<>(published);
+        ItemFilterPolicy policy = new ItemFilterPolicy(
+                ItemFilterMode.WHITELIST_ONLY, Set.of("minecraft:emerald"), Set.of()
+        );
+        AutomaticOpportunityDispatcher dispatcher = new AutomaticOpportunityDispatcher(
+                () -> config, coordinator, latest::get, () -> policy, CLOCK
+        );
+
+        dispatcher.onSnapshotPublished(published);
+
+        assertEquals(0, adapter.purchaseCount);
+        assertEquals(0, coordinator.snapshot().purchasesThisSession());
+    }
+
+    @Test
     void ignoresPublicationsUntilCurrentServerIsAllowlisted() {
         AutomationConfig config = enabledConfig();
         CountingAdapter adapter = new CountingAdapter();
@@ -136,8 +159,12 @@ class AutomaticOpportunityDispatcherTest {
     }
 
     private static AutomationConfig enabledConfig() {
+        return enabledConfig(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
+    }
+
+    private static AutomationConfig enabledConfig(AutomationMode mode) {
         return new AutomationConfig(
-                true, AutomationMode.AUTOMATIC_AUTHORIZED_SERVER, Set.of("example.test"),
+                true, mode, Set.of("example.test"),
                 new BigDecimal("100000"), new BigDecimal("500000"), 8,
                 30, 8, BigDecimal.ZERO, BigDecimal.ZERO, 30, 0,
                 RelistPricingStrategy.CONSERVATIVE_FAIR_VALUE, BigDecimal.ZERO, BigDecimal.ZERO,

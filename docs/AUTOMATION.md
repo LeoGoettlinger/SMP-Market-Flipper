@@ -11,7 +11,7 @@ included.
 
 The shipped configuration cannot execute a purchase: automation is disabled, dry-run is selected,
 the server allowlist is empty, all monetary/session limits are zero, and no interaction profile
-exists. The exact current-server allowlist is the server-access gate; there is no separate ARM SESSION control or typed authorization phrase. Live actions still require the relevant module, enabled mode, private interaction profile, bounded nonzero limits, and all verification checks. Disconnect/server or allowlist changes cancel active work; the emergency stop remains available.
+exists. The exact current-server allowlist is the server-access gate; there is no separate ARM SESSION control or typed authorization phrase. Transactional AH/Order actions and automatic sale require the relevant private profile, enabled module/mode, bounded nonzero limits, and all verification checks. Fishing cast/reel is the narrow exception: an exact allowlisted server suffices, and profile-free catches are retained without listing. Disconnect/server or allowlist changes cancel active work; the emergency stop remains available.
 
 ## State flow
 
@@ -25,13 +25,15 @@ QUEUED -> PRECHECK -> WAITING_FOR_CONFIRMATION (confirm-each only)
 Every failure is terminal and returns to a safe screen. A client restart converts any nonterminal
 database row to `INTERRUPTED_REQUIRES_REVIEW`; it never resumes a purchase or relist.
 
-In `AUTOMATIC_AUTHORIZED_SERVER`, successful immutable snapshot publications enqueue newly seen
+In either `AUTOMATIC_AUTHORIZED_SERVER` (Auto) or `SMART_AUTHORIZED_SERVER` (Smart), successful immutable snapshot publications enqueue newly seen
 `NEW` opportunities at the provider boundary. The queue holds at most eight entries, deduplicates
 the opportunity ID and listing key, and keeps the coordinator single-flight. Before a queued entry
 is submitted, it must still be `NEW`, have the same immutable item/seller/count/price/fingerprint,
 contain valid canonical fingerprint metadata, and have a listing verified within 15 seconds.
 Queue overflow, stale data, changed data, missing sellers, and missing metadata are journaled as
-preflight failures without sending a command or clicking a slot.
+preflight failures without sending a command or clicking a slot. Auto processes scanner-approved
+opportunities. Smart additionally checks the current item whitelist/blacklist against each refreshed
+candidate immediately before submission; a filter change therefore rejects already-queued work.
 
 ## Custom profile contract
 
@@ -97,19 +99,20 @@ decrease.
 5. Press **RUN** on one opportunity, inspect the pending state, then press **CONFIRM TRADE** only after reviewing it.
 6. Use **CANCEL EXECUTION** to cancel pending work or **EMERGENCY STOP** to block all new work and cancel the active workflow. Once idle, the emergency-stop control becomes **CLEAR STOP**; clearing it does not change your mode, server allowlist, profile, or other settings.
 
-After confirm-each testing, selecting `AUTOMATIC_AUTHORIZED_SERVER` with Automation enabled and the current exact server allowlisted enables
+After confirm-each testing, selecting Auto (`AUTOMATIC_AUTHORIZED_SERVER`) or Smart
+(`SMART_AUTHORIZED_SERVER`) with Automation enabled and the current exact server allowlisted enables
 provider-driven submission. No GUI needs to be open: the next successful live snapshot publication
 immediately queues new actionable opportunities. `RUN` remains available for explicit execution.
 
-Do not use `AUTOMATIC_AUTHORIZED_SERVER` until the complete profile and failure behavior have been
-tested on disposable server data. The mod does not bypass anti-cheat, CAPTCHAs, rate limits, or
+Do not use Auto or Smart until the complete profile and failure behavior have been tested on
+disposable server data. The mod does not bypass anti-cheat, CAPTCHAs, rate limits, or
 server restrictions.
 
 ## Fishing workflow
 
 Fishing shares the global switch and exact-server allowlist. The dedicated Fishing tab starts a
-Fishing-only module set (AH Deals and Order→AH remain off), chooses
-`AUTOMATIC_AUTHORIZED_SERVER`, and enables Automation. This is a clear start/stop control, not a
+Fishing-only module set (AH Deals and Order→AH remain off), chooses Auto
+(`AUTOMATIC_AUTHORIZED_SERVER`), and enables Automation. This is a clear start/stop control, not a
 separate authorization step: every tick still requires the exact connected address to be allowlisted.
 Stop disables global Automation as well as the Fishing module, so enabling another module later
 cannot silently resume automatic execution.

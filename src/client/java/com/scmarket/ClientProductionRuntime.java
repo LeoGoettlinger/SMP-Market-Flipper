@@ -218,12 +218,15 @@ public final class ClientProductionRuntime implements AutoCloseable {
         return fishingController.status();
     }
 
-    public CompletableFuture<Void> enableFishingAutomation() {
-        return automationSettings.setMode(com.scmarket.automation.model.AutomationMode.AUTOMATIC_AUTHORIZED_SERVER)
-                .thenCompose(ignored -> automationSettings.setEnabled(true));
+    public CompletableFuture<Void> enableAutomation(com.scmarket.automation.model.AutomationMode mode) {
+        if (!mode.isAutomatic()) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException(
+                    "Automation requires Auto or Smart mode."));
+        }
+        return automationSettings.setMode(mode).thenCompose(ignored -> automationSettings.setEnabled(true));
     }
 
-    public CompletableFuture<Void> disableFishingAutomation() {
+    public CompletableFuture<Void> disableAutomation() {
         return automationSettings.setEnabled(false);
     }
 
@@ -238,8 +241,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         String server = ScMarketClient.currentServerAddress().strip()
                 .toLowerCase(java.util.Locale.ROOT);
         if (!runtime.enabled() || !runtime.moduleEnabled(MarketModule.FISHING)
-                || !config.enabled() || config.mode()
-                != com.scmarket.automation.model.AutomationMode.AUTOMATIC_AUTHORIZED_SERVER
+                || !config.enabled() || !config.mode().isAutomatic()
                 || server.isBlank() || !config.serverAllowed(server)) {
             return false;
         }
@@ -426,7 +428,8 @@ public final class ClientProductionRuntime implements AutoCloseable {
                              balanceProvider
                      );
             AutomaticOpportunityDispatcher automaticDispatcher = new AutomaticOpportunityDispatcher(
-                    () -> flipperAutomation(configuration.get().automation()), automation, snapshots::snapshot
+                    () -> flipperAutomation(configuration.get().automation()), automation, snapshots::snapshot,
+                    () -> filters(configuration.get())
             );
             Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
             return Optional.of(new ClientProductionRuntime(
@@ -542,7 +545,8 @@ public final class ClientProductionRuntime implements AutoCloseable {
                             automation
                     );
             AutomaticOpportunityDispatcher automaticDispatcher = new AutomaticOpportunityDispatcher(
-                    () -> flipperAutomation(configuration.get().automation()), automation, snapshots::snapshot
+                    () -> flipperAutomation(configuration.get().automation()), automation, snapshots::snapshot,
+                    () -> filters(configuration.get())
             );
             Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
             return Optional.of(new ClientProductionRuntime(

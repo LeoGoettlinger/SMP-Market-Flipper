@@ -281,13 +281,25 @@ public final class ScMarketClient implements ClientModInitializer {
         setModuleEnabled(module, !runtimeSettings.moduleEnabled(module));
     }
 
-    /** Starts a fishing-only authorized mode so enabling Fishing cannot also start AH buying workflows. */
-    public static CompletableFuture<Void> startFishingOnly() {
-        updateRuntimeSettings(new ModRuntimeSettings(true,
-                Set.of(com.scmarket.configuration.MarketModule.FISHING)));
+    /** Enables only the selected workflow; the exact server allowlist and profile/safety gates remain mandatory. */
+    public static CompletableFuture<Void> startAuthorizedModule(
+            com.scmarket.configuration.MarketModule module,
+            com.scmarket.automation.model.AutomationMode mode
+    ) {
+        Objects.requireNonNull(module, "module");
+        Objects.requireNonNull(mode, "mode");
+        if (!mode.isAutomatic()) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException(
+                    "Select Auto or Smart to start an automatic module."));
+        }
+        if (module == com.scmarket.configuration.MarketModule.ORDER_TO_AH) {
+            return CompletableFuture.failedFuture(new IllegalStateException(
+                    "Order→AH stays locked until the exact full-order claim parser is verified."));
+        }
+        updateRuntimeSettings(new ModRuntimeSettings(true, Set.of(module)));
         ClientProductionRuntime runtime = productionRuntime;
         if (runtime != null) {
-            return runtime.enableFishingAutomation();
+            return runtime.enableAutomation(mode);
         }
         CompletableFuture<Optional<ClientProductionRuntime>> startup = productionStartup;
         if (startup == null) {
@@ -295,17 +307,30 @@ public final class ScMarketClient implements ClientModInitializer {
                     new IllegalStateException("The live market runtime has not started."));
         }
         return startup.thenCompose(optional -> optional
-                .map(ClientProductionRuntime::enableFishingAutomation)
+                .map(value -> value.enableAutomation(mode))
                 .orElseGet(() -> CompletableFuture.failedFuture(
                         new IllegalStateException("No live market runtime is available; check Packet Scan status."))));
     }
 
-    /** Stops the fishing-only workflow and disables global automation to avoid arming later modules. */
-    public static CompletableFuture<Void> stopFishingOnly() {
-        setModuleEnabled(com.scmarket.configuration.MarketModule.FISHING, false);
+    /** Starts Fishing alone using the simple automatic mode. */
+    public static CompletableFuture<Void> startFishingOnly() {
+        return startAuthorizedModule(com.scmarket.configuration.MarketModule.FISHING,
+                com.scmarket.automation.model.AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
+    }
+
+    /** Stops the selected workflow and disables global automation to avoid arming another module later. */
+    public static CompletableFuture<Void> stopAuthorizedModule(
+            com.scmarket.configuration.MarketModule module
+    ) {
+        ModRuntimeSettings stopped = runtimeSettings.withModule(Objects.requireNonNull(module, "module"), false);
+        updateRuntimeSettings(new ModRuntimeSettings(stopped.enabled(), Set.of()));
         ClientProductionRuntime runtime = productionRuntime;
         return runtime == null ? CompletableFuture.completedFuture(null)
-                : runtime.disableFishingAutomation();
+                : runtime.disableAutomation();
+    }
+
+    public static CompletableFuture<Void> stopFishingOnly() {
+        return stopAuthorizedModule(com.scmarket.configuration.MarketModule.FISHING);
     }
 
     /** Compatibility hook; selecting a legacy mode intentionally makes it the only active module. */

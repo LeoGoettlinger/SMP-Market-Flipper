@@ -14,7 +14,8 @@ A client-side market scanner and opt-in automation toolkit for Minecraft Java Ed
 2. Build with Java 25 using `./gradlew test build --no-daemon`.
 3. Put the mod JAR from `build/libs/` into `.minecraft/mods` and start the matching 26.2 game.
 4. Press **Right Shift** to open or close the ClickGUI; press **Escape** to close it.
-5. Packet Scan is the default data source and does not need an API key. Open the Settings tab to see its status; use the dedicated Fishing tab for the fishing-only start/stop control. Changes apply live; disabling automation or changing modules cancels pending/in-flight work.
+5. Packet Scan is the default data source and does not need an API key. Open Settings to see its status.
+6. For Fishing, connect to a server you control or have permission to automate, click **ALLOW CURRENT SERVER**, leave a rod and free inventory slot, then click **START FISHING · PRIVATE SERVER**. Catches are retained without a market profile; automatic selling is separately guarded. AH Deals has Auto/Smart start buttons, but buys still need the verified private profile, balance provider, fresh prices, and every transaction gate. Order→AH is locked until its full-order UI is verified.
 
 ## Download the built mod from GitHub Actions
 
@@ -25,19 +26,21 @@ The current branch's CI run has uploaded the installable JAR as `sc-market-06939
 ### Settings
 
 - **Mod switch** in the window header pauses or resumes scanning and HUD alerts immediately.
-- **Modules** toggle `FISHING`, `AH DEALS`, and `ORDER → AH` independently; multiple may be selected. The global **Mod** switch still pauses everything.
+- **One tab per module:** Fishing, AH Deals, and Order→AH each have a dedicated page. Starting Fishing or an AH Deals mode activates only that module; stopping it disables automation and clears active module selections. Fishing has a one-click Auto start; AH Deals offers Auto and Smart. Order→AH remains read-only/locked until its full-order parser and claim state are verified.
+- **Auto** runs scanner-approved AH Deals opportunities automatically after every safety check. **Smart** is also automatic, but additionally rechecks the current whitelist/blacklist immediately before submitting, so queued work is rejected if filters changed. Both keep exact allowlisting, current price/item checks, private profiles, transaction verification, and emergency stop. Choose Auto or Smart directly in the AH Deals tab; Dry Run and Confirm Each remain available in Automation.
 - **Detection source** switches between API mode and **Packet Scan**. Packet Scan is the default, needs no API key, and is restored automatically if an old saved API preference has no key. It passively reads only the configured auction screen; a matching private-screen profile is still needed to parse prices.
 - **API credential** can be saved or removed in the panel. It is stored separately in `config/sc-market/api-key.txt`, not in `config.json`. Saving a credential while API Detection is selected reconnects the client live.
-- **Order→AH limits and item whitelist** are editable under **Item Filters → Order → AH Settings**. The default size is 1,024; the UI allows up to the screenshot-supported 2,048-item size, while total and per-item order limits never exceed the server-observed 10/2 ceilings.
-- **Local action capture** is an explicit opt-in in that same panel. It saves a bounded JSONL file under `config/sc-market/diagnostics/`; chat and typed text are excluded. Review [Local action capture](docs/LOCAL_ACTION_CAPTURE.md) before sharing a file. The exact player-facing steps are in [Developer function: local Order/AH capture](docs/DEVELOPER_FUNCTION.md).
+- **Order→AH limits and item whitelist** are editable in the **Order→AH** tab. The default size is 1,024; the UI allows up to the screenshot-supported 2,048-item size, while total and per-item order limits never exceed the server-observed 10/2 ceilings. These settings do not unlock the order GUI interaction.
+- **Item ID filters** (whitelist and blacklist) are editable in **Filters** and are rechecked by Smart mode immediately before an action.
+- **Local action capture** is an explicit opt-in in the **Order→AH** tab. It saves a bounded JSONL file under `config/sc-market/diagnostics/`; chat and typed text are excluded. Review [Local action capture](docs/LOCAL_ACTION_CAPTURE.md) before sharing a file. The exact player-facing steps are in [Developer function: local Order/AH capture](docs/DEVELOPER_FUNCTION.md).
 
 ### AH Deals
 
-This existing workflow scans AH/API evidence, surfaces candidates, and includes the guarded AH buy/relist state machine. Purchases/listings remain separately controlled from the Automation panel. Dry-run is the initial execution mode; it does not click, purchase, or list.
+The dedicated tab starts Auto or Smart without an API key when Packet Scan is selected. Packet Scan still needs the private auction-screen profile to parse listing prices. The tab shows whether the profile and transactional balance gate are ready; shipped defaults intentionally block live buys until the private profile, fresh evidence, balance verification, and all transaction checks are valid. Starting the module does not bypass those gates.
 
 ### Order → AH
 
-The Order economics, candidate ranking, configurable order size (1,024 by default, up to 2,048), minimum profit, 10-total/2-per-item capacity ceilings, per-item whitelist, separate completion-observation ledger, and serial order coordinator are implemented with focused tests. Settings persist to `order-module.properties`; the item whitelist and limits are editable in **Item Filters → Order → AH Settings**. The coordinator can consume these settings live, re-reads Order/AH quotes before each new order and every stack sale, collects at most one fully completed order per cycle, and never treats partial deliveries as independent sales. It refuses stale/thin evidence, unprofitable candidates, and fill forecasts beyond four days.
+The Order economics, candidate ranking, configurable order size (1,024 by default, up to 2,048), minimum profit, 10-total/2-per-item capacity ceilings, per-item whitelist, separate completion-observation ledger, and serial order coordinator are implemented with focused tests. Settings persist to `order-module.properties`; the item whitelist and limits are editable in the **Order→AH** tab. The coordinator can consume these settings live, re-reads Order/AH quotes before each new order and every stack sale, collects at most one fully completed order per cycle, and never treats partial deliveries as independent sales. It refuses stale/thin evidence, unprofitable candidates, and fill forecasts beyond four days.
 
 **Live Order GUI actions remain fail-closed and are not yet connected.** The supplied screenshots do not show the tooltip/lore for an individual Order row or the completed-order detail/claim screen, so SC-Market cannot yet verify the server's order ID, current unit price/fill state, delivery time, or exact claim control. Do not enable automatic Order→AH actions until a private profile adapter can verify those details and the displayed deposit, 1% fee, and total against the fresh plan. Reference screenshots and the detailed contract are in [Order→AH](docs/ORDER_TO_AH.md).
 
