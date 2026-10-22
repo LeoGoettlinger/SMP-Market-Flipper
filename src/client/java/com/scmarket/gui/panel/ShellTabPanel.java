@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
@@ -84,6 +85,7 @@ public final class ShellTabPanel implements TabContentPanel {
                 CONTENT_X, CONTENT_Y + 13, GuiColors.SECONDARY_TEXT, false);
         switch (tab) {
             case DASHBOARD -> renderDashboard(context, textRenderer);
+            case FISHING -> renderFishing(context, textRenderer, mouseX, mouseY);
             case OPPORTUNITIES -> renderOpportunities(context, textRenderer, mouseX, mouseY);
             case ITEM_FILTERS -> renderFilters(context, textRenderer, mouseX, mouseY);
             case HISTORY -> renderHistory(context, textRenderer);
@@ -99,6 +101,9 @@ public final class ShellTabPanel implements TabContentPanel {
         }
         if (tab == GuiTab.OPPORTUNITIES) {
             return clickOpportunity(mouseX, mouseY);
+        }
+        if (tab == GuiTab.FISHING) {
+            return clickFishing(mouseX, mouseY);
         }
         if (tab == GuiTab.AUTOMATION) {
             return clickAutomation(mouseX, mouseY);
@@ -143,7 +148,7 @@ public final class ShellTabPanel implements TabContentPanel {
                 ScMarketClient.selectDetectionMode(next);
                 notice = detectionModeLabel(next) + " selected; the scanner is switching now.";
             } catch (RuntimeException failure) {
-                notice = "Unable to save detection mode preference.";
+                notice = Objects.requireNonNullElse(failure.getMessage(), "Unable to save detection mode preference.");
             }
             return true;
         }
@@ -173,12 +178,15 @@ public final class ShellTabPanel implements TabContentPanel {
         if (tab == GuiTab.SETTINGS && contains(mouseX, mouseY,
                 apiKeyClearX(), apiKeyFieldY(), 34, 16)) {
             try {
+                boolean apiModeWasSelected = ScMarketClient.selectedDetectionMode() == MarketDetectionMode.API;
                 ScMarketClient.clearApiKey();
                 if (apiKeyField != null) {
                     apiKeyField.setValue("");
                     apiKeyField.setFocused(false);
                 }
-                notice = "Stored API key removed; API mode switches to its unavailable state.";
+                notice = apiModeWasSelected
+                        ? "API key removed; switched to Packet Scan, which needs no API key."
+                        : "Stored API key removed; Packet Scan remains available without a key.";
             } catch (RuntimeException failure) {
                 notice = "Unable to remove the stored API key.";
             }
@@ -293,7 +301,7 @@ public final class ShellTabPanel implements TabContentPanel {
         int cardWidth = (CONTENT_WIDTH - gap * 2) / 3;
         metric(context, textRenderer, CONTENT_X, CARD_TOP, cardWidth, "SCANNER", scanner.lifecycleState());
         metric(context, textRenderer, CONTENT_X + cardWidth + gap, CARD_TOP, cardWidth,
-                "MARKET API", api.displayName());
+                "DATA SOURCE", api.displayName());
         metric(context, textRenderer, CONTENT_X + (cardWidth + gap) * 2, CARD_TOP, cardWidth,
                 "ACTIVE LISTINGS", compact(market.activeListings()));
         metric(context, textRenderer, CONTENT_X, CARD_TOP + 57, cardWidth,
@@ -304,6 +312,120 @@ public final class ShellTabPanel implements TabContentPanel {
                 "POTENTIAL PROFIT", "$" + compact(market.combinedPotentialProfit()));
 
         renderMarketChart(context, textRenderer, dataSources.marketChart().getMarketChart(), CARD_TOP + 121);
+    }
+
+    private void renderFishing(GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY) {
+        AutomationSettingsSnapshot snapshot = dataSources.automationSettings().snapshot();
+        int right = CONTENT_X + 227;
+        int rightWidth = CONTENT_RIGHT - right;
+        panel(context, CONTENT_X, CARD_TOP, 220, 211);
+        panel(context, right, CARD_TOP, rightWidth, 211);
+
+        boolean moduleOn = ScMarketClient.runtimeSettings().moduleEnabled(MarketModule.FISHING);
+        boolean fishingArmed = moduleOn && snapshot.configuration().enabled()
+                && snapshot.configuration().mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER;
+        String address = ScMarketClient.currentServerAddress().strip();
+        boolean connected = !address.isBlank();
+        boolean allowed = connected && snapshot.configuration().serverAllowed(address);
+        boolean hasProfile = snapshot.configuration().interactionProfile().isPresent();
+        boolean packetMode = ScMarketClient.selectedDetectionMode() == MarketDetectionMode.PACKET_SCAN;
+        Minecraft client = Minecraft.getInstance();
+        boolean rodReady = client.player != null && hasFishingRodInHotbar(client.player);
+        boolean inventoryReady = client.player != null && hasFreeInventorySlot(client.player);
+
+        GuiTypography.draw(context, renderer, "FISHING CONTROLS", CONTENT_X + 10, CARD_TOP + 11,
+                GuiColors.ACCENT_TEXT, false);
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 27, 200, 18,
+                fishingArmed ? "STOP FISHING" : "START FISHING · PRIVATE SERVER",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18));
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Server", connected ? fit(renderer, address, 120) : "Not connected", CARD_TOP + 55);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Allowlist", allowed ? "EXACT SERVER ALLOWED" : "NOT ALLOWED", CARD_TOP + 76);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Private AH profile", hasProfile ? "CONFIGURED" : "NOT CONFIGURED", CARD_TOP + 97);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Rod / inventory", (rodReady ? "ROD OK" : "ADD ROD") + " · "
+                        + (inventoryReady ? "SPACE OK" : "NO SPACE"), CARD_TOP + 118);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Market data", packetMode ? "PACKET SCAN · NO API" : "API MODE", CARD_TOP + 139);
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 158, 200, 18,
+                allowed ? "CURRENT SERVER ALREADY ALLOWED" : "ALLOW CURRENT SERVER",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 158, 200, 18));
+        GuiTypography.draw(context, renderer, "No API key is needed for Packet Scan.",
+                CONTENT_X + 10, CARD_TOP + 190, GuiColors.POSITIVE_TEXT, false);
+
+        GuiTypography.draw(context, renderer, "LIVE FISHING STATUS", right + 10, CARD_TOP + 11,
+                GuiColors.ACCENT_TEXT, false);
+        drawWrapped(context, renderer, ScMarketClient.fishingStatus(), right + 10, CARD_TOP + 31,
+                rightWidth - 20, GuiColors.PRIMARY_TEXT, 4);
+        context.fill(right + 10, CARD_TOP + 87, CONTENT_RIGHT - 10, CARD_TOP + 88,
+                GuiColors.SECONDARY_BORDER);
+        GuiTypography.draw(context, renderer, "AUTOMATION CHECKLIST", right + 10, CARD_TOP + 96,
+                GuiColors.ACCENT_TEXT, false);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Automation", snapshot.configuration().enabled() ? "ENABLED" : "DISABLED",
+                CARD_TOP + 117);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Execution mode", shortMode(snapshot.configuration().mode()), CARD_TOP + 137);
+        String guidance = !hasProfile
+                ? "Catching can run, but listing stays off until a verified private AH profile is configured."
+                : "Keep the matching AH page open for fresh Packet Scan prices. Uncertain catches stay in inventory.";
+        drawWrapped(context, renderer, guidance, right + 10, CARD_TOP + 158,
+                rightWidth - 20, GuiColors.MUTED_TEXT, 3);
+    }
+
+    private boolean clickFishing(int mouseX, int mouseY) {
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18)) {
+            AutomationSettingsSnapshot snapshot = dataSources.automationSettings().snapshot();
+            boolean armed = ScMarketClient.runtimeSettings().moduleEnabled(MarketModule.FISHING)
+                    && snapshot.configuration().enabled()
+                    && snapshot.configuration().mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER;
+            if (armed) {
+                notice = "Stopping Fishing and disabling automation…";
+                ScMarketClient.stopFishingOnly().whenComplete((ignored, error) -> notice = error == null
+                        ? "Fishing stopped; automation is disabled."
+                        : "Fishing stopped, but settings could not be saved: "
+                                + Objects.requireNonNullElse(error.getMessage(), "unknown error"));
+            } else {
+                notice = "Starting Fishing-only mode. The exact server allowlist is still required.";
+                ScMarketClient.startFishingOnly().whenComplete((ignored, error) -> notice = error == null
+                        ? "Fishing-only mode is ready; it will remain paused unless this exact server is allowlisted."
+                        : "Fishing setup could not finish: " + Objects.requireNonNullElse(error.getMessage(), "runtime unavailable"));
+            }
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 158, 200, 18)) {
+            if (ScMarketClient.currentServerAddress().isBlank()) {
+                notice = "Connect to the authorized private server before adding it to the allowlist.";
+            } else {
+                dataSources.automationSettings().allowCurrentServer()
+                        .whenComplete((ignored, error) -> notice = error == null
+                                ? "Exact current server added to the allowlist."
+                                : "Unable to allow the current server; check the Automation status.");
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean hasFishingRodInHotbar(net.minecraft.client.player.LocalPlayer player) {
+        for (int slot = 0; slot < 9; slot++) {
+            if (BuiltInRegistries.ITEM.getKey(player.getInventory().getItem(slot).getItem())
+                    .toString().equals("minecraft:fishing_rod")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasFreeInventorySlot(net.minecraft.client.player.LocalPlayer player) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (player.getInventory().getItem(slot).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void renderMarketChart(
@@ -1045,27 +1167,43 @@ public final class ShellTabPanel implements TabContentPanel {
 
         int rightX = CONTENT_X + panelWidth + 17;
         int rightEdge = CONTENT_RIGHT - 10;
-        GuiTypography.draw(context, textRenderer, "CONNECTION", rightX, CARD_TOP + 11,
-                GuiColors.ACCENT_TEXT, false);
-        lineAt(context, textRenderer, rightX, rightEdge,
-                "Requests / window", Integer.toString(api.requestsInCurrentWindow()), CARD_TOP + 34);
-        lineAt(context, textRenderer, rightX, rightEdge,
-                "Average latency", api.averageLatencyMillis() + " ms", CARD_TOP + 55);
-        lineAt(context, textRenderer, rightX, rightEdge,
-                "Last update", api.lastUpdateText(), CARD_TOP + 76);
-        context.fill(rightX, CARD_TOP + 94, rightEdge, CARD_TOP + 95,
-                GuiColors.SECONDARY_BORDER);
-        String warning = api.warning().or(() -> scanner.warning()).orElse(
-                api.displayName().equals("Mock Data")
-                        ? "Market API integration is inactive while mock mode is selected."
-                        : "Live data is read asynchronously; purchases remain manual."
-        );
+        boolean packetMode = ScMarketClient.selectedDetectionMode() == MarketDetectionMode.PACKET_SCAN;
+        GuiTypography.draw(context, textRenderer, packetMode ? "NO-API MARKET SCAN" : "API CONNECTION",
+                rightX, CARD_TOP + 11, GuiColors.ACCENT_TEXT, false);
+        String warning;
+        if (packetMode) {
+            boolean profileConfigured = dataSources.automationSettings().snapshot()
+                    .configuration().interactionProfile().isPresent();
+            lineAt(context, textRenderer, rightX, rightEdge,
+                    "Data source", "Packet Scan · no key", CARD_TOP + 34);
+            lineAt(context, textRenderer, rightX, rightEdge,
+                    "Capture state", api.lastUpdateText(), CARD_TOP + 55);
+            lineAt(context, textRenderer, rightX, rightEdge,
+                    "Private AH profile", profileConfigured ? "CONFIGURED" : "NEEDED", CARD_TOP + 76);
+            context.fill(rightX, CARD_TOP + 94, rightEdge, CARD_TOP + 95,
+                    GuiColors.SECONDARY_BORDER);
+            warning = api.warning().or(() -> scanner.warning()).orElse(profileConfigured
+                    ? "No API key is needed. Open the profiled auction page and keep it open while the scan settles."
+                    : "No API key is needed, but packet parsing requires a private AH profile with the exact title, slots, and price/seller lore prefixes.");
+        } else {
+            lineAt(context, textRenderer, rightX, rightEdge,
+                    "Requests / window", Integer.toString(api.requestsInCurrentWindow()), CARD_TOP + 34);
+            lineAt(context, textRenderer, rightX, rightEdge,
+                    "Average latency", api.averageLatencyMillis() + " ms", CARD_TOP + 55);
+            lineAt(context, textRenderer, rightX, rightEdge,
+                    "Last update", api.lastUpdateText(), CARD_TOP + 76);
+            context.fill(rightX, CARD_TOP + 94, rightEdge, CARD_TOP + 95,
+                    GuiColors.SECONDARY_BORDER);
+            warning = api.warning().or(() -> scanner.warning()).orElse(
+                    "Live data is read asynchronously; gameplay actions remain separately gated.");
+        }
         drawWrapped(context, textRenderer, warning, rightX, CARD_TOP + 108,
-                rightEdge - rightX, GuiColors.MUTED_TEXT, 6);
+                rightEdge - rightX, GuiColors.MUTED_TEXT, 4);
         GuiTypography.draw(context, textRenderer,
-                apiKeyConfigured ? "API key stored securely" : "API key not configured",
+                packetMode ? "API key optional · Packet Scan works without it"
+                        : apiKeyConfigured ? "API key stored securely" : "API key required for API mode",
                 rightX, CARD_TOP + 160,
-                apiKeyConfigured ? GuiColors.POSITIVE_TEXT : GuiColors.MUTED_TEXT,
+                packetMode || apiKeyConfigured ? GuiColors.POSITIVE_TEXT : GuiColors.MUTED_TEXT,
                 false);
         if (apiKeyField == null) {
             apiKeyField = new EditBox(textRenderer, apiKeyFieldX(), apiKeyFieldY(),
@@ -1138,7 +1276,9 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static String detectionModeLabel(MarketDetectionMode mode) {
-        return mode == MarketDetectionMode.API ? "API DETECTION  ·  Donut API" : "PACKET SCAN  ·  AH window";
+        return mode == MarketDetectionMode.API
+                ? "API MODE  ·  key configured"
+                : "PACKET SCAN  ·  no API key needed";
     }
 
     private static String moduleLabel(MarketModule module) {

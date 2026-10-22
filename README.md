@@ -14,7 +14,7 @@ A client-side market scanner and opt-in automation toolkit for Minecraft Java Ed
 2. Build with Java 25 using `./gradlew test build --no-daemon`.
 3. Put the mod JAR from `build/libs/` into `.minecraft/mods` and start the matching 26.2 game.
 4. Press **Right Shift** to open or close the ClickGUI; press **Escape** to close it.
-5. In Settings, independently toggle Fishing, AH Deals, and Order→AH, and choose the data source. Changes apply live; disabling automation or changing modules cancels pending/in-flight work.
+5. Packet Scan is the default data source and does not need an API key. Open the Settings tab to see its status; use the dedicated Fishing tab for the fishing-only start/stop control. Changes apply live; disabling automation or changing modules cancels pending/in-flight work.
 
 ## Download the built mod from GitHub Actions
 
@@ -26,7 +26,7 @@ After the current changes are pushed, `.github/workflows/verify.yml` runs tests 
 
 - **Mod switch** in the window header pauses or resumes scanning and HUD alerts immediately.
 - **Modules** toggle `FISHING`, `AH DEALS`, and `ORDER → AH` independently; multiple may be selected. The global **Mod** switch still pauses everything.
-- **Detection source** switches between `API Detection` and `Packet Scan`.
+- **Detection source** switches between API mode and **Packet Scan**. Packet Scan is the default, needs no API key, and is restored automatically if an old saved API preference has no key. It passively reads only the configured auction screen; a matching private-screen profile is still needed to parse prices.
 - **API credential** can be saved or removed in the panel. It is stored separately in `config/sc-market/api-key.txt`, not in `config.json`. Saving a credential while API Detection is selected reconnects the client live.
 - **Order→AH limits and item whitelist** are editable under **Item Filters → Order → AH Settings**. The default size is 1,024; the UI allows up to the screenshot-supported 2,048-item size, while total and per-item order limits never exceed the server-observed 10/2 ceilings.
 - **Local action capture** is an explicit opt-in in that same panel. It saves a bounded JSONL file under `config/sc-market/diagnostics/`; chat and typed text are excluded. Review [Local action capture](docs/LOCAL_ACTION_CAPTURE.md) before sharing a file. The exact player-facing steps are in [Developer function: local Order/AH capture](docs/DEVELOPER_FUNCTION.md).
@@ -43,24 +43,18 @@ The Order economics, candidate ranking, configurable order size (1,024 by defaul
 
 ### Fishing
 
-Fishing mode uses the player's selected hotbar fishing rod, detects the server-synchronised bite state, waits for the configured action delay, reels, then checks for inventory changes. It does not infer a bite from bobber motion. It will not cast without an available inventory slot.
+Fishing has a dedicated **Fishing** tab. Its **START FISHING · PRIVATE SERVER** button enables only the Fishing module, selects `AUTOMATIC_AUTHORIZED_SERVER`, and leaves AH Deals/Order modules off. The exact current server must still be allowlisted; the start button does not authorize a server. **STOP FISHING** disables Automation as well as the Fishing module, so later enabling another module cannot silently resume execution. The global Mod switch and emergency stop also pause it.
 
-Automatic sale is more restrictive than catching. A caught item is eligible only when its exact fingerprint was absent before this fishing session (or is already tracked as loot caught by this session). Existing matching inventory items are never automatically sold. With recent sale history, the price is bounded by the lower quartile and weighted median, and credible asks can only lower it. Without sale history (including Packet Scan), an ask-only estimate is allowed only with at least five fresh active listings from at least three sellers; the lowest ask must be at least 70% of the ask median, and the mod lists one currency unit below it. Active asks older than ten minutes are excluded. This ask-only value is explicitly an estimate, not evidence of a completed sale. Sparse, stale, unsupported, or suspicious market evidence means the catch stays in inventory.
+Casting and reeling work without an API key and without an auction profile: SC-Market uses the server-synchronized bite flag, waits the configured action delay, reels, and checks inventory changes. It does not infer a bite from bobber motion and refuses to cast without a fishing rod in the hotbar and an empty inventory slot. Without a verified private auction profile, catches are kept in inventory and **not** listed.
 
-To run Fishing automatically, all of the following must be true:
+Automatic sale requires the private profile and fresh, supported market evidence. A caught item's exact fingerprint must be new to this fishing session; pre-existing matching inventory is never eligible. With recent sale history, the price is bounded by the lower quartile and weighted median, and credible asks can only lower it. Without sale history—including Packet Scan—the ask-only path requires at least five fresh active listings from at least three sellers; the lowest ask must be at least 70% of the ask median. Asks older than ten minutes, sparse evidence, or suspicious prices mean the catch stays in inventory. Packet Scan needs no API key, but it still needs the configured private AH screen profile and fresh visible listings to price automatic sales.
 
-1. Select **Fishing** and keep the global **Mod** switch enabled.
-2. In Automation, enable the authorized execution setting and choose `AUTOMATIC_AUTHORIZED_SERVER`.
-3. Configure the private-server auction profile and add the exact current server using **ALLOW CURRENT SERVER**. The exact allowlist is the server-access gate; no ARM SESSION button or typed phrase is required.
-4. Put a fishing rod in the hotbar, leave an empty inventory slot, and close other screens.
-5. Use **CANCEL EXECUTION** to cancel the active trade, switch Automation off to prevent new actions, or use **EMERGENCY STOP** to block execution immediately.
-
-The profile's `listingCommandTemplate` must describe a legitimate sale command for your own private test server, and `listingCreatedTitle` must exactly match its successful listing confirmation screen. Automatic selling remains off when those requirements or safe market evidence are missing.
+Before live Fishing, connect only to a server you control or whose operator explicitly permits this automation, add its exact address using **ALLOW CURRENT SERVER**, keep a fishing rod in the hotbar, and leave an empty inventory slot. Configure the private profile only if automatic listing is wanted. The allowlist remains the authorization gate; the profile and transaction checks protect actions performed on that server.
 
 ## Market data sources
 
 - **API Detection** uses the official DonutSMP API, including recently listed auctions and completed transactions. It is the recommended source for price evidence when an API credential is available.
-- **Packet Scan** captures the configured auction-house screen from server packets without an API key. Open the exact configured screen and keep it open while the page loads; only a complete inventory snapshot that has been quiet for 300 ms is ingested. To broaden the no-key market sample, manually visit other pages; the scanner does not issue `/ah`, click page controls, or automatically traverse them. It captures visible listing items, configured price/seller lore and supported item metadata—not completed sales. Reconfirmed asks expire from price analysis after ten minutes without a fresh observation. Fishing may use the guarded ask-only estimate described above; it never invents transaction history.
+- **Packet Scan** is the default when no API key is configured and needs no credential. It passively captures the exact private auction-house screen configured in `automation.interactionProfile`; keep that screen open while its page loads, then manually visit pages to broaden the sample. It ingests only a complete inventory snapshot quiet for 300 ms, captures visible listings and configured price/seller lore (not completed sales), and never issues `/ah` or clicks page controls. Asks expire from current-price analysis after ten minutes without reconfirmation.
 
 Useful sale-backed fair values and trend estimates need enough completed sales plus active market evidence; without transactions they may remain unavailable even when Packet Scan has captured asks. An API key authenticates API requests only; it is not permission to automate gameplay.
 
@@ -71,7 +65,7 @@ No public-server auction screen or command profile is included. Configure `autom
 Real gameplay actions require all of these gates:
 
 - The **exact connected address** is on the explicit server allowlist; wildcard addresses are rejected.
-- A valid private-server interaction profile is configured. Before a listing, the item fingerprint and count are rechecked; completion requires the exact configured confirmation screen and inventory delta.
+- AH buying/relisting and automatic fishing sales require a validated private-server interaction profile. Each action rechecks item identity, inventory, exact confirmation screen, and resulting inventory delta. Fishing cast/reel can run without the profile; catches are retained and never listed until the profile and price evidence are ready.
 - Automation is explicitly enabled, the selected mode and module are correct, and the current exact server address is on the allowlist. No typed session-arm phrase is required. Disconnects/server changes cancel active work; the exact allowlist, private profile, configured limits, safety checks, and emergency stop still apply.
 
 The initial configuration is disabled, dry-run, and has no allowlisted server or interaction profile. Fishing and AH Deals use the same exact-server/profile safety gates. This mod does not bypass anti-cheat, CAPTCHAs, rate limits or server restrictions. Transparent action pacing is only a user-configurable delay; it is not anti-cheat evasion.

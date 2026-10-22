@@ -218,6 +218,15 @@ public final class ClientProductionRuntime implements AutoCloseable {
         return fishingController.status();
     }
 
+    public CompletableFuture<Void> enableFishingAutomation() {
+        return automationSettings.setMode(com.scmarket.automation.model.AutomationMode.AUTOMATIC_AUTHORIZED_SERVER)
+                .thenCompose(ignored -> automationSettings.setEnabled(true));
+    }
+
+    public CompletableFuture<Void> disableFishingAutomation() {
+        return automationSettings.setEnabled(false);
+    }
+
     public String orderStatus() {
         return "Order→AH is safely idle: this build has no verified parser for Order IDs/claim details yet; "
                 + "no order or AH action will be sent.";
@@ -231,7 +240,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         if (!runtime.enabled() || !runtime.moduleEnabled(MarketModule.FISHING)
                 || !config.enabled() || config.mode()
                 != com.scmarket.automation.model.AutomationMode.AUTOMATIC_AUTHORIZED_SERVER
-                || config.interactionProfile().isEmpty() || server.isBlank() || !config.serverAllowed(server)) {
+                || server.isBlank() || !config.serverAllowed(server)) {
             return false;
         }
         TradeExecutionSnapshot execution = automationSettings.snapshot().execution();

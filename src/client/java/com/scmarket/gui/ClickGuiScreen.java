@@ -153,7 +153,7 @@ public final class ClickGuiScreen extends Screen {
         int y = GuiLayout.LOGICAL_HEIGHT - 14;
         int x = 10;
 
-        x = drawStatusText(context, "API: ", GuiColors.PRIMARY_TEXT, x, y);
+        x = drawStatusText(context, "DATA: ", GuiColors.PRIMARY_TEXT, x, y);
         x = drawStatusText(context, api.displayName(), GuiColors.SECONDARY_TEXT, x, y);
         x = drawStatusText(context, "  |  Last Update: ", GuiColors.MUTED_TEXT, x, y);
         x = drawStatusText(context, api.lastUpdateText(), GuiColors.SECONDARY_TEXT, x, y);

@@ -44,6 +44,7 @@ public final class FishingAutomationController {
     private long nextActionNanos;
     private long nextSaleRetryNanos;
     private boolean saleInFlight;
+    private boolean beforeReelProfiled;
     private String status = "Fishing is idle.";
 
     public FishingAutomationController(
@@ -75,10 +76,6 @@ public final class FishingAutomationController {
             status = "Fishing paused: enable Fishing and allowlist this exact server.";
             return;
         }
-        if (profile.isEmpty()) {
-            status = "Fishing paused: configure a private-server interaction profile.";
-            return;
-        }
         LocalPlayer player = client.player;
         if (player == null || client.level == null || client.gameMode == null
                 || client.getConnection() == null) {
@@ -91,7 +88,11 @@ public final class FishingAutomationController {
             return;
         }
 
-        processSaleQueue(profile.orElseThrow(), now);
+        if (profile.isPresent()) {
+            processSaleQueue(profile.orElseThrow(), now);
+        } else if (!saleQueue.isEmpty()) {
+            status = "Fishing continues; automatic listing is paused until a private auction profile is configured.";
+        }
         if (saleInFlight) {
             return;
         }
@@ -103,7 +104,7 @@ public final class FishingAutomationController {
                     phase = Phase.WAITING_FOR_BITE;
                     status = "Fishing: bobber is in the water; waiting for a bite.";
                 } else if (now >= nextActionNanos && saleQueue.isEmpty()) {
-                    cast(player, profile.orElseThrow(), now);
+                    cast(player, profile, now);
                 }
             }
             case CASTING -> {
@@ -129,7 +130,8 @@ public final class FishingAutomationController {
                     }
                     player.getInventory().setSelectedSlot(rodSlot);
                     beforeReel.clear();
-                    beforeReel.putAll(inventoryCounts(profile.orElseThrow()));
+                    beforeReel.putAll(inventoryCounts(profile));
+                    beforeReelProfiled = profile.isPresent();
                     phase = Phase.REEL_PENDING;
                     deadlineNanos = now + actionDelayNanos();
                     status = "Bite detected; reeling after the configured action delay.";
@@ -170,7 +172,7 @@ public final class FishingAutomationController {
             }
             case SETTLING_CATCH -> {
                 if (now >= deadlineNanos) {
-                    recordCatch(profile.orElseThrow(), now);
+                    recordCatch(profile, now);
                 }
             }
         }
@@ -184,12 +186,15 @@ public final class FishingAutomationController {
         phase = Phase.IDLE;
         saleInFlight = false;
         beforeReel.clear();
+        beforeReelProfiled = false;
         saleQueue.clear();
         ownedLootCounts.clear();
         status = "Fishing stopped; no pending items will be listed automatically.";
     }
 
-    private void cast(LocalPlayer player, AuctionInteractionProfile profile, long now) {
+    private void cast(
+            LocalPlayer player, Optional<AuctionInteractionProfile> profile, long now
+    ) {
         int rodSlot = findFishingRod(player);
         if (rodSlot < 0) {
             status = "Fishing paused: place a fishing rod in the hotbar.";
@@ -215,6 +220,7 @@ public final class FishingAutomationController {
             player.getInventory().setSelectedSlot(rodSlot);
             beforeReel.clear();
             beforeReel.putAll(inventoryCounts(profile));
+            beforeReelProfiled = profile.isPresent();
             client.gameMode.useItem(player, InteractionHand.MAIN_HAND);
             phase = Phase.CASTING;
             deadlineNanos = now + CAST_TIMEOUT_NANOS;
@@ -227,8 +233,28 @@ public final class FishingAutomationController {
         deadlineNanos = now + CATCH_SETTLE_NANOS;
     }
 
-    private void recordCatch(AuctionInteractionProfile profile, long now) {
+    private void recordCatch(Optional<AuctionInteractionProfile> profile, long now) {
         Map<String, Integer> after = inventoryCounts(profile);
+        if (beforeReelProfiled != profile.isPresent()) {
+            phase = Phase.IDLE;
+            nextActionNanos = now + actionDelayNanos();
+            status = "Fishing profile changed during a cast; keeping inventory safe and skipping automatic sale.";
+            beforeReel.clear();
+            beforeReelProfiled = false;
+            return;
+        }
+        if (profile.isEmpty()) {
+            boolean found = after.entrySet().stream()
+                    .anyMatch(entry -> entry.getValue() > beforeReel.getOrDefault(entry.getKey(), 0));
+            phase = Phase.IDLE;
+            nextActionNanos = now + actionDelayNanos();
+            status = found
+                    ? "Catch detected and kept in inventory; automatic sale needs a verified private auction profile."
+                    : "No inventory catch was confirmed; no sale was attempted.";
+            beforeReel.clear();
+            beforeReelProfiled = false;
+            return;
+        }
         boolean found = false;
         for (Map.Entry<String, Integer> entry : after.entrySet()) {
             int previous = beforeReel.getOrDefault(entry.getKey(), 0);
@@ -264,7 +290,7 @@ public final class FishingAutomationController {
             return;
         }
         String fingerprint = saleQueue.peekFirst();
-        int inventoryCount = inventoryCounts(profile).getOrDefault(fingerprint, 0);
+        int inventoryCount = inventoryCounts(Optional.of(profile)).getOrDefault(fingerprint, 0);
         Integer ownedCount = ownedLootCounts.get(fingerprint);
         if (inventoryCount <= 0 || ownedCount == null) {
             saleQueue.removeFirst();
@@ -325,7 +351,7 @@ public final class FishingAutomationController {
                                 nextSaleRetryNanos = System.nanoTime() + SALE_RETRY_NANOS;
                                 if (listingError == null && result != null && result.verified()) {
                                     saleQueue.remove(fingerprint);
-                                    int remaining = inventoryCounts(profile).getOrDefault(fingerprint, 0);
+                                    int remaining = inventoryCounts(Optional.of(profile)).getOrDefault(fingerprint, 0);
                                     int stillOwned = Math.max(0,
                                             ownedLootCounts.getOrDefault(fingerprint, 0) - immutable.getCount());
                                     if (remaining <= 0 || stillOwned <= 0) {
@@ -351,7 +377,7 @@ public final class FishingAutomationController {
         }));
     }
 
-    private Map<String, Integer> inventoryCounts(AuctionInteractionProfile profile) {
+    private Map<String, Integer> inventoryCounts(Optional<AuctionInteractionProfile> profile) {
         Map<String, Integer> counts = new HashMap<>();
         if (client.player == null) {
             return counts;
@@ -360,7 +386,10 @@ public final class FishingAutomationController {
             ItemStack stack = client.player.getInventory().getItem(slot);
             if (!stack.isEmpty()) {
                 try {
-                    counts.merge(fingerprintFactory.fingerprint(stack, profile), stack.getCount(), Integer::sum);
+                    String fingerprint = profile.isPresent()
+                            ? fingerprintFactory.fingerprint(stack, profile.orElseThrow())
+                            : fingerprintFactory.observationFingerprint(stack);
+                    counts.merge(fingerprint, stack.getCount(), Integer::sum);
                 } catch (RuntimeException ignored) {
                     // An item that cannot be normalized is never eligible for automatic sale.
                 }

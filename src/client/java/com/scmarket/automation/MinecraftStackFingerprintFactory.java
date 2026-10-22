@@ -33,6 +33,11 @@ public final class MinecraftStackFingerprintFactory {
         return normalize(stack, profile).fingerprint().sha256();
     }
 
+    /** Inventory-only identity for recognizing newly caught loot before any server profile exists. */
+    public String observationFingerprint(ItemStack stack) {
+        return normalizer.normalize(descriptor(stack, null, 0)).fingerprint().sha256();
+    }
+
     public com.scmarket.market.item.model.NormalizedItem normalize(
             ItemStack stack, AuctionInteractionProfile profile
     ) {
@@ -122,6 +127,9 @@ public final class MinecraftStackFingerprintFactory {
     }
 
     private static boolean ignored(String line, AuctionInteractionProfile profile) {
+        if (profile == null) {
+            return false;
+        }
         if (!profile.listingKeyLorePrefix().isBlank()
                 && line.startsWith(profile.listingKeyLorePrefix())) {
             return true;

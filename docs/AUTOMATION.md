@@ -107,20 +107,25 @@ server restrictions.
 
 ## Fishing workflow
 
-Fishing shares the global switch, exact-server allowlist, and private interaction profile. Select the
-`FISHING` workflow, enable Automation, choose `AUTOMATIC_AUTHORIZED_SERVER`, and add the exact
-current server. No separate ARM SESSION step or typed phrase is used. Changing workflow cancels
-active work; changing servers also cancels active work, and the new address must independently be
-allowlisted. Flipper's market-opportunity dispatcher is disabled while Fishing is selected, so
-queued buy opportunities cannot run in Fishing.
+Fishing shares the global switch and exact-server allowlist. The dedicated Fishing tab starts a
+Fishing-only module set (AH Deals and Order→AH remain off), chooses
+`AUTOMATIC_AUTHORIZED_SERVER`, and enables Automation. This is a clear start/stop control, not a
+separate authorization step: every tick still requires the exact connected address to be allowlisted.
+Stop disables global Automation as well as the Fishing module, so enabling another module later
+cannot silently resume automatic execution.
+Changing server cancels active work, and the new address must independently be allowlisted. No API
+key is required when Packet Scan is selected.
 
-The client casts only with a fishing rod in the hotbar and at least one free inventory slot. It reads
-the server-synchronised vanilla bobber bite flag, waits the configured action delay, reels, and then
-compares the inventory before/after. It never guesses a bite from bobber motion. Existing matching
-items are not eligible for automatic sale: an item fingerprint must have been absent before the
-first catch in the current fishing session, or already be tracked as loot caught by that session.
+Catching and reeling do not require an auction profile. The client casts only with a fishing rod in
+the hotbar and at least one free inventory slot. It reads the server-synchronised vanilla bobber bite
+flag, waits the configured action delay, reels, and checks inventory before/after. It never guesses a
+bite from bobber motion. If no profile is configured, a newly detected catch is kept in inventory;
+SC-Market does not list it. If a profile is configured, existing matching items are still ineligible:
+an item fingerprint must have been absent before the first catch in the current fishing session, or
+already be tracked as loot caught by that session.
 
-The price policy has two explicit evidence paths:
+Automatic listing requires a validated private interaction profile, fresh market evidence, and the
+usual exact-server/action gates. The price policy has two explicit evidence paths:
 
 1. **Completed-sales path:** requires the configured minimum number of comparable sales (at least
    three; eight by default) and a most-recent sale within 24 hours. The candidate is bounded by the

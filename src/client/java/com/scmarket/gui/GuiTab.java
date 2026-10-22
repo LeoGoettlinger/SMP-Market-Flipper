@@ -2,6 +2,7 @@ package com.scmarket.gui;
 
 public enum GuiTab {
     DASHBOARD("Dashboard", "Market and scanner overview"),
+    FISHING("Fishing", "Fishing controls and safety status"),
     OPPORTUNITIES("Opportunities", "Review detected market opportunities"),
     ITEM_FILTERS("Item Filters", "Manage whitelist and blacklist"),
     HISTORY("History", "Reviewed and dismissed opportunities"),

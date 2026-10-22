@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -167,8 +168,20 @@ public final class ScMarketClient implements ClientModInitializer {
         });
 
         FileApiCredentialsStore credentials = new FileApiCredentialsStore(configDirectory.resolve("api-key.txt"));
-        selectedDetectionMode = new MarketDetectionModeStore(configDirectory.resolve("market-detection-mode.txt"))
-                .load(hasApiKey(credentials) ? MarketDetectionMode.API : MarketDetectionMode.PACKET_SCAN);
+        MarketDetectionModeStore detectionModeStore =
+                new MarketDetectionModeStore(configDirectory.resolve("market-detection-mode.txt"));
+        MarketDetectionMode storedDetectionMode = detectionModeStore.load(
+                hasApiKey(credentials) ? MarketDetectionMode.API : MarketDetectionMode.PACKET_SCAN);
+        selectedDetectionMode = storedDetectionMode.availableWhen(hasApiKey(credentials));
+        if (selectedDetectionMode != storedDetectionMode) {
+            try {
+                detectionModeStore.save(selectedDetectionMode);
+            } catch (RuntimeException preferenceFailure) {
+                LOGGER.warn("Could not persist Packet Scan fallback; it will still run for this session.",
+                        preferenceFailure);
+            }
+            LOGGER.info("No API key is configured; starting Packet Scan instead of API mode.");
+        }
         long startupGeneration = detectionModeGeneration.get();
         productionStartup = startDetectionMode(configDirectory, selectedDetectionMode);
         productionStartup.whenComplete((runtime, error) -> {
@@ -245,7 +258,8 @@ public final class ScMarketClient implements ClientModInitializer {
 
     public static String fishingStatus() {
         ClientProductionRuntime runtime = productionRuntime;
-        return runtime == null ? "Fishing runtime is not ready; choose Packet Scan or configure API access."
+        return runtime == null
+                ? "Fishing runtime is starting. Packet Scan needs no API key; check Settings if it stays unavailable."
                 : runtime.fishingStatus();
     }
 
@@ -267,6 +281,33 @@ public final class ScMarketClient implements ClientModInitializer {
         setModuleEnabled(module, !runtimeSettings.moduleEnabled(module));
     }
 
+    /** Starts a fishing-only authorized mode so enabling Fishing cannot also start AH buying workflows. */
+    public static CompletableFuture<Void> startFishingOnly() {
+        updateRuntimeSettings(new ModRuntimeSettings(true,
+                Set.of(com.scmarket.configuration.MarketModule.FISHING)));
+        ClientProductionRuntime runtime = productionRuntime;
+        if (runtime != null) {
+            return runtime.enableFishingAutomation();
+        }
+        CompletableFuture<Optional<ClientProductionRuntime>> startup = productionStartup;
+        if (startup == null) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("The live market runtime has not started."));
+        }
+        return startup.thenCompose(optional -> optional
+                .map(ClientProductionRuntime::enableFishingAutomation)
+                .orElseGet(() -> CompletableFuture.failedFuture(
+                        new IllegalStateException("No live market runtime is available; check Packet Scan status."))));
+    }
+
+    /** Stops the fishing-only workflow and disables global automation to avoid arming later modules. */
+    public static CompletableFuture<Void> stopFishingOnly() {
+        setModuleEnabled(com.scmarket.configuration.MarketModule.FISHING, false);
+        ClientProductionRuntime runtime = productionRuntime;
+        return runtime == null ? CompletableFuture.completedFuture(null)
+                : runtime.disableFishingAutomation();
+    }
+
     /** Compatibility hook; selecting a legacy mode intentionally makes it the only active module. */
     public static void selectOperatingMode(OperatingMode mode) {
         updateRuntimeSettings(new ModRuntimeSettings(runtimeSettings.enabled(),
@@ -286,6 +327,9 @@ public final class ScMarketClient implements ClientModInitializer {
 
     public static void selectDetectionMode(MarketDetectionMode mode) {
         Objects.requireNonNull(mode, "mode");
+        if (mode == MarketDetectionMode.API && !apiKeyConfigured()) {
+            throw new IllegalStateException("API mode needs a key; Packet Scan works without one.");
+        }
         Path directory = FabricLoader.getInstance().getConfigDir().resolve(ModConstants.CONFIG_DIRECTORY_NAME);
         new MarketDetectionModeStore(directory.resolve("market-detection-mode.txt")).save(mode);
         if (selectedDetectionMode != mode) {
@@ -414,6 +458,16 @@ public final class ScMarketClient implements ClientModInitializer {
         new FileApiCredentialsStore(FabricLoader.getInstance().getConfigDir()
                 .resolve(ModConstants.CONFIG_DIRECTORY_NAME).resolve("api-key.txt")).clear();
         if (selectedDetectionMode == MarketDetectionMode.API) {
+            Path directory = FabricLoader.getInstance().getConfigDir()
+                    .resolve(ModConstants.CONFIG_DIRECTORY_NAME);
+            selectedDetectionMode = MarketDetectionMode.PACKET_SCAN;
+            try {
+                new MarketDetectionModeStore(directory.resolve("market-detection-mode.txt"))
+                        .save(selectedDetectionMode);
+            } catch (RuntimeException preferenceFailure) {
+                LOGGER.warn("API key was removed, but Packet Scan preference could not be persisted.",
+                        preferenceFailure);
+            }
             restartDetectionSource();
         }
     }
