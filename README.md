@@ -4,9 +4,9 @@
 
 **Author:** SampleCraft
 
-A client-side market scanner and opt-in automation toolkit for Minecraft Java Edition. SC-Market records observed listings and completed sales, estimates conservative values, reports opportunities, and provides independently switchable Fishing/AH Deals workflows plus a fail-closed Order→AH strategy core for authorized private/test servers.
+A client-side market scanner and opt-in automation toolkit for Minecraft Java Edition. SC-Market records observed listings and completed sales, estimates conservative values, reports opportunities, and provides dedicated tabs for Fishing and AH Deals plus a fail-closed Order→AH strategy core for authorized private/test servers.
 
-> **Compatibility / verification status:** the current build configuration targets **Minecraft 26.2**, Java 25, Fabric Loader 0.19.5, Fabric API 0.161.0+26.2, non-remapping Loom, and Mojang names. Commit `069392322d1ba849d3c9b9c89b1015ba0527a86d` passed CI run [39812308743](https://github.com/LeoGoettlinger/SMP-Market-Flipper/actions/runs/39812308743): tests/build and the 26.2 client launch/render smoke succeeded. This verifies compilation and startup/UI rendering, **not live fishing or private-server market behavior**; no live-server integration is claimed. See [Agent.md](Agent.md) and the [26.2 port report](docs/PORTING_26_2.md) for the exact boundary.
+> **Compatibility / verification status:** the current build configuration targets **Minecraft 26.2**, Java 25, Fabric Loader 0.19.5, Fabric API 0.161.0+26.2, non-remapping Loom, and Mojang names. Commit `e29bf62082f2b90d2100f60cae8bf81a1f8e30dd` passed CI run [39817018389](https://github.com/LeoGoettlinger/SMP-Market-Flipper/actions/runs/39817018389): tests/build, JAR upload, and the 26.2 client launch/render smoke succeeded, including the per-module UI and Smart mode changes. This verifies compilation and offline startup/UI rendering, **not live fishing, AH transactions, or private-server market behavior**; no live-server integration is claimed. See [Agent.md](Agent.md) and the [26.2 port report](docs/PORTING_26_2.md) for the exact boundary.
 
 ## Start here
 
@@ -19,7 +19,7 @@ A client-side market scanner and opt-in automation toolkit for Minecraft Java Ed
 
 ## Download the built mod from GitHub Actions
 
-The current branch's CI run has uploaded the installable JAR as `sc-market-069392322d1ba849d3c9b9c89b1015ba0527a86d` (sources JAR excluded; 14-day retention). Open the repository's **Actions → Verify**, select [run 39812308743](https://github.com/LeoGoettlinger/SMP-Market-Flipper/actions/runs/39812308743), download its ZIP under **Artifacts**, and copy the `.jar` into the matching Minecraft 26.2 `mods` folder. Future successful `test build` runs upload `sc-market-<commit SHA>` before the GUI smoke, so check the smoke result separately; a downloadable build is not proof of live-server behavior. The workflow can also be run manually from Actions using **Run workflow**.
+The current branch's CI run has uploaded the installable JAR as `sc-market-e29bf62082f2b90d2100f60cae8bf81a1f8e30dd` (sources JAR excluded; 14-day retention). Open the repository's **Actions → Verify**, select [run 39817018389](https://github.com/LeoGoettlinger/SMP-Market-Flipper/actions/runs/39817018389), download its ZIP under **Artifacts**, and copy the `.jar` into the matching Minecraft 26.2 `mods` folder. Future successful `test build` runs upload `sc-market-<commit SHA>` before the GUI smoke, so check the smoke result separately; a downloadable build is not proof of live-server behavior. The workflow can also be run manually from Actions using **Run workflow**.
 
 ## ClickGUI controls
 
