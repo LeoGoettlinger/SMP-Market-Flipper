@@ -142,6 +142,16 @@ public final class ScMarketClient implements ClientModInitializer {
             if (Boolean.parseBoolean(System.getenv("SCMARKET_CI_SMOKE_TEST"))) {
                 int smokeTick = smokeTestTicks.incrementAndGet();
                 if (smokeTick == 1) {
+                    // Login normally loads this class. Force its transformation in the offline smoke
+                    // test so invalid interaction-recorder injections fail CI before release.
+                    try {
+                        Class.forName("net.minecraft.client.multiplayer.MultiPlayerGameMode", false,
+                                ScMarketClient.class.getClassLoader());
+                    } catch (ClassNotFoundException missingGameMode) {
+                        throw new IllegalStateException("Minecraft client game-mode class was not found.",
+                                missingGameMode);
+                    }
+                    LOGGER.info("26.2 client smoke test loaded the game-mode mixin target.");
                     client.gui.setScreen(new ClickGuiScreen(dataSources));
                     LOGGER.info("26.2 client smoke test opened the SC-Market GUI.");
                 } else if (smokeTick >= 100 && smokeTestStopRequested.compareAndSet(false, true)) {

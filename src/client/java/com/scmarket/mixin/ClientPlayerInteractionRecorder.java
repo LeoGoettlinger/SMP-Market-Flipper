@@ -13,7 +13,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -52,14 +51,6 @@ public abstract class ClientPlayerInteractionRecorder {
     @Inject(method = "interact", at = @At("HEAD"))
     private void scmarket$recordInteractEntity(Player player, Entity target, InteractionHand hand,
                                                CallbackInfoReturnable<InteractionResult> cir) {
-        scmarket$record("interact_entity", player.getItemInHand(hand));
-    }
-
-    @Inject(method = "interactAt", at = @At("HEAD"))
-    private void scmarket$recordInteractEntityAtLocation(
-            Player player, Entity target, EntityHitResult hit, InteractionHand hand,
-            CallbackInfoReturnable<InteractionResult> cir
-    ) {
         scmarket$record("interact_entity", player.getItemInHand(hand));
     }
 
