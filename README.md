@@ -6,7 +6,7 @@
 
 A client-side market scanner and opt-in automation toolkit for Minecraft Java Edition. SC-Market records observed listings and completed sales, estimates conservative values, reports opportunities, and provides independently switchable Fishing/AH Deals workflows plus a fail-closed Order→AH strategy core for authorized private/test servers.
 
-> **Compatibility / verification status:** the current build configuration targets **Minecraft 26.2**, Java 25, Fabric Loader 0.19.5, Fabric API 0.161.0+26.2, non-remapping Loom, and Mojang names. The latest passing CI run (39656997407) tested the earlier committed baseline, not the extensive uncommitted working-tree changes present at the 2026-10-22 snapshot. Therefore this snapshot is **not confirmed as working** until the current diff passes `test build` and the client smoke. No live private-server integration is claimed. See [Agent.md](Agent.md) and the [26.2 port report](docs/PORTING_26_2.md) for the exact boundary.
+> **Compatibility / verification status:** the current build configuration targets **Minecraft 26.2**, Java 25, Fabric Loader 0.19.5, Fabric API 0.161.0+26.2, non-remapping Loom, and Mojang names. Commit `069392322d1ba849d3c9b9c89b1015ba0527a86d` passed CI run [39812308743](https://github.com/LeoGoettlinger/SMP-Market-Flipper/actions/runs/39812308743): tests/build and the 26.2 client launch/render smoke succeeded. This verifies compilation and startup/UI rendering, **not live fishing or private-server market behavior**; no live-server integration is claimed. See [Agent.md](Agent.md) and the [26.2 port report](docs/PORTING_26_2.md) for the exact boundary.
 
 ## Start here
 
@@ -18,7 +18,7 @@ A client-side market scanner and opt-in automation toolkit for Minecraft Java Ed
 
 ## Download the built mod from GitHub Actions
 
-After the current changes are pushed, `.github/workflows/verify.yml` runs tests and builds the mod. When `test build` succeeds, it uploads the installable JAR as the artifact `sc-market-<commit SHA>` (sources JAR excluded; 14-day retention). Open the repository's **Actions → Verify**, select the run for your commit, download the ZIP under **Artifacts**, and copy the `.jar` into the matching Minecraft 26.2 `mods` folder. The workflow uploads after the build step and before its GUI smoke, so check the GUI-smoke result separately; a downloadable build is not proof of live-server behavior. The workflow can also be run manually from Actions using **Run workflow**.
+The current branch's CI run has uploaded the installable JAR as `sc-market-069392322d1ba849d3c9b9c89b1015ba0527a86d` (sources JAR excluded; 14-day retention). Open the repository's **Actions → Verify**, select [run 39812308743](https://github.com/LeoGoettlinger/SMP-Market-Flipper/actions/runs/39812308743), download its ZIP under **Artifacts**, and copy the `.jar` into the matching Minecraft 26.2 `mods` folder. Future successful `test build` runs upload `sc-market-<commit SHA>` before the GUI smoke, so check the smoke result separately; a downloadable build is not proof of live-server behavior. The workflow can also be run manually from Actions using **Run workflow**.
 
 ## ClickGUI controls
 

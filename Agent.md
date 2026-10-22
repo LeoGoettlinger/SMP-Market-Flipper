@@ -23,7 +23,7 @@ The build files currently specify Minecraft **26.2**, Java **25**, non-remapping
 
 ### Do not overstate test status
 
-On 2026-10-22, commit `9164feb` passed GitHub Actions run `39804134126`: tests/build, JAR upload, and the configured offline 26.2 client/GUI smoke. This does not certify live Order/AH behavior, gameplay interactions, server-specific profile parsing, or transaction correctness. The local sandbox previously lacked a Java executable, so check availability before attempting local Gradle verification. For any later source changes, report the exact CI run/revision and distinguish CI smoke from live-server verification.
+On 2026-10-22, commit `069392322d1ba849d3c9b9c89b1015ba0527a86d` passed GitHub Actions run `39812308743`: tests/build, JAR upload, and the configured offline 26.2 client/GUI smoke. This includes the API-free Packet Scan fallback, Fishing tab, and new mode unit tests at compile/CI level; it does not certify live fishing, server-specific profile parsing, transaction correctness, or private-server behavior. Local `./gradlew test build --no-daemon` could not run because the sandbox has no `java` executable; CI supplied Java 25 and passed. For later source changes, report the exact CI run/revision and distinguish CI smoke from live-server verification.
 
 The earlier `39656235326` CI attempt had 1 failure among 277 tests: `MarketScannerTest.temporaryApiFailureDoesNotImmediatelyKillScanner()` saw a failure cleared by concurrent successful fake scanner work. The test was isolated in the later passing baseline. A separate earlier GUI smoke rendered successfully but hit a native FreeType shutdown crash; shutdown was changed to a one-shot, delayed stop, and a later baseline smoke passed. These are historical findings, not proof that any later revision is good or bad.
 
@@ -79,7 +79,7 @@ The current source layout is split by runtime boundary:
 - `.github/workflows/verify.yml` — CI build/test and optional offline client smoke. Read this before modifying verification behavior.
 - `gradle/verification-metadata.xml` and `gradle/wrapper/` — supply-chain checksums and pinned Gradle wrapper.
 
-Use `docs/PROJECT_TREE.md` for a concise current subsystem map. Key source entrypoints include `com.scmarket.ScMarketClient`, `ClientProductionRuntime`, `DonutApiClient`, `MarketScanner`, `DatabaseManager`, `LiveMarketSnapshotService`, `OrderAutomationCoordinator`, `FishingAutomationController`, `AuctionHouseDataCapture`, and `ClickGuiScreen`; paths may shift while the uncommitted refactor is active.
+Use `docs/PROJECT_TREE.md` for a concise current subsystem map. Key source entrypoints include `com.scmarket.ScMarketClient`, `ClientProductionRuntime`, `DonutApiClient`, `MarketScanner`, `DatabaseManager`, `LiveMarketSnapshotService`, `OrderAutomationCoordinator`, `FishingAutomationController`, `AuctionHouseDataCapture`, and `ClickGuiScreen`; verify current paths in the active branch before editing.
 
 Keep the dependency direction understandable: core domain/service code should not depend on Minecraft classes; client adapters translate Minecraft state/events into domain ports; providers expose immutable snapshots to the UI; database writes are transactional and repositories own persistence. Prefer injected interfaces and fake adapters in tests over static game globals.
 
