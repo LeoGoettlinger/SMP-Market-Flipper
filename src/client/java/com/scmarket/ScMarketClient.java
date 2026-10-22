@@ -150,6 +150,11 @@ public final class ScMarketClient implements ClientModInitializer {
                     } catch (ClassNotFoundException missingGameMode) {
                         throw new IllegalStateException("Minecraft client game-mode class was not found.",
                                 missingGameMode);
+                    } catch (Throwable transformationFailure) {
+                        LOGGER.error("26.2 smoke test could not transform the game-mode mixin target.",
+                                transformationFailure);
+                        throw new IllegalStateException("Game-mode mixin transformation failed.",
+                                transformationFailure);
                     }
                     LOGGER.info("26.2 client smoke test loaded the game-mode mixin target.");
                     client.gui.setScreen(new ClickGuiScreen(dataSources));
