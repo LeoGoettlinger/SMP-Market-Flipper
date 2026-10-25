@@ -12,8 +12,8 @@ public final class SidebarNavigation {
     private static final int START_X = 6;
     private static final int START_Y = GuiLayout.HEADER_HEIGHT + 12;
     private static final int BUTTON_WIDTH = GuiLayout.SIDEBAR_WIDTH - 12;
-    private static final int BUTTON_HEIGHT = 27;
-    private static final int BUTTON_GAP = 3;
+    private static final int BUTTON_HEIGHT = 24;
+    private static final int BUTTON_GAP = 2;
 
     public void render(
             GuiGraphicsExtractor context,

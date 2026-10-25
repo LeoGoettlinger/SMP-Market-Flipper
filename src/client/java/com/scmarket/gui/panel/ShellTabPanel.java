@@ -18,6 +18,7 @@ import com.scmarket.data.AutomationSettingsSnapshot;
 import com.scmarket.automation.model.AutomationMode;
 import com.scmarket.gui.GuiLayout;
 import com.scmarket.gui.GuiTab;
+import com.scmarket.gui.format.MoneyMagnitudeFormatter;
 import com.scmarket.gui.render.GuiDraw;
 import com.scmarket.gui.theme.GuiColors;
 import com.scmarket.gui.theme.GuiTypography;
@@ -89,6 +90,7 @@ public final class ShellTabPanel implements TabContentPanel {
         switch (tab) {
             case DASHBOARD -> renderDashboard(context, textRenderer);
             case FISHING -> renderFishing(context, textRenderer, mouseX, mouseY);
+            case USER -> renderUser(context, textRenderer, mouseX, mouseY);
             case AH_DEALS -> renderModuleTab(context, textRenderer, mouseX, mouseY, MarketModule.AH_DEALS);
             case ORDER_TO_AH -> renderModuleTab(context, textRenderer, mouseX, mouseY, MarketModule.ORDER_TO_AH);
             case OPPORTUNITIES -> renderOpportunities(context, textRenderer, mouseX, mouseY);
@@ -109,6 +111,9 @@ public final class ShellTabPanel implements TabContentPanel {
         }
         if (tab == GuiTab.FISHING) {
             return clickFishing(mouseX, mouseY);
+        }
+        if (tab == GuiTab.USER) {
+            return clickUser(mouseX, mouseY);
         }
         if (tab == GuiTab.AH_DEALS) {
             return clickModuleTab(mouseX, mouseY, MarketModule.AH_DEALS);
@@ -350,25 +355,29 @@ public final class ShellTabPanel implements TabContentPanel {
 
         GuiTypography.draw(context, renderer, "FISHING CONTROLS", CONTENT_X + 10, CARD_TOP + 11,
                 GuiColors.ACCENT_TEXT, false);
-        button(context, renderer, CONTENT_X + 10, CARD_TOP + 27, 200, 18,
-                fishingArmed ? "STOP FISHING" : "START FISHING · PRIVATE SERVER",
-                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18));
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 27, 95, 18, "START AUTO",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 95, 18));
+        button(context, renderer, CONTENT_X + 115, CARD_TOP + 27, 95, 18, "START SMART",
+                contains(mouseX, mouseY, CONTENT_X + 115, CARD_TOP + 27, 95, 18));
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 49, 200, 18,
+                fishingArmed ? "STOP FISHING" : "STOP / RESET FISHING",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 49, 200, 18));
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
-                "Server", connected ? fit(renderer, address, 120) : "Not connected", CARD_TOP + 55);
+                "Server", connected ? fit(renderer, address, 120) : "Not connected", CARD_TOP + 73);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
-                "Allowlist", allowed ? "EXACT SERVER ALLOWED" : "NOT ALLOWED", CARD_TOP + 76);
+                "Allowlist", allowed ? "EXACT SERVER ALLOWED" : "NOT ALLOWED", CARD_TOP + 89);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
-                "Private AH profile", hasProfile ? "CONFIGURED" : "NOT CONFIGURED", CARD_TOP + 97);
+                "Profile", hasProfile ? "CONFIGURED" : "OPTIONAL FOR CATCHING", CARD_TOP + 105);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
                 "Rod / inventory", (rodReady ? "ROD OK" : "ADD ROD") + " · "
-                        + (inventoryReady ? "SPACE OK" : "NO SPACE"), CARD_TOP + 118);
+                        + (inventoryReady ? "SPACE OK" : "NO SPACE"), CARD_TOP + 121);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
-                "Market data", packetMode ? "PACKET SCAN · NO API" : "API MODE", CARD_TOP + 139);
-        button(context, renderer, CONTENT_X + 10, CARD_TOP + 158, 200, 18,
+                "Data source", packetMode ? "PACKET SCAN · NO API" : "API MODE", CARD_TOP + 137);
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 153, 200, 18,
                 allowed ? "CURRENT SERVER ALREADY ALLOWED" : "ALLOW CURRENT SERVER",
-                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 158, 200, 18));
-        GuiTypography.draw(context, renderer, "No API key is needed for Packet Scan.",
-                CONTENT_X + 10, CARD_TOP + 190, GuiColors.POSITIVE_TEXT, false);
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 153, 200, 18));
+        GuiTypography.draw(context, renderer, "Smart keeps filter-excluded catches.",
+                CONTENT_X + 10, CARD_TOP + 183, GuiColors.MUTED_TEXT, false);
 
         GuiTypography.draw(context, renderer, "LIVE FISHING STATUS", right + 10, CARD_TOP + 11,
                 GuiColors.ACCENT_TEXT, false);
@@ -390,6 +399,120 @@ public final class ShellTabPanel implements TabContentPanel {
                 rightWidth - 20, GuiColors.MUTED_TEXT, 3);
     }
 
+    private void renderUser(GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY) {
+        int right = CONTENT_X + 227;
+        int rightWidth = CONTENT_RIGHT - right;
+        panel(context, CONTENT_X, CARD_TOP, 220, 211);
+        panel(context, right, CARD_TOP, rightWidth, 211);
+        String address = ScMarketClient.currentServerAddress().strip();
+        boolean connected = !address.isBlank();
+        boolean allowed = connected && dataSources.automationSettings().snapshot()
+                .configuration().serverAllowed(address);
+        GuiTypography.draw(context, renderer, "RTP HISTORY · LOCAL ONLY", CONTENT_X + 10,
+                CARD_TOP + 11, GuiColors.ACCENT_TEXT, false);
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 27, 200, 18, "SAVE CURRENT POSITION",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18));
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 49, 200, 18,
+                ScMarketClient.rtpBotRunning() ? "STOP RTP BOT" : "START RTP BOT",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 49, 200, 18));
+        button(context, renderer, CONTENT_X + 10, CARD_TOP + 71, 200, 18,
+                "RTP INTERVAL · " + ScMarketClient.rtpDelaySeconds() + "s",
+                contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 71, 200, 18));
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Exact server", allowed ? "ALLOWLISTED" : "NOT ALLOWLISTED", CARD_TOP + 100);
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Saved points", Long.toString(ScMarketClient.rtpRecordedCount()), CARD_TOP + 118);
+        String latest = ScMarketClient.latestRtp().map(point -> point.dimension() + " "
+                + point.x() + " " + point.y() + " " + point.z()).orElse("No landing saved yet");
+        lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
+                "Latest", fit(renderer, latest, 112), CARD_TOP + 136);
+        GuiTypography.draw(context, renderer, "Stored in config/sc-market/rtp-history.jsonl",
+                CONTENT_X + 10, CARD_TOP + 158, GuiColors.MUTED_TEXT, false);
+        drawWrapped(context, renderer, ScMarketClient.rtpBotStatus(), CONTENT_X + 10,
+                CARD_TOP + 176, 200, GuiColors.SECONDARY_TEXT, 2);
+        if (!notice.isBlank()) {
+            GuiTypography.draw(context, renderer, fit(renderer, notice, 200),
+                    CONTENT_X + 10, CARD_TOP + 199, GuiColors.POSITIVE_TEXT, false);
+        }
+
+        ItemFilterSnapshot filterState = dataSources.itemFilters().getItemFilters();
+        boolean sellerRunning = ScMarketClient.runtimeSettings().moduleEnabled(MarketModule.AH_SELLER);
+        GuiTypography.draw(context, renderer, "AH SELLER · $1 UNDERCUT", right + 10,
+                CARD_TOP + 11, GuiColors.ACCENT_TEXT, false);
+        drawWrapped(context, renderer, ScMarketClient.ahSellerStatus(), right + 10,
+                CARD_TOP + 28, rightWidth - 20, GuiColors.PRIMARY_TEXT, 2);
+        button(context, renderer, right + 10, CARD_TOP + 50, 95, 18, "START AUTO",
+                contains(mouseX, mouseY, right + 10, CARD_TOP + 50, 95, 18));
+        button(context, renderer, right + 115, CARD_TOP + 50, rightWidth - 125, 18, "START SMART",
+                contains(mouseX, mouseY, right + 115, CARD_TOP + 50, rightWidth - 125, 18));
+        button(context, renderer, right + 10, CARD_TOP + 72, rightWidth - 20, 18,
+                sellerRunning ? "STOP AH SELLER" : "STOP / RESET AH SELLER",
+                contains(mouseX, mouseY, right + 10, CARD_TOP + 72, rightWidth - 20, 18));
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Whitelist", filterState.mode() == ItemFilterMode.WHITELIST_ONLY
+                        ? filterState.whitelistedItems().size() + " items · READY"
+                        : "set Whitelist-only in Item Filters", CARD_TOP + 101);
+        lineAt(context, renderer, right + 10, CONTENT_RIGHT - 10,
+                "Server / profile", ScMarketClient.currentServerAddress().isBlank()
+                        ? "connect + allow exact server" : "private AH profile required", CARD_TOP + 119);
+        drawWrapped(context, renderer,
+                "Uses only fresh comparable AH asks (15s), lists one stack at a time, and stops if confirmation is uncertain. "
+                        + "Whitelist setup: Item Filters tab.",
+                right + 10, CARD_TOP + 143, rightWidth - 20, GuiColors.MUTED_TEXT, 3);
+    }
+
+    private boolean clickUser(int mouseX, int mouseY) {
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18)) {
+            notice = ScMarketClient.recordCurrentRtp()
+                    ? "Current position saved to the local RTP history."
+                    : ScMarketClient.rtpBotStatus();
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 49, 200, 18)) {
+            if (ScMarketClient.rtpBotRunning()) {
+                ScMarketClient.stopRtpBot();
+                notice = "RTP bot stopped.";
+            } else if (!ScMarketClient.runtimeSettings().enabled()) {
+                notice = "Turn on the mod switch first; the exact server allowlist is still required.";
+            } else {
+                ScMarketClient.startRtpBot();
+                notice = ScMarketClient.rtpBotStatus();
+            }
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 71, 200, 18)) {
+            int next = switch (ScMarketClient.rtpDelaySeconds()) {
+                case 30 -> 60;
+                case 60 -> 120;
+                case 120 -> 300;
+                case 300 -> 600;
+                default -> 30;
+            };
+            notice = ScMarketClient.setRtpDelaySeconds(next)
+                    ? "RTP interval saved as " + next + " seconds."
+                    : "Could not save the RTP interval; the previous value remains active.";
+            return true;
+        }
+        int right = CONTENT_X + 227;
+        int rightWidth = CONTENT_RIGHT - right;
+        if (contains(mouseX, mouseY, right + 10, CARD_TOP + 50, 95, 18)) {
+            startModule(MarketModule.AH_SELLER, AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
+            return true;
+        }
+        if (contains(mouseX, mouseY, right + 115, CARD_TOP + 50, rightWidth - 125, 18)) {
+            startModule(MarketModule.AH_SELLER, AutomationMode.SMART_AUTHORIZED_SERVER);
+            return true;
+        }
+        if (contains(mouseX, mouseY, right + 10, CARD_TOP + 72, rightWidth - 20, 18)) {
+            ScMarketClient.stopAuthorizedModule(MarketModule.AH_SELLER)
+                    .whenComplete((ignored, error) -> notice = error == null
+                            ? "AH Seller stopped; no further stack will be listed."
+                            : "AH Seller stopped, but settings could not be saved.");
+            return true;
+        }
+        return false;
+    }
+
     private void renderModuleTab(
             GuiGraphicsExtractor context, Font renderer, int mouseX, int mouseY, MarketModule module
     ) {
@@ -408,10 +531,10 @@ public final class ShellTabPanel implements TabContentPanel {
         GuiTypography.draw(context, renderer, order ? "ORDER → AH WORKFLOW" : "AH DEALS WORKFLOW",
                 CONTENT_X + 10, CARD_TOP + 11, GuiColors.ACCENT_TEXT, false);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
-                "Module", order ? "LOCKED · parser unverified" : moduleOn ? "ACTIVE" : "STOPPED",
+                "Module", order ? "LOCKED · parser/claim unverified" : moduleOn ? "ACTIVE" : "STOPPED",
                 CARD_TOP + 34);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
-                "Mode", shortMode(snapshot.configuration().mode()), CARD_TOP + 55);
+                order ? "Preference" : "Mode", shortMode(snapshot.configuration().mode()), CARD_TOP + 55);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
                 "Server", allowed ? "EXACT SERVER ALLOWED" : "NOT ALLOWED", CARD_TOP + 76);
         lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
@@ -432,10 +555,20 @@ public final class ShellTabPanel implements TabContentPanel {
         } else {
             lineAt(context, renderer, CONTENT_X + 10, CONTENT_X + 210,
                     "Execution", "SAFELY DISABLED", CARD_TOP + 119);
-            GuiTypography.draw(context, renderer, "API credentials do not unlock this parser.",
-                    CONTENT_X + 10, CARD_TOP + 149, GuiColors.MUTED_TEXT, false);
-            GuiTypography.draw(context, renderer, "No order will be collected or listed.",
-                    CONTENT_X + 10, CARD_TOP + 164, GuiColors.MUTED_TEXT, false);
+            boolean autoSelected = snapshot.configuration().mode() == AutomationMode.AUTOMATIC_AUTHORIZED_SERVER;
+            boolean smartSelected = snapshot.configuration().mode() == AutomationMode.SMART_AUTHORIZED_SERVER;
+            button(context, renderer, CONTENT_X + 10, CARD_TOP + 145, 95, 18,
+                    autoSelected ? "AUTO ✓" : "SELECT AUTO",
+                    contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 145, 95, 18));
+            button(context, renderer, CONTENT_X + 115, CARD_TOP + 145, 95, 18,
+                    smartSelected ? "SMART ✓" : "SELECT SMART",
+                    contains(mouseX, mouseY, CONTENT_X + 115, CARD_TOP + 145, 95, 18));
+            GuiTypography.draw(context, renderer, "Selection stops active automation.",
+                    CONTENT_X + 10, CARD_TOP + 169, GuiColors.MUTED_TEXT, false);
+            GuiTypography.draw(context, renderer, "Parser / full claim state unverified.",
+                    CONTENT_X + 10, CARD_TOP + 183, GuiColors.MUTED_TEXT, false);
+            GuiTypography.draw(context, renderer, "No order collection or listing.",
+                    CONTENT_X + 10, CARD_TOP + 197, GuiColors.MUTED_TEXT, false);
             renderOrderModuleSettings(context, renderer, mouseX, mouseY, right);
             return;
         }
@@ -466,8 +599,25 @@ public final class ShellTabPanel implements TabContentPanel {
                 rightWidth - 20, GuiColors.MUTED_TEXT, 5);
     }
 
+    private void selectLockedOrderMode(AutomationMode mode) {
+        notice = "Stopping active automation and saving the Order→AH mode preference; execution stays locked.";
+        ScMarketClient.stopAuthorizedModule(MarketModule.ORDER_TO_AH)
+                .thenCompose(ignored -> dataSources.automationSettings().setMode(mode))
+                .whenComplete((ignored, error) -> notice = error == null
+                        ? shortMode(mode) + " selected for Order→AH; no order can be collected or listed."
+                        : "Order→AH remains locked; unable to save the mode preference.");
+    }
+
     private boolean clickModuleTab(int mouseX, int mouseY, MarketModule module) {
         if (module == MarketModule.ORDER_TO_AH) {
+            if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 145, 95, 18)) {
+                selectLockedOrderMode(AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
+                return true;
+            }
+            if (contains(mouseX, mouseY, CONTENT_X + 115, CARD_TOP + 145, 95, 18)) {
+                selectLockedOrderMode(AutomationMode.SMART_AUTHORIZED_SERVER);
+                return true;
+            }
             return false;
         }
         if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 119, 200, 18)) {
@@ -501,31 +651,30 @@ public final class ShellTabPanel implements TabContentPanel {
     private void startModule(MarketModule module, AutomationMode mode) {
         notice = "Starting " + moduleLabel(module) + " in " + shortMode(mode) + " mode…";
         ScMarketClient.startAuthorizedModule(module, mode).whenComplete((ignored, error) -> notice = error == null
-                ? moduleLabel(module) + " is armed; exact server, profile, and transaction checks still apply."
+                ? module == MarketModule.FISHING
+                        ? "Fishing is armed; without a verified profile, catches stay in inventory."
+                        : module == MarketModule.AH_SELLER
+                                ? "AH Seller armed; only fresh-price, whitelisted stacks can be listed."
+                                : moduleLabel(module) + " is armed; exact server, profile, and transaction checks still apply."
                 : "Module did not start: " + Objects.requireNonNullElse(error.getMessage(), "runtime unavailable"));
     }
 
     private boolean clickFishing(int mouseX, int mouseY) {
-        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 200, 18)) {
-            AutomationSettingsSnapshot snapshot = dataSources.automationSettings().snapshot();
-            boolean armed = ScMarketClient.runtimeSettings().moduleEnabled(MarketModule.FISHING)
-                    && snapshot.configuration().enabled()
-                    && snapshot.configuration().mode().isAutomatic();
-            if (armed) {
-                notice = "Stopping Fishing and disabling automation…";
-                ScMarketClient.stopFishingOnly().whenComplete((ignored, error) -> notice = error == null
-                        ? "Fishing stopped; automation is disabled."
-                        : "Fishing stopped, but settings could not be saved: "
-                                + Objects.requireNonNullElse(error.getMessage(), "unknown error"));
-            } else {
-                notice = "Starting Fishing-only mode. The exact server allowlist is still required.";
-                ScMarketClient.startFishingOnly().whenComplete((ignored, error) -> notice = error == null
-                        ? "Fishing-only mode is ready; it will remain paused unless this exact server is allowlisted."
-                        : "Fishing setup could not finish: " + Objects.requireNonNullElse(error.getMessage(), "runtime unavailable"));
-            }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 27, 95, 18)) {
+            startModule(MarketModule.FISHING, AutomationMode.AUTOMATIC_AUTHORIZED_SERVER);
             return true;
         }
-        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 158, 200, 18)) {
+        if (contains(mouseX, mouseY, CONTENT_X + 115, CARD_TOP + 27, 95, 18)) {
+            startModule(MarketModule.FISHING, AutomationMode.SMART_AUTHORIZED_SERVER);
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 49, 200, 18)) {
+            ScMarketClient.stopFishingOnly().whenComplete((ignored, error) -> notice = error == null
+                    ? "Fishing stopped; automation is disabled."
+                    : "Fishing stopped, but settings could not be saved.");
+            return true;
+        }
+        if (contains(mouseX, mouseY, CONTENT_X + 10, CARD_TOP + 153, 200, 18)) {
             if (ScMarketClient.currentServerAddress().isBlank()) {
                 notice = "Connect to the authorized private server before adding it to the allowlist.";
             } else {
@@ -917,15 +1066,17 @@ public final class ShellTabPanel implements TabContentPanel {
         int rightEdge = CONTENT_RIGHT - 10;
         GuiTypography.draw(context, renderer, "ORDER → AH SETTINGS", rightX, CARD_TOP + 11,
                 GuiColors.ACCENT_TEXT, false);
-        drawSettingStepper(context, renderer, rightX, rightEdge, "Order size", settings.orderQuantity(),
-                orderQuantityButtonY(), 70, mouseX, mouseY);
-        drawSettingStepper(context, renderer, rightX, rightEdge, "Total active orders",
-                settings.maximumTotalOrders(), totalOrdersButtonY(), 70, mouseX, mouseY);
-        drawSettingStepper(context, renderer, rightX, rightEdge, "Orders per item",
-                settings.maximumOrdersPerItem(), perItemButtonY(), 70, mouseX, mouseY);
+        drawSettingStepper(context, renderer, rightX, rightEdge, "Items per order",
+                "‹ " + settings.orderQuantity() + " ›", orderQuantityButtonY(), 70, mouseX, mouseY);
+        drawSettingStepper(context, renderer, rightX, rightEdge, "Max active orders",
+                "‹ " + settings.maximumTotalOrders() + " ›", totalOrdersButtonY(), 70, mouseX, mouseY);
+        drawSettingStepper(context, renderer, rightX, rightEdge, "Max per item",
+                "‹ " + settings.maximumOrdersPerItem() + " ›", perItemButtonY(), 70, mouseX, mouseY);
         drawSettingStepper(context, renderer, rightX, rightEdge, "Minimum profit / item",
-                "$" + settings.minimumProfitPerItem().stripTrailingZeros().toPlainString(),
+                "‹ $" + settings.minimumProfitPerItem().stripTrailingZeros().toPlainString() + " ›",
                 minimumProfitButtonY(), 70, mouseX, mouseY);
+        GuiTypography.draw(context, renderer, "Click each value to cycle its limit.",
+                rightX, CARD_TOP + 103, GuiColors.MUTED_TEXT, false);
 
         context.fill(rightX, CARD_TOP + 109, rightEdge, CARD_TOP + 110, GuiColors.SECONDARY_BORDER);
         GuiTypography.draw(context, renderer,
@@ -1543,6 +1694,7 @@ public final class ShellTabPanel implements TabContentPanel {
     private static String moduleLabel(MarketModule module) {
         return switch (module) {
             case FISHING -> "FISHING";
+            case AH_SELLER -> "AH SELLER";
             case AH_DEALS -> "AH DEALS";
             case ORDER_TO_AH -> "ORDER → AH";
         };
@@ -1705,18 +1857,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static String compact(long value) {
-        long absolute = value == Long.MIN_VALUE ? Long.MAX_VALUE : Math.abs(value);
-        String prefix = value < 0 ? "-" : "";
-        if (absolute >= 1_000_000_000L) {
-            return prefix + decimal(absolute / 1_000_000_000.0D) + "B";
-        }
-        if (absolute >= 1_000_000L) {
-            return prefix + decimal(absolute / 1_000_000.0D) + "M";
-        }
-        if (absolute >= 1_000L) {
-            return prefix + decimal(absolute / 1_000.0D) + "K";
-        }
-        return Long.toString(value);
+        return MoneyMagnitudeFormatter.format(value);
     }
 
     private static String balanceText(com.scmarket.balance.BalanceSnapshot snapshot) {
@@ -1729,27 +1870,7 @@ public final class ShellTabPanel implements TabContentPanel {
     }
 
     private static String compact(BigDecimal value) {
-        BigDecimal absolute = value.abs();
-        String prefix = value.signum() < 0 ? "-" : "";
-        BigDecimal billion = BigDecimal.valueOf(1_000_000_000L);
-        BigDecimal million = BigDecimal.valueOf(1_000_000L);
-        BigDecimal thousand = BigDecimal.valueOf(1_000L);
-        if (absolute.compareTo(billion) >= 0) {
-            return prefix + decimal(absolute.divide(billion).doubleValue()) + "B";
-        }
-        if (absolute.compareTo(million) >= 0) {
-            return prefix + decimal(absolute.divide(million).doubleValue()) + "M";
-        }
-        if (absolute.compareTo(thousand) >= 0) {
-            return prefix + decimal(absolute.divide(thousand).doubleValue()) + "K";
-        }
-        return value.stripTrailingZeros().toPlainString();
-    }
-
-    private static String decimal(double value) {
-        return value >= 100.0D
-                ? String.format(Locale.ROOT, "%.0f", value)
-                : String.format(Locale.ROOT, "%.1f", value).replace(".0", "");
+        return MoneyMagnitudeFormatter.format(value);
     }
 
     private static String formatPercent(double value) {

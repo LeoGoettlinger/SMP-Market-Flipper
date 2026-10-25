@@ -75,8 +75,8 @@ Details:
 	Process Virtual Size (MiB): 8358.85
 	Process Resident Size (MiB): 875.51
 	JVM Flags: 1 total; -XX:StackShadowPages=32
-	Debug Flags: 0 total; 
-	Fabric Mods: 
+	Debug Flags: 0 total;
+	Fabric Mods:
 		fabric-advancement-api-v1: Fabric Advancement API (v1) 1.0.0+58719a3b9e
 		fabric-api: Fabric API 0.161.0+26.2
 		fabric-api-base: Fabric API Base 2.0.4+ece063239e
@@ -143,8 +143,8 @@ Details:
 	Graphics Device Features: DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=true, drawIndirect=true, nonZeroFirstInstance=true, persistentMapping=true]
 	Backend failure message: Failed to find the GLFW platform surface extensions
 	Backend failure reason: glfw_error
-	Backend failure missing capabilities: 
-	GL debug messages: 
+	Backend failure missing capabilities:
+	GL debug messages:
 	Is Modded: Definitely; Client brand changed to 'fabric'
 	Universe: 400921fb54442d18
 	Type: Client

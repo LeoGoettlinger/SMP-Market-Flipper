@@ -16,6 +16,10 @@ import com.scmarket.data.ClientUiDataSourceRouter;
 import com.scmarket.gui.ClickGuiScreen;
 import com.scmarket.gui.hud.OpportunityHudOverlay;
 import com.scmarket.market.scanner.MarketScanner;
+import com.scmarket.rtp.RtpHistoryStore;
+import com.scmarket.rtp.RtpLocation;
+import com.scmarket.rtp.RtpBotController;
+import com.scmarket.rtp.RtpBotSettingsStore;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -26,6 +30,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.resources.Identifier;
@@ -63,6 +68,9 @@ public final class ScMarketClient implements ClientModInitializer {
     private static volatile OrderModuleSettingsStore orderModuleSettingsStore;
     private static volatile OrderModuleSettings orderModuleSettings = OrderModuleSettings.defaults();
     private static volatile LocalActionRecorder actionRecorder;
+    private static volatile RtpHistoryStore rtpHistoryStore;
+    private static volatile RtpBotController rtpBotController;
+    private static volatile RtpBotSettingsStore rtpBotSettingsStore;
 
     @Override
     public void onInitializeClient() {
@@ -84,6 +92,20 @@ public final class ScMarketClient implements ClientModInitializer {
             orderModuleSettings = OrderModuleSettings.defaults();
         }
         actionRecorder = new LocalActionRecorder(configDirectory);
+        rtpBotSettingsStore = new RtpBotSettingsStore(configDirectory.resolve("rtp-bot.properties"));
+        int savedRtpDelaySeconds = RtpBotSettingsStore.DEFAULT_DELAY_SECONDS;
+        try {
+            savedRtpDelaySeconds = rtpBotSettingsStore.loadDelaySeconds();
+        } catch (IOException settingsFailure) {
+            LOGGER.warn("RTP bot settings could not be loaded; using the safe default interval.", settingsFailure);
+        }
+        try {
+            rtpHistoryStore = new RtpHistoryStore(configDirectory.resolve("rtp-history.jsonl"));
+        } catch (IOException historyFailure) {
+            LOGGER.warn("RTP history could not be loaded; recording and RTP automation stay disabled.",
+                    historyFailure);
+            rtpHistoryStore = null;
+        }
         if (orderModuleSettings.localActionRecording()) {
             try {
                 actionRecorder.start(orderModuleSettings.maximumRecordedActions());
@@ -95,6 +117,11 @@ public final class ScMarketClient implements ClientModInitializer {
         HUD_OVERLAY.setModuleEnabled(runtimeSettings.enabled());
         dataSourceRouter = new ClientUiDataSourceRouter(ClientUiDataSources.createMock());
         dataSources = dataSourceRouter.dataSources();
+        if (rtpHistoryStore != null) {
+            rtpBotController = new RtpBotController(Minecraft.getInstance(), ScMarketClient::rtpAuthorized,
+                    rtpHistoryStore);
+            rtpBotController.setDelaySeconds(savedRtpDelaySeconds);
+        }
         KeyMapping.Category category = KeyMapping.Category.register(
                 Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, ModConstants.KEYBIND_CATEGORY_PATH)
         );
@@ -136,9 +163,18 @@ public final class ScMarketClient implements ClientModInitializer {
                 }
             }
             HUD_OVERLAY.tick(dataSources);
+            RtpBotController rtpBot = rtpBotController;
+            if (rtpBot != null) {
+                if (runtimeSettings.enabled()) {
+                    rtpBot.tick();
+                } else {
+                    rtpBot.stop();
+                }
+            }
             ClientProductionRuntime runtime = productionRuntime;
             if (runtime != null) {
                 runtime.tickFishing();
+                runtime.tickAhSeller();
             }
             if (Boolean.parseBoolean(System.getenv("SCMARKET_CI_SMOKE_TEST"))) {
                 int smokeTick = smokeTestTicks.incrementAndGet();
@@ -263,6 +299,13 @@ public final class ScMarketClient implements ClientModInitializer {
                 : runtime.fishingStatus();
     }
 
+    public static String ahSellerStatus() {
+        ClientProductionRuntime runtime = productionRuntime;
+        return runtime == null
+                ? "AH Seller runtime is starting; use the item filters tab to build a non-empty whitelist."
+                : runtime.ahSellerStatus();
+    }
+
     public static String orderStatus() {
         ClientProductionRuntime runtime = productionRuntime;
         return runtime == null ? "Order→AH is safely idle until its private-server GUI profile is verified."
@@ -270,6 +313,9 @@ public final class ScMarketClient implements ClientModInitializer {
     }
 
     public static void setModEnabled(boolean enabled) {
+        if (!enabled) {
+            stopRtpBot();
+        }
         updateRuntimeSettings(runtimeSettings.withEnabled(enabled));
     }
 
@@ -296,10 +342,12 @@ public final class ScMarketClient implements ClientModInitializer {
             return CompletableFuture.failedFuture(new IllegalStateException(
                     "Order→AH stays locked until the exact full-order claim parser is verified."));
         }
+        stopRtpBot();
         updateRuntimeSettings(new ModRuntimeSettings(true, Set.of(module)));
         ClientProductionRuntime runtime = productionRuntime;
         if (runtime != null) {
-            return runtime.enableAutomation(mode);
+            return module == com.scmarket.configuration.MarketModule.AH_SELLER
+                    ? runtime.enableAhSeller(mode) : runtime.enableAutomation(mode);
         }
         CompletableFuture<Optional<ClientProductionRuntime>> startup = productionStartup;
         if (startup == null) {
@@ -307,7 +355,8 @@ public final class ScMarketClient implements ClientModInitializer {
                     new IllegalStateException("The live market runtime has not started."));
         }
         return startup.thenCompose(optional -> optional
-                .map(value -> value.enableAutomation(mode))
+                .map(value -> module == com.scmarket.configuration.MarketModule.AH_SELLER
+                        ? value.enableAhSeller(mode) : value.enableAutomation(mode))
                 .orElseGet(() -> CompletableFuture.failedFuture(
                         new IllegalStateException("No live market runtime is available; check Packet Scan status."))));
     }
@@ -322,6 +371,7 @@ public final class ScMarketClient implements ClientModInitializer {
     public static CompletableFuture<Void> stopAuthorizedModule(
             com.scmarket.configuration.MarketModule module
     ) {
+        stopRtpBot();
         ModRuntimeSettings stopped = runtimeSettings.withModule(Objects.requireNonNull(module, "module"), false);
         updateRuntimeSettings(new ModRuntimeSettings(stopped.enabled(), Set.of()));
         ClientProductionRuntime runtime = productionRuntime;
@@ -419,6 +469,93 @@ public final class ScMarketClient implements ClientModInitializer {
 
     public static LocalActionRecorder actionRecorder() {
         return actionRecorder;
+    }
+
+    public static boolean rtpBotRunning() {
+        RtpBotController controller = rtpBotController;
+        return controller != null && controller.isRunning();
+    }
+
+    public static String rtpBotStatus() {
+        RtpBotController controller = rtpBotController;
+        return controller == null ? "RTP history is unavailable; check local file permissions." : controller.status();
+    }
+
+    public static long rtpRecordedCount() {
+        RtpBotController controller = rtpBotController;
+        return controller == null ? 0 : controller.recordedCount();
+    }
+
+    public static Optional<RtpLocation> latestRtp() {
+        RtpBotController controller = rtpBotController;
+        return controller == null ? Optional.empty() : controller.history().latest();
+    }
+
+    public static boolean recordCurrentRtp() {
+        RtpBotController controller = rtpBotController;
+        return controller != null && controller.recordCurrentPosition();
+    }
+
+    public static void startRtpBot() {
+        RtpBotController controller = rtpBotController;
+        if (controller == null) {
+            return;
+        }
+        if (!runtimeSettings.enabled()) {
+            return;
+        }
+        if (!runtimeSettings.activeModules().isEmpty()) {
+            stopAuthorizedModule(com.scmarket.configuration.MarketModule.AH_DEALS)
+                    .whenComplete((ignored, error) -> {
+                        if (error == null && runtimeSettings.enabled()) {
+                            controller.start();
+                        } else {
+                            controller.stop();
+                        }
+                    });
+            return;
+        }
+        controller.start();
+    }
+
+    public static void stopRtpBot() {
+        RtpBotController controller = rtpBotController;
+        if (controller != null) {
+            controller.stop();
+        }
+    }
+
+    public static int rtpDelaySeconds() {
+        RtpBotController controller = rtpBotController;
+        return controller == null ? 60 : controller.delaySeconds();
+    }
+
+    public static boolean setRtpDelaySeconds(int seconds) {
+        RtpBotController controller = rtpBotController;
+        RtpBotSettingsStore settingsStore = rtpBotSettingsStore;
+        if (controller == null || settingsStore == null) {
+            return false;
+        }
+        try {
+            settingsStore.saveDelaySeconds(seconds);
+            controller.setDelaySeconds(seconds);
+            return true;
+        } catch (IOException | IllegalArgumentException failure) {
+            LOGGER.warn("RTP delay could not be saved; previous setting remains active.", failure);
+            return false;
+        }
+    }
+
+    private static boolean rtpAuthorized() {
+        String address = currentServerAddress.strip().toLowerCase(java.util.Locale.ROOT);
+        if (address.isBlank() || dataSources == null) {
+            return false;
+        }
+        try {
+            return dataSources.automationSettings().snapshot().configuration().serverAllowed(address);
+        } catch (RuntimeException unavailableSettings) {
+            return false;
+        }
     }
 
     public static synchronized OrderModuleSettings updateOrderModuleSettings(

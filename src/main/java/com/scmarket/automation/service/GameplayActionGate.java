@@ -9,6 +9,7 @@ public final class GameplayActionGate {
     public enum Owner {
         FISHING,
         AH_DEALS,
+        AH_SELLER,
         ORDER_TO_AH
     }
 

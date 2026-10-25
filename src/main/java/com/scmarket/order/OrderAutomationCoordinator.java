@@ -27,6 +27,7 @@ public final class OrderAutomationCoordinator {
     private final OrderExecutionPort port;
     private final OrderOpportunitySelector selector;
     private final OrderCapacityPolicy capacityPolicy;
+    private final OrderClaimSafetyPolicy claimSafetyPolicy = new OrderClaimSafetyPolicy();
     private final OrderCompletionObservationRegistry observations;
     private final BooleanSupplier enabledAndAuthorized;
     private final Clock clock;
@@ -135,9 +136,20 @@ public final class OrderAutomationCoordinator {
                             + expiringPartial.orElseThrow().orderId() + " now."));
         }
 
+        Optional<TrackedOrder> unverifiedClaim = orders.stream()
+                .filter(order -> order.state() == TrackedOrderState.FILLED_UNCLAIMED)
+                .filter(order -> !hasVerifiedFullClaimSnapshot(order))
+                .findFirst();
+        if (unverifiedClaim.isPresent()) {
+            return CompletableFuture.completedFuture(OrderCycleResult.idle(
+                    "A completed order has missing or inconsistent claimable-quantity/payout data; "
+                            + "no order was collected or newly created."));
+        }
+
         Optional<TrackedOrder> completed = orders.stream()
                 .filter(order -> order.state() == TrackedOrderState.FILLED_UNCLAIMED
-                        && order.filledQuantity() == order.totalQuantity())
+                        && order.filledQuantity() == order.totalQuantity()
+                        && hasVerifiedFullClaimSnapshot(order))
                 .min(Comparator.comparing(TrackedOrder::createdAt).thenComparing(TrackedOrder::orderId));
         if (completed.isPresent()) {
             return processOneCompletedOrder(completed.orElseThrow());
@@ -204,7 +216,18 @@ public final class OrderAutomationCoordinator {
         });
     }
 
+    private boolean hasVerifiedFullClaimSnapshot(TrackedOrder order) {
+        return order.claimSnapshot()
+                .map(claimSafetyPolicy::assessForAutomaticCollection)
+                .map(OrderClaimSafetyPolicy.Assessment::eligible)
+                .orElse(false);
+    }
+
     private CompletableFuture<OrderCycleResult> processOneCompletedOrder(TrackedOrder order) {
+        if (!hasVerifiedFullClaimSnapshot(order)) {
+            return CompletableFuture.completedFuture(OrderCycleResult.idle(
+                    "The order's complete claimable amount and payout have not been verified; collection was skipped."));
+        }
         if (!stillAuthorized()) {
             return CompletableFuture.completedFuture(OrderCycleResult.idle("Allowlist, profile, or settings changed before collection."));
         }

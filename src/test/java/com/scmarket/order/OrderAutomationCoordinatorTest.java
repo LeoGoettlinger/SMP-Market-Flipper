@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OrderAutomationCoordinatorTest {
@@ -45,9 +46,55 @@ class OrderAutomationCoordinatorTest {
         assertEquals(32, port.priceRefreshes);
     }
 
+    @Test
+    void missingClaimSnapshotBlocksCollectionAndNewOrderPlacement() {
+        FakePort port = new FakePort();
+        port.orders.add(new TrackedOrder("order-unverified", "minecraft:jungle_log", "Jungle Log",
+                2_048, 2_048, new BigDecimal("202"), TrackedOrderState.FILLED_UNCLAIMED,
+                NOW.minusSeconds(120), NOW.minusSeconds(60)));
+        OrderAutomationCoordinator coordinator = new OrderAutomationCoordinator(
+                port, new OrderOpportunitySelector(), new OrderCapacityPolicy(),
+                new OrderCompletionObservationRegistry(), () -> true,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        OrderCycleResult result = coordinator.runCycle().join();
+
+        assertTrue(result.succeeded());
+        assertFalse(result.actionAttempted());
+        assertTrue(port.collectedOrderIds.isEmpty());
+        assertEquals(0, port.quoteRefreshes);
+    }
+
+    @Test
+    void partialClaimableAmountBlocksCollectionAndNewOrderPlacement() {
+        FakePort port = new FakePort();
+        port.orders.add(new TrackedOrder("order-partial-claim", "minecraft:jungle_log", "Jungle Log",
+                2_048, 2_048, new BigDecimal("202"), TrackedOrderState.FILLED_UNCLAIMED,
+                NOW.minusSeconds(120), NOW.minusSeconds(60),
+                Optional.of(new OrderClaimSnapshot("order-partial-claim", "minecraft:jungle_log",
+                        2_048, 2_048, 1_724, new BigDecimal("413696"),
+                        new BigDecimal("413696"), NOW))));
+        OrderAutomationCoordinator coordinator = new OrderAutomationCoordinator(
+                port, new OrderOpportunitySelector(), new OrderCapacityPolicy(),
+                new OrderCompletionObservationRegistry(), () -> true,
+                Clock.fixed(NOW, ZoneOffset.UTC));
+
+        OrderCycleResult result = coordinator.runCycle().join();
+
+        assertTrue(result.succeeded());
+        assertFalse(result.actionAttempted());
+        assertTrue(port.collectedOrderIds.isEmpty());
+        assertEquals(0, port.quoteRefreshes);
+        assertTrue(result.message().contains("claimable-quantity/payout"));
+    }
+
     private static TrackedOrder order(String id, TrackedOrderState state) {
+        BigDecimal unitPrice = new BigDecimal("10");
         return new TrackedOrder(id, "minecraft:diamond", "Diamond", 1_024, 1_024,
-                new BigDecimal("10"), state, NOW.minusSeconds(10), NOW.minusSeconds(5));
+                unitPrice, state, NOW.minusSeconds(10), NOW.minusSeconds(5),
+                Optional.of(new OrderClaimSnapshot(id, "minecraft:diamond", 1_024, 1_024, 1_024,
+                        unitPrice.multiply(BigDecimal.valueOf(1_024)),
+                        unitPrice.multiply(BigDecimal.valueOf(1_024)), NOW)));
     }
 
     private static final class FakePort implements OrderExecutionPort {
@@ -56,6 +103,7 @@ class OrderAutomationCoordinatorTest {
         private final List<String> recordedOrderIds = new ArrayList<>();
         private final List<BigDecimal> listedPrices = new ArrayList<>();
         private int priceRefreshes;
+        private int quoteRefreshes;
 
         @Override
         public CompletableFuture<List<TrackedOrder>> refreshOrders() {
@@ -64,6 +112,7 @@ class OrderAutomationCoordinatorTest {
 
         @Override
         public CompletableFuture<List<OrderMarketQuote>> refreshMarketQuotes() {
+            quoteRefreshes++;
             return CompletableFuture.completedFuture(List.of());
         }
 

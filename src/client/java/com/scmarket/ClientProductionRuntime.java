@@ -12,6 +12,7 @@ import com.scmarket.automation.service.TradeAutomationCoordinator;
 import com.scmarket.automation.service.GameplayActionGate;
 import com.scmarket.automation.MinecraftAuctionInteractionAdapter;
 import com.scmarket.automation.FishingAutomationController;
+import com.scmarket.automation.AhInventorySellerController;
 import com.scmarket.automation.MinecraftStackFingerprintFactory;
 import com.scmarket.automation.model.AuctionInteractionProfile;
 import com.scmarket.automation.model.FishingMarketEvidence;
@@ -68,6 +69,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.ItemStack;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -81,6 +83,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
     private final ExecutorService persistenceExecutor;
     private final DonutApiClient apiClient;
     private final DatabaseManager database;
+    private final ListingRepository listings;
     private final TradeExecutionRepository tradeExecutions;
     private final ClientAutomationSettingsController automationSettings;
     private final MinecraftAuctionInteractionAdapter authorizedAuctionAdapter;
@@ -94,6 +97,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
     private final AuctionHouseDataCapture packetCapture;
     private final GameplayActionGate gameplayActionGate;
     private final FishingAutomationController fishingController;
+    private final AhInventorySellerController ahSellerController;
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicReference<CompletableFuture<Void>> closeCompletion = new AtomicReference<>();
     private volatile java.util.Set<MarketModule> lastAppliedModules = java.util.Set.of();
@@ -104,6 +108,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             ExecutorService persistenceExecutor,
             DonutApiClient apiClient,
             DatabaseManager database,
+            ListingRepository listings,
             TradeExecutionRepository tradeExecutions,
             ClientAutomationSettingsController automationSettings,
             MinecraftAuctionInteractionAdapter authorizedAuctionAdapter,
@@ -122,6 +127,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
         this.persistenceExecutor = persistenceExecutor;
         this.apiClient = apiClient;
         this.database = database;
+        this.listings = Objects.requireNonNull(listings, "listings");
         this.tradeExecutions = tradeExecutions;
         this.automationSettings = automationSettings;
         this.authorizedAuctionAdapter = authorizedAuctionAdapter;
@@ -138,7 +144,12 @@ public final class ClientProductionRuntime implements AutoCloseable {
                 Minecraft.getInstance(), this::fishingAuthorized,
                 () -> configuration.get().automation().interactionProfile(),
                 this::estimateFishingPrice, authorizedAuctionAdapter,
-                () -> configuration.get().automation().actionDelayMillis(), gameplayActionGate
+                () -> configuration.get().automation().actionDelayMillis(),
+                () -> configuration.get().automation().mode(), () -> filters(configuration.get()), gameplayActionGate
+        );
+        this.ahSellerController = new AhInventorySellerController(
+                Minecraft.getInstance(), this::sellerAuthorized, () -> filters(configuration.get()),
+                this::freshLowestComparableStackPrice, authorizedAuctionAdapter, gameplayActionGate
         );
     }
 
@@ -218,6 +229,23 @@ public final class ClientProductionRuntime implements AutoCloseable {
         return fishingController.status();
     }
 
+    public void tickAhSeller() {
+        ModRuntimeSettings settings = ScMarketClient.runtimeSettings();
+        if (!settings.enabled() || !settings.moduleEnabled(MarketModule.AH_SELLER)) {
+            ahSellerController.stop();
+            return;
+        }
+        ahSellerController.tick();
+    }
+
+    public String ahSellerStatus() {
+        return ahSellerController.status();
+    }
+
+    public CompletableFuture<Void> enableAhSeller(com.scmarket.automation.model.AutomationMode mode) {
+        return enableAutomation(mode).thenRun(() -> ahSellerController.start(mode));
+    }
+
     public CompletableFuture<Void> enableAutomation(com.scmarket.automation.model.AutomationMode mode) {
         if (!mode.isAutomatic()) {
             return CompletableFuture.failedFuture(new IllegalArgumentException(
@@ -249,6 +277,64 @@ public final class ClientProductionRuntime implements AutoCloseable {
         return gameplayActionGate.availableTo(GameplayActionGate.Owner.FISHING)
                 && execution.activeExecutionId().isEmpty()
                 && !execution.emergencyStopped();
+    }
+
+    private boolean sellerAuthorized() {
+        ModRuntimeSettings runtime = ScMarketClient.runtimeSettings();
+        AutomationConfig config = configuration.get().automation();
+        String server = ScMarketClient.currentServerAddress().strip()
+                .toLowerCase(java.util.Locale.ROOT);
+        if (!runtime.enabled() || !runtime.moduleEnabled(MarketModule.AH_SELLER)
+                || !config.enabled() || !config.mode().isAutomatic()
+                || config.interactionProfile().isEmpty()
+                || server.isBlank() || !config.serverAllowed(server)) {
+            return false;
+        }
+        TradeExecutionSnapshot execution = automationSettings.snapshot().execution();
+        return gameplayActionGate.availableTo(GameplayActionGate.Owner.AH_SELLER)
+                && execution.activeExecutionId().isEmpty()
+                && !execution.emergencyStopped();
+    }
+
+    private CompletableFuture<Optional<BigDecimal>> freshLowestComparableStackPrice(ItemStack stack) {
+        Optional<AuctionInteractionProfile> profile = configuration.get().automation().interactionProfile();
+        if (profile.isEmpty() || stack.isEmpty()) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        NormalizedItem normalized;
+        try {
+            normalized = new MinecraftStackFingerprintFactory().normalize(stack, profile.orElseThrow());
+        } catch (RuntimeException unsupported) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        if (normalized.matchQuality().matchType()
+                == com.scmarket.market.item.model.ItemMatchType.UNSUPPORTED
+                || normalized.matchQuality().matchType()
+                == com.scmarket.market.item.model.ItemMatchType.APPROXIMATE) {
+            return CompletableFuture.completedFuture(Optional.empty());
+        }
+        Instant cutoff = Instant.now().minusSeconds(15);
+        String ownSellerName = Minecraft.getInstance().getUser().getName();
+        String ownSellerUuid = Optional.ofNullable(Minecraft.getInstance().getUser().getProfileId())
+                .map(java.util.UUID::toString).orElse("");
+        return listings.findActiveByFingerprintSince(normalized.fingerprint().sha256(), 500, cutoff)
+                .thenApply(rows -> rows.stream()
+                        .filter(row -> {
+                            if (!ownSellerUuid.isBlank() && row.sellerUuid().isPresent()) {
+                                return !row.sellerUuid().orElseThrow().equalsIgnoreCase(ownSellerUuid);
+                            }
+                            return row.sellerName().map(name -> !name.equalsIgnoreCase(ownSellerName)).orElse(true);
+                        })
+                        .filter(row -> normalized.matchQuality().matchType().unitPriceBased()
+                                || row.itemCount() == stack.getCount())
+                        .map(row -> normalized.matchQuality().matchType().unitPriceBased()
+                                ? row.unitPrice().orElseGet(() -> row.listingPrice().divide(
+                                        BigDecimal.valueOf(row.itemCount()),
+                                        com.scmarket.market.statistics.StatisticalMath.MATH_CONTEXT
+                                )).multiply(BigDecimal.valueOf(stack.getCount()))
+                                : row.listingPrice())
+                        .filter(price -> price.signum() > 0)
+                        .min(BigDecimal::compareTo));
     }
 
     private CompletableFuture<Optional<BigDecimal>> estimateFishingPrice(
@@ -434,7 +520,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
             return Optional.of(new ClientProductionRuntime(
                     configurationManager, configuration, persistenceExecutor, apiClient,
-                    database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
+                    database, listings, tradeExecutions, automationSettings, authorizedAuctionAdapter,
                     automaticDispatcher, snapshotSubscription,
                     scanner, snapshots, analysis, statistics, personalProfitTracker, null, gameplayActionGate
             ));
@@ -551,7 +637,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             Runnable snapshotSubscription = snapshots.subscribe(automaticDispatcher::onSnapshotPublished);
             return Optional.of(new ClientProductionRuntime(
                     configurationManager, configuration, persistenceExecutor, null,
-                    database, tradeExecutions, automationSettings, authorizedAuctionAdapter,
+                    database, listings, tradeExecutions, automationSettings, authorizedAuctionAdapter,
                     automaticDispatcher, snapshotSubscription,
                     scanner, snapshots, analysis, statistics, personalProfitTracker, capture, gameplayActionGate
             ));
@@ -721,6 +807,7 @@ public final class ClientProductionRuntime implements AutoCloseable {
             return completion;
         }
         fishingController.stop();
+        ahSellerController.stop();
         if (packetCapture != null) {
             AuctionHouseCaptureRegistry.clear(packetCapture);
         }

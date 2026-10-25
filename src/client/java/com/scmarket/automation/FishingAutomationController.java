@@ -1,7 +1,9 @@
 package com.scmarket.automation;
 
 import com.scmarket.automation.model.AuctionInteractionProfile;
+import com.scmarket.automation.model.AutomationMode;
 import com.scmarket.automation.service.GameplayActionGate;
+import com.scmarket.market.opportunity.ItemFilterPolicy;
 import com.scmarket.mixin.FishingBobberAccessor;
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
@@ -34,6 +36,8 @@ public final class FishingAutomationController {
     private final Function<ItemStack, CompletableFuture<Optional<BigDecimal>>> marketPrice;
     private final MinecraftAuctionInteractionAdapter auctionAdapter;
     private final LongSupplier actionDelayMillis;
+    private final Supplier<AutomationMode> automationMode;
+    private final Supplier<ItemFilterPolicy> itemFilters;
     private final GameplayActionGate gameplayActionGate;
     private final MinecraftStackFingerprintFactory fingerprintFactory = new MinecraftStackFingerprintFactory();
     private final Map<String, Integer> beforeReel = new HashMap<>();
@@ -54,6 +58,8 @@ public final class FishingAutomationController {
             Function<ItemStack, CompletableFuture<Optional<BigDecimal>>> marketPrice,
             MinecraftAuctionInteractionAdapter auctionAdapter,
             LongSupplier actionDelayMillis,
+            Supplier<AutomationMode> automationMode,
+            Supplier<ItemFilterPolicy> itemFilters,
             GameplayActionGate gameplayActionGate
     ) {
         this.client = Objects.requireNonNull(client, "client");
@@ -62,6 +68,8 @@ public final class FishingAutomationController {
         this.marketPrice = Objects.requireNonNull(marketPrice, "marketPrice");
         this.auctionAdapter = Objects.requireNonNull(auctionAdapter, "auctionAdapter");
         this.actionDelayMillis = Objects.requireNonNull(actionDelayMillis, "actionDelayMillis");
+        this.automationMode = Objects.requireNonNull(automationMode, "automationMode");
+        this.itemFilters = Objects.requireNonNull(itemFilters, "itemFilters");
         this.gameplayActionGate = Objects.requireNonNull(gameplayActionGate, "gameplayActionGate");
     }
 
@@ -71,8 +79,11 @@ public final class FishingAutomationController {
             status = "Fishing paused while another market module owns the shared GUI action lease.";
             return;
         }
-        Optional<AuctionInteractionProfile> profile = profileSupplier.get();
-        if (!authorized.getAsBoolean()) {
+        Optional<AuctionInteractionProfile> profile = currentProfile();
+        if (!isAuthorized()) {
+            phase = Phase.IDLE;
+            beforeReel.clear();
+            beforeReelProfiled = false;
             status = "Fishing paused: enable Fishing and allowlist this exact server.";
             return;
         }
@@ -256,6 +267,7 @@ public final class FishingAutomationController {
             return;
         }
         boolean found = false;
+        boolean filterExcluded = false;
         for (Map.Entry<String, Integer> entry : after.entrySet()) {
             int previous = beforeReel.getOrDefault(entry.getKey(), 0);
             if (entry.getValue() <= previous) {
@@ -269,6 +281,14 @@ public final class FishingAutomationController {
                 ownedLootCounts.merge(entry.getKey(), caughtCount, Integer::sum);
             }
             if (ownedLootCounts.containsKey(entry.getKey())) {
+                if (requiresSmartFilter()) {
+                    ItemStack catchStack = findStack(entry.getKey(), profile.orElseThrow());
+                    if (catchStack.isEmpty() || !smartFilterAllows(catchStack)) {
+                        ownedLootCounts.remove(entry.getKey());
+                        filterExcluded = true;
+                        continue;
+                    }
+                }
                 if (!saleQueue.contains(entry.getKey())) {
                     saleQueue.addLast(entry.getKey());
                 }
@@ -278,7 +298,11 @@ public final class FishingAutomationController {
         }
         phase = Phase.IDLE;
         nextActionNanos = now + actionDelayNanos();
-        if (found && !saleQueue.isEmpty()) {
+        if (filterExcluded) {
+            status = saleQueue.isEmpty()
+                    ? "Smart mode kept the filter-excluded catch in inventory."
+                    : "Smart mode kept the filter-excluded catch; checking other eligible catches.";
+        } else if (found && !saleQueue.isEmpty()) {
             status = "Catch detected; checking recent market evidence before listing.";
         } else if (!found) {
             status = "No inventory catch was confirmed; no sale was attempted.";
@@ -312,6 +336,12 @@ public final class FishingAutomationController {
             ownedLootCounts.remove(fingerprint);
             return;
         }
+        if (requiresSmartFilter() && !smartFilterAllows(stack)) {
+            saleQueue.removeFirst();
+            ownedLootCounts.remove(fingerprint);
+            status = "Smart mode retained this catch after a filter change; no listing was attempted.";
+            return;
+        }
         saleInFlight = true;
         ItemStack immutable = stack.copy();
         CompletableFuture<Optional<BigDecimal>> quote;
@@ -324,7 +354,7 @@ public final class FishingAutomationController {
             return;
         }
         quote.whenComplete((price, error) -> client.execute(() -> {
-            if (!authorized.getAsBoolean()) {
+            if (!isAuthorized()) {
                 saleInFlight = false;
                 status = "Sale cancelled because the current server or automation safety gates changed.";
                 return;
@@ -375,6 +405,40 @@ public final class FishingAutomationController {
                 status = "Catch retained: listing could not start; no retry was sent immediately.";
             }
         }));
+    }
+
+    private Optional<AuctionInteractionProfile> currentProfile() {
+        try {
+            Optional<AuctionInteractionProfile> current = profileSupplier.get();
+            return current == null ? Optional.empty() : current;
+        } catch (RuntimeException unavailableProfile) {
+            return Optional.empty();
+        }
+    }
+
+    private boolean isAuthorized() {
+        try {
+            return authorized.getAsBoolean();
+        } catch (RuntimeException unavailableAuthorization) {
+            return false;
+        }
+    }
+
+    private boolean requiresSmartFilter() {
+        try {
+            return automationMode.get().isSmart();
+        } catch (RuntimeException unavailableMode) {
+            return true;
+        }
+    }
+
+    private boolean smartFilterAllows(ItemStack stack) {
+        try {
+            String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+            return itemFilters.get().evaluate(itemId).allowed();
+        } catch (RuntimeException unavailableFilter) {
+            return false;
+        }
     }
 
     private Map<String, Integer> inventoryCounts(Optional<AuctionInteractionProfile> profile) {

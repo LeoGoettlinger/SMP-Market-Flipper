@@ -3,6 +3,7 @@ package com.scmarket.gui;
 public enum GuiTab {
     DASHBOARD("Dashboard", "Market and scanner overview"),
     FISHING("Fishing", "Fishing controls and safety status"),
+    USER("User", "AH seller, RTP history, and personal tools"),
     AH_DEALS("AH Deals", "Automatic auction-house deal workflow"),
     ORDER_TO_AH("Order→AH", "Order workflow status and safety checks"),
     OPPORTUNITIES("Market", "Review detected market opportunities"),

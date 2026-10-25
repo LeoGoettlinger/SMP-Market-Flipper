@@ -193,11 +193,10 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
     }
 
     /**
-     * Lists a newly caught stack from the player's inventory. The call is intentionally separate
-     * from purchase/relist execution: it validates the exact private-server profile and verifies
-     * both the configured listing screen and the precise inventory decrease.
+     * Lists one explicitly selected inventory stack. The call validates the private-server profile
+     * and verifies both the configured listing screen and the exact inventory decrease.
      */
-    public CompletableFuture<ListingVerificationResult> listFishingCatch(
+    public CompletableFuture<ListingVerificationResult> listInventoryStack(
             ItemStack caughtStack, BigDecimal price, java.util.function.BooleanSupplier authorization
     ) {
         Objects.requireNonNull(caughtStack, "caughtStack");
@@ -252,6 +251,13 @@ public final class MinecraftAuctionInteractionAdapter implements AuctionInteract
             }).exceptionally(error -> new ListingVerificationResult(false,
                     result.message() + " Inventory restoration failed: " + rootMessage(error)));
         });
+    }
+
+    /** Compatibility alias for the Fishing workflow. */
+    public CompletableFuture<ListingVerificationResult> listFishingCatch(
+            ItemStack caughtStack, BigDecimal price, java.util.function.BooleanSupplier authorization
+    ) {
+        return listInventoryStack(caughtStack, price, authorization);
     }
 
     private FishingListingCapture prepareFishingListing(
