@@ -21,6 +21,9 @@ public final class MoneyMagnitudeFormatter {
             return "0";
         }
         BigDecimal absolute = amount.abs();
+        if (absolute.compareTo(BigDecimal.valueOf(1_000L)) < 0) {
+            return amount.stripTrailingZeros().toPlainString();
+        }
         int magnitude = 0;
         BigDecimal divisor = BigDecimal.ONE;
         while (magnitude < SUFFIXES.length - 1

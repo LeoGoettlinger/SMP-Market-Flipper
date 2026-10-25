@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MoneyMagnitudeFormatterTest {
     @Test
     void formatsTheFwmMagnitudeExamples() {
-        assertEquals("1.4K", MoneyMagnitudeFormatter.format(new BigDecimal("1300")));
+        assertEquals("1.3K", MoneyMagnitudeFormatter.format(new BigDecimal("1300")));
         assertEquals("12M", MoneyMagnitudeFormatter.format(new BigDecimal("12000000")));
         assertEquals("3.1B", MoneyMagnitudeFormatter.format(new BigDecimal("3100000000")));
     }
