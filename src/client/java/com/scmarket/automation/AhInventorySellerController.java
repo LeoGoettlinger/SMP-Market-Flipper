@@ -2,7 +2,7 @@ package com.scmarket.automation;
 
 import com.scmarket.automation.model.ListingVerificationResult;
 import com.scmarket.automation.service.GameplayActionGate;
-import com.scmarket.configuration.AutomationMode;
+import com.scmarket.automation.model.AutomationMode;
 import com.scmarket.market.opportunity.ItemFilterMode;
 import com.scmarket.market.opportunity.ItemFilterPolicy;
 import com.scmarket.order.OrderTradePlanner;

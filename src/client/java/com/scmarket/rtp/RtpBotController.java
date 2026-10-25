@@ -172,6 +172,6 @@ public final class RtpBotController {
     }
 
     private static String dimensionId(ResourceKey<Level> dimension) {
-        return dimension.location().toString();
+        return dimension.identifier().toString();
     }
 }
