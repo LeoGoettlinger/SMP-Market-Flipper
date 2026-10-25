@@ -1,180 +1,73 @@
-	at org.spongepowered.asm.mixin.transformer.TargetClassContext.applyMixins(TargetClassContext.java:418)
-	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:351)
-	... 20 more
+Downloading https://services.gradle.org/distributions/gradle-9.7.1-bin.zip
+..............10%..............20%...............30%..............40%...............50%..............60%...............70%..............80%..............90%...............100%
 
+Welcome to Gradle 9.7.1!
 
-A detailed walkthrough of the error, its code path and all known details is as follows:
----------------------------------------------------------------------------------------
+Here are the highlights of this release:
+ - Isolated Projects graduates to incubating
+ - Broader Configuration Cache compatibility
+ - Resilient Sync helps you fix broken builds
+ - More source locations in problem reports
 
--- Head --
-Thread: Render thread
-Stacktrace:
-	at knot//com.scmarket.ScMarketClient.lambda$onInitializeClient$2(ScMarketClient.java:156)
-	at knot//net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.lambda$static$3(ClientTickEvents.java:43)
-	at knot//net.minecraft.client.Minecraft.handler$znc000$fabric-lifecycle-events-v1$onEndTick(Minecraft.java:4662)
+For more details see https://docs.gradle.org/9.7.1/release-notes.html
 
--- Uptime --
-Details:
-	JVM uptime: 15.757s
-	Wall uptime: 7.053s
-	High-res time: 5.875s
-	Client ticks: 1 ticks / 0.050s
-Stacktrace:
-	at knot//net.minecraft.client.Minecraft.fillReport(Minecraft.java:2496)
-	at knot//net.minecraft.client.Minecraft.emergencySaveAndCrash(Minecraft.java:1008)
-	at knot//net.minecraft.client.Minecraft.run(Minecraft.java:983)
-	at knot//net.minecraft.client.main.Main.main(Main.java:292)
-	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:517)
-	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
-	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
-	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Calculating task graph as configuration cache cannot be reused due to --write-verification-metadata
 
--- Last reload --
-Details:
-	Reload number: 1
-	Reload reason: initial
-	Finished: No
-	Packs: vanilla, fabric-advancement-api-v1, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-getter-api-v2, fabric-client-gametest-api-v1, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-creative-tab-api-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-debug-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-key-mapping-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v3, fabric-menu-api-v1, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-permission-api-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, sc_market
+> Configure project :
+Fabric Loom: 1.18.4
 
--- System Details --
-Details:
-	Minecraft Version: 26.2
-	Minecraft Version ID: 26.2
-	Operating System: Linux (amd64) version 6.17.0-1022-azure
-	Java Version: 25.0.4.1, Eclipse Adoptium
-	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Eclipse Adoptium
-	Memory: 42832160 bytes (40 MiB) / 373293056 bytes (356 MiB) up to 4192206848 bytes (3998 MiB)
-	Memory (heap): init: 250MiB, used: 314MiB, committed: 356MiB, max: 3998MiB
-	Memory (non-head): init: 007MiB, used: 139MiB, committed: 140MiB, max: 000MiB
-	CPUs: 4
-	Processor Vendor: GenuineIntel
-	Processor Name: INTEL(R) XEON(R) PLATINUM 8573C
-	Identifier: Intel64 Family 6 Model 207 Stepping 2
-	Microarchitecture: unknown
-	Frequency (GHz): -0.00
-	Number of physical packages: 1
-	Number of physical CPUs: 2
-	Number of logical CPUs: 4
-	Graphics card #0 name: hyperv_drmdrmfb
-	Graphics card #0 vendor: unknown
-	Graphics card #0 VRAM (MiB): 0.00
-	Graphics card #0 deviceId: unknown
-	Graphics card #0 versionInfo: unknown
-	Virtual memory max (MiB): 11066.35
-	Virtual memory used (MiB): 2479.48
-	Swap memory total (MiB): 3072.00
-	Swap memory used (MiB): 0.00
-	Space in storage for jna.tmpdir (MiB): <path not set>
-	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
-	Space in storage for io.netty.native.workdir (MiB): <path not set>
-	Space in storage for java.io.tmpdir (MiB): available: 86536.45, total: 147718.61
-	Space in storage for workdir (MiB): available: 86536.45, total: 147718.61
-	Operating System Version: GNU/Linux Ubuntu 24.04.5 LTS (Noble Numbat) build 6.17.0-1022-azure
-	Process Elevated: false
-	Process Loads: Uptime: 15s, user: 34s (227.94%), kernel: 1s (5.50%), total: 35s (233.45%)
-	Process Virtual Size (MiB): 8358.85
-	Process Resident Size (MiB): 875.51
-	JVM Flags: 1 total; -XX:StackShadowPages=32
-	Debug Flags: 0 total;
-	Fabric Mods:
-		fabric-advancement-api-v1: Fabric Advancement API (v1) 1.0.0+58719a3b9e
-		fabric-api: Fabric API 0.161.0+26.2
-		fabric-api-base: Fabric API Base 2.0.4+ece063239e
-		fabric-api-lookup-api-v1: Fabric API Lookup API (v1) 2.0.18+11e1c9a39e
-		fabric-biome-api-v1: Fabric Biome API (v1) 18.0.6+c7bd5b8e9e
-		fabric-block-api-v1: Fabric Block API (v1) 3.1.0+53515aab9e
-		fabric-block-getter-api-v2: Fabric BlockGetter API (v2) 2.0.7+ec56b6019e
-		fabric-client-gametest-api-v1: Fabric Client Game Test API (v1) 6.0.2+0f4f1dca9e
-		fabric-command-api-v2: Fabric Command API (v2) 3.1.0+00cb03469e
-		fabric-content-registries-v0: Fabric Content Registries (v0) 11.3.2+37b1aa249e
-		fabric-convention-tags-v2: Fabric Convention Tags (v2) 4.7.1+1f023a9e9e
-		fabric-crash-report-info-v1: Fabric Crash Report Info (v1) 1.0.5+086d547a9e
-		fabric-creative-tab-api-v1: Fabric Creative Tab API (v1) 5.0.15+6468574f9e
-		fabric-data-attachment-api-v1: Fabric Data Attachment API (v1) 2.2.19+515ac5339e
-		fabric-data-generation-api-v1: Fabric Data Generation API (v1) 25.6.0+c0da0b829e
-		fabric-debug-api-v1: Fabric Debug API (v1) 1.0.2+c792624d9e
-		fabric-dimensions-v1: Fabric Dimensions API (v1) 5.1.12+515ac5339e
-		fabric-entity-events-v1: Fabric Entity Events (v1) 5.0.5+06488ac19e
-		fabric-events-interaction-v0: Fabric Events Interaction (v0) 5.2.8+515ac5339e
-		fabric-game-rule-api-v1: Fabric Game Rule API (v1) 4.0.8+46a6d00c9e
-		fabric-gametest-api-v1: Fabric Game Test API (v1) 4.0.22+4a7fa0819e
-		fabric-item-api-v1: Fabric Item API (v1) 14.5.0+c68f6cbe9e
-		fabric-key-mapping-api-v1: Fabric Key Mapping API (v1) 2.0.5+e2bdee789e
-		fabric-lifecycle-events-v1: Fabric Lifecycle Events (v1) 4.1.4+29b6eb019e
-		fabric-loot-api-v3: Fabric Loot API (v3) 3.0.17+06488ac19e
-		fabric-menu-api-v1: Fabric Menu API (v1) 2.0.17+086d547a9e
-		fabric-message-api-v1: Fabric Message API (v1) 7.0.8+bb2ed3f79e
-		fabric-model-loading-api-v1: Fabric Model Loading API (v1) 8.0.17+c80601bb9e
-		fabric-networking-api-v1: Fabric Networking API (v1) 6.3.4+2989c6a09e
-		fabric-object-builder-api-v1: Fabric Object Builder API (v1) 24.1.1+6fcd5f039e
-		fabric-particles-v1: Fabric Particles (v1) 5.0.19+d1756aa99e
-		fabric-permission-api-v1: Fabric Permission API (v1) 1.0.5+e442d8d09e
-		fabric-recipe-api-v1: Fabric Recipe API (v1) 9.0.22+11e1c9a39e
-		fabric-registry-sync-v0: Fabric Registry Sync (v0) 7.1.1+c7bd5b8e9e
-		fabric-renderer-api-v1: Fabric Renderer API (v1) 14.1.4+2b0d8a229e
-		fabric-renderer-indigo: Fabric Renderer - Indigo 9.1.4+2b0d8a229e
-		fabric-rendering-fluids-v1: Fabric Rendering Fluids (v1) 6.0.4+06488ac19e
-		fabric-rendering-v1: Fabric Rendering (v1) 25.3.3+515ac5339e
-		fabric-resource-conditions-api-v1: Fabric Resource Conditions API (v1) 6.1.0+10e9a28b9e
-		fabric-resource-loader-v0: Fabric Resource Loader (v0) 3.3.20+4fc5413f9e
-		fabric-resource-loader-v1: Fabric Resource Loader (v1) 2.0.13+9edec1269e
-		fabric-screen-api-v1: Fabric Screen API (v1) 5.2.1+5087f8249e
-		fabric-serialization-api-v1: Fabric Serialization API (v1) 2.0.4+11a26f319e
-		fabric-sound-api-v1: Fabric Sound API (v1) 2.0.5+11a26f319e
-		fabric-tag-api-v1: Fabric Tag API (v1) 2.1.4+515ac5339e
-		fabric-transfer-api-v1: Fabric Transfer API (v1) 8.0.13+11dbb7d79e
-		fabric-transitive-access-wideners-v1: Fabric Transitive Access Wideners (v1) 8.1.4+67c847259e
-		fabricloader: Fabric Loader 0.19.5
-		java: OpenJDK 64-Bit Server VM 25
-		minecraft: Minecraft 26.2
-		mixinextras: MixinExtras 0.5.5
-		sc_market: SC-Market 0.1.0
-	Launched Version: Fabric
-	Backend library: LWJGL version 3.4.1-snapshot
-	Window size: 854x480
-	Surface Info: unconfigured
-	GFLW Platform: x11
-	Graphics Device: llvmpipe (LLVM 20.1.2, 256 bits)
-	Graphics Backend: OpenGL
-	Graphics Vendor: Mesa
-	Graphics Drivers: 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4
-	Graphics Device Extensions: GL_ARB_multi_draw_indirect, GL_ARB_buffer_storage, GL_ARB_shader_draw_parameters, GL_ARB_base_instance, GL_KHR_debug, GL_ARB_draw_indirect, GL_ARB_clip_control, GL_ARB_vertex_attrib_binding, GL_ARB_direct_state_access, GL_EXT_texture_filter_anisotropic
-	Graphics Device Type: CPU
-	Graphics Device Features: DeviceFeatures[shaderDrawParameters=true, multiDrawDirectInterleaved=false, multiDrawDirectSeparate=true, multiDrawIndirect=true, drawIndirect=true, nonZeroFirstInstance=true, persistentMapping=true]
-	Backend failure message: Failed to find the GLFW platform surface extensions
-	Backend failure reason: glfw_error
-	Backend failure missing capabilities:
-	GL debug messages:
-	Is Modded: Definitely; Client brand changed to 'fabric'
-	Universe: 400921fb54442d18
-	Type: Client
-	Transparency: regular
-	Render Distance: 16/16 chunks
-	Narrator config: OFF
-	Narrator status: false
-	Resource Packs: vanilla, fabric-advancement-api-v1, fabric-api, fabric-api-base, fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-getter-api-v2, fabric-client-gametest-api-v1, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-creative-tab-api-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-debug-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-gametest-api-v1, fabric-item-api-v1, fabric-key-mapping-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v3, fabric-menu-api-v1, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-permission-api-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v0, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, fabric-transitive-access-wideners-v1, fabricloader, sc_market
-	Sound Cache: 0 bytes in 0 buffers
-	Current Language: en_us
-	Locale: en
-	System encoding: UTF-8
-	File encoding: UTF-8
-	CPU: 4x INTEL(R) XEON(R) PLATINUM 8573C
-#@!@# Game crashed! Crash report saved to: #@!@# /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/run/crash-reports/crash-2026-10-22_15.48.15-client.txt
+> Task :compileJava
+> Task :processResources
+> Task :classes
 
-> Task :runClient FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1792684063971.json
+> Task :compileClientJava FAILED
+/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:5: error: cannot find symbol
+import com.scmarket.configuration.AutomationMode;
+                                 ^
+  symbol:   class AutomationMode
+  location: package com.scmarket.configuration
+/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:55: error: cannot find symbol
+    public void start(AutomationMode mode) {
+                      ^
+  symbol:   class AutomationMode
+  location: class AhInventorySellerController
+/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/rtp/RtpBotController.java:175: error: cannot find symbol
+        return dimension.location().toString();
+                        ^
+  symbol:   method location()
+  location: variable dimension of type ResourceKey<Level>
+3 errors
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792952273806.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/build/reports/problems/problems-report.html
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':runClient' (registered by plugin 'fabric-loom').
-> Process 'command 'xvfb-run'' finished with non-zero exit value 255
+Execution failed for task ':compileClientJava' (registered by plugin class 'org.gradle.api.plugins.JavaBasePlugin').
+> Compilation failed; see the compiler output below.
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:5: error: cannot find symbol
+  import com.scmarket.configuration.AutomationMode;
+                                   ^
+    symbol:   class AutomationMode
+    location: package com.scmarket.configuration
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:55: error: cannot find symbol
+      public void start(AutomationMode mode) {
+                        ^
+    symbol:   class AutomationMode
+    location: class AhInventorySellerController
+  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/rtp/RtpBotController.java:175: error: cannot find symbol
+          return dimension.location().toString();
+                          ^
+    symbol:   method location()
+    location: variable dimension of type ResourceKey<Level>
+  3 errors
 
 * Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
+> Check your code and dependencies to fix the compilation error(s)
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
-> Get more help at https://help.gradle.org.
 
-BUILD FAILED in 36s
-8 actionable tasks: 4 executed, 4 up-to-date
+BUILD FAILED in 1m 2s
+3 actionable tasks: 3 executed
