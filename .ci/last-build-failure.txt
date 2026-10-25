@@ -21,53 +21,53 @@ Fabric Loom: 1.18.4
 > Task :compileJava
 > Task :processResources
 > Task :classes
+> Task :compileClientJava
+> Task :processClientResources
 
-> Task :compileClientJava FAILED
-/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:5: error: cannot find symbol
-import com.scmarket.configuration.AutomationMode;
-                                 ^
-  symbol:   class AutomationMode
-  location: package com.scmarket.configuration
-/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:55: error: cannot find symbol
-    public void start(AutomationMode mode) {
-                      ^
-  symbol:   class AutomationMode
-  location: class AhInventorySellerController
-/home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/rtp/RtpBotController.java:175: error: cannot find symbol
-        return dimension.location().toString();
-                        ^
-  symbol:   method location()
-  location: variable dimension of type ResourceKey<Level>
-3 errors
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792952273806.json
+> Task :processIncludeJars
+(3.53.1.0) is not valid semver for dependency org.xerial:sqlite-jdbc:3.53.1.0
+
+> Task :sourcesJar
+> Task :clientClasses
+> Task :jar
+> Task :compileTestJava
+> Task :processTestResources
+> Task :testClasses
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by org.sqlite.SQLiteJDBCLoader in an unnamed module (file:/home/runner/.gradle/caches/modules-2/files-2.1/org.xerial/sqlite-jdbc/3.53.1.0/bfd33c5a7a195a60b8288d40934481861b552684/sqlite-jdbc-3.53.1.0.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+> Task :test
+
+MoneyMagnitudeFormatterTest > formatsTheFwmMagnitudeExamples() FAILED
+    org.opentest4j.AssertionFailedError at MoneyMagnitudeFormatterTest.java:11
+
+MoneyMagnitudeFormatterTest > preservesSmallAndNegativeAmounts() FAILED
+    org.opentest4j.AssertionFailedError at MoneyMagnitudeFormatterTest.java:25
+
+298 tests completed, 2 failed
+
+> Task :test FAILED
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1792952392124.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/build/reports/problems/problems-report.html
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':compileClientJava' (registered by plugin class 'org.gradle.api.plugins.JavaBasePlugin').
-> Compilation failed; see the compiler output below.
-  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:5: error: cannot find symbol
-  import com.scmarket.configuration.AutomationMode;
-                                   ^
-    symbol:   class AutomationMode
-    location: package com.scmarket.configuration
-  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/automation/AhInventorySellerController.java:55: error: cannot find symbol
-      public void start(AutomationMode mode) {
-                        ^
-    symbol:   class AutomationMode
-    location: class AhInventorySellerController
-  /home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/src/client/java/com/scmarket/rtp/RtpBotController.java:175: error: cannot find symbol
-          return dimension.location().toString();
-                          ^
-    symbol:   method location()
-    location: variable dimension of type ResourceKey<Level>
-  3 errors
+Execution failed for task ':test'.
+> There were failing tests. See the report at: file:///home/runner/work/SMP-Market-Flipper/SMP-Market-Flipper/build/reports/tests/test/index.html
 
 * Try:
-> Check your code and dependencies to fix the compilation error(s)
 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
 
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
 BUILD FAILED in 1m 2s
-3 actionable tasks: 3 executed
+10 actionable tasks: 10 executed
