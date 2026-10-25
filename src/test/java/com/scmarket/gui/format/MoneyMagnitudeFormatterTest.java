@@ -23,7 +23,7 @@ class MoneyMagnitudeFormatterTest {
     @Test
     void preservesSmallAndNegativeAmounts() {
         assertEquals("999.99", MoneyMagnitudeFormatter.format(new BigDecimal("999.99")));
-        assertEquals("-1.4K", MoneyMagnitudeFormatter.format(new BigDecimal("-1300")));
+        assertEquals("-1.3K", MoneyMagnitudeFormatter.format(new BigDecimal("-1300")));
         assertEquals("0", MoneyMagnitudeFormatter.format(BigDecimal.ZERO));
     }
 
