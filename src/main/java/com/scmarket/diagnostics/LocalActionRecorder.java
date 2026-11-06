@@ -10,12 +10,15 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 /** Opt-in, bounded JSONL capture for local GUI diagnosis. It never records chat, keys, or credentials. */
 public final class LocalActionRecorder implements AutoCloseable {
     private static final int MAXIMUM_FILE_BYTES = 4 * 1024 * 1024;
+    private static final int MAXIMUM_LORE_LINES = 32;
+    private static final int MAXIMUM_LORE_LINE_LENGTH = 320;
     private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("uuuuMMdd-HHmmss")
             .withZone(ZoneOffset.UTC);
     private final Path diagnosticsDirectory;
@@ -55,25 +58,58 @@ public final class LocalActionRecorder implements AutoCloseable {
         activeFile = candidate;
         recordsWritten = 0;
         this.maximumRecords = maximumRecords;
-        writeRecord("capture_started", "", -1, -1, "", 0, -1, -1, -1);
+        writeRecord("capture_started", "", -1, -1, "", 0, -1, -1, -1,
+                "", List.of(), -1, -1, -1, -1, -1);
         return Optional.of(activeFile);
+    }
+
+    /** Records a screen/menu snapshot header before its individual slot_snapshot rows. */
+    public synchronized void recordScreenSnapshot(
+            String screenTitle, int syncId, int screenWidth, int screenHeight, int slotCount
+    ) {
+        if (!canRecord()) {
+            return;
+        }
+        writeRecord("screen_snapshot", screenTitle, syncId, -1, "", 0, -1, -1, -1,
+                "", List.of(), screenWidth, screenHeight, slotCount, -1, -1);
+    }
+
+    /** Records a stack's visible identity and lore; lore may include seller names, so files stay local. */
+    public synchronized void recordSlotSnapshot(
+            String screenTitle, int syncId, int slot, String itemId, int itemCount,
+            String displayName, List<String> lore, int screenWidth, int screenHeight, int slotX, int slotY
+    ) {
+        if (!canRecord()) {
+            return;
+        }
+        writeRecord("slot_snapshot", screenTitle, syncId, slot, itemId, itemCount, -1, -1, -1,
+                displayName, lore, screenWidth, screenHeight, -1, slotX, slotY);
     }
 
     public synchronized void recordGuiClick(
             String screenTitle, int syncId, int slot, String itemId, int itemCount, int mouseButton
     ) {
-        recordGuiClick(screenTitle, syncId, slot, itemId, itemCount, mouseButton, -1, -1);
+        recordGuiClick(screenTitle, syncId, slot, itemId, itemCount, "", List.of(),
+                mouseButton, -1, -1);
     }
 
     public synchronized void recordGuiClick(
             String screenTitle, int syncId, int slot, String itemId, int itemCount,
             int mouseButton, int screenX, int screenY
     ) {
-        if (writer == null || recordsWritten >= maximumRecords) {
+        recordGuiClick(screenTitle, syncId, slot, itemId, itemCount, "", List.of(),
+                mouseButton, screenX, screenY);
+    }
+
+    public synchronized void recordGuiClick(
+            String screenTitle, int syncId, int slot, String itemId, int itemCount,
+            String displayName, List<String> lore, int mouseButton, int screenX, int screenY
+    ) {
+        if (!canRecord()) {
             return;
         }
         writeRecord("gui_click", screenTitle, syncId, slot, itemId, itemCount,
-                mouseButton, screenX, screenY);
+                mouseButton, screenX, screenY, displayName, lore, -1, -1, -1, -1, -1);
     }
 
     public synchronized boolean isRecording() {
@@ -114,31 +150,53 @@ public final class LocalActionRecorder implements AutoCloseable {
         }
     }
 
+    private boolean canRecord() {
+        return writer != null && recordsWritten < maximumRecords;
+    }
+
     private void writeRecord(
             String event, String title, int syncId, int slot, String itemId,
-            int count, int button, int screenX, int screenY
+            int count, int button, int screenX, int screenY, String displayName,
+            List<String> lore, int screenWidth, int screenHeight, int slotCount, int slotX, int slotY
     ) {
         if (writer == null) {
             return;
         }
         try {
-            String json = "{\"time\":\"" + escape(Instant.now(clock).toString())
-                    + "\",\"event\":\"" + escape(event)
-                    + "\",\"screen\":\"" + escape(bounded(title, 120))
-                    + "\",\"syncId\":" + syncId
-                    + ",\"slot\":" + slot
-                    + ",\"itemId\":\"" + escape(bounded(itemId, 256))
-                    + "\",\"count\":" + Math.max(0, Math.min(count, 99_999))
-                    + ",\"button\":" + button
-                    + ",\"screenX\":" + boundedCoordinate(screenX)
-                    + ",\"screenY\":" + boundedCoordinate(screenY) + "}";
-            long encodedLength = json.getBytes(StandardCharsets.UTF_8).length + 1L;
+            StringBuilder json = new StringBuilder(256)
+                    .append("{\"time\":\"").append(escape(Instant.now(clock).toString()))
+                    .append("\",\"event\":\"").append(escape(event))
+                    .append("\",\"screen\":\"").append(escape(bounded(title, 120)))
+                    .append("\",\"syncId\":\").append(syncId)
+                    .append(",\"slot\":").append(slot)
+                    .append(",\"itemId\":\"").append(escape(bounded(itemId, 256)))
+                    .append("\",\"count\":").append(Math.max(0, Math.min(count, 99_999)))
+                    .append(",\"displayName\":\"").append(escape(bounded(displayName, 256)))
+                    .append("\",\"lore\":[");
+            List<String> safeLore = boundedLore(lore);
+            for (int index = 0; index < safeLore.size(); index++) {
+                if (index > 0) {
+                    json.append(',');
+                }
+                json.append('\"').append(escape(safeLore.get(index))).append('\"');
+            }
+            json.append("],\"button\":\").append(button)
+                    .append(",\"screenX\":\").append(boundedCoordinate(screenX))
+                    .append(",\"screenY\":\").append(boundedCoordinate(screenY))
+                    .append(",\"screenWidth\":\").append(boundedCoordinate(screenWidth))
+                    .append(",\"screenHeight\":\").append(boundedCoordinate(screenHeight))
+                    .append(",\"slotCount\":\").append(Math.max(-1, Math.min(slotCount, 512)))
+                    .append(",\"slotX\":\").append(boundedCoordinate(slotX))
+                    .append(",\"slotY\":\").append(boundedCoordinate(slotY))
+                    .append('}');
+            String line = json.toString();
+            long encodedLength = line.getBytes(StandardCharsets.UTF_8).length + 1L;
             if (encodedLength > MAXIMUM_FILE_BYTES
                     || Files.exists(activeFile) && Files.size(activeFile) + encodedLength > MAXIMUM_FILE_BYTES) {
                 stop();
                 return;
             }
-            writer.write(json);
+            writer.write(line);
             writer.newLine();
             recordsWritten++;
             if (recordsWritten >= maximumRecords) {
@@ -159,6 +217,14 @@ public final class LocalActionRecorder implements AutoCloseable {
                 }
             }
         }
+    }
+
+    private static List<String> boundedLore(List<String> lore) {
+        if (lore == null || lore.isEmpty()) {
+            return List.of();
+        }
+        return lore.stream().limit(MAXIMUM_LORE_LINES)
+                .map(line -> bounded(line, MAXIMUM_LORE_LINE_LENGTH)).toList();
     }
 
     private static int boundedCoordinate(int value) {

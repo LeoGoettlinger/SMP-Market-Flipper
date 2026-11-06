@@ -33,7 +33,11 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +72,8 @@ public final class ScMarketClient implements ClientModInitializer {
     private static volatile OrderModuleSettingsStore orderModuleSettingsStore;
     private static volatile OrderModuleSettings orderModuleSettings = OrderModuleSettings.defaults();
     private static volatile LocalActionRecorder actionRecorder;
+    private static String lastCapturedContainerSignature = "";
+    private static int diagnosticCaptureTick;
     private static volatile RtpHistoryStore rtpHistoryStore;
     private static volatile RtpBotController rtpBotController;
     private static volatile RtpBotSettingsStore rtpBotSettingsStore;
@@ -137,8 +143,15 @@ public final class ScMarketClient implements ClientModInitializer {
                 HUD_OVERLAY::extractRenderState
         );
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            LocalActionRecorder screenRecorder = actionRecorder;
+            if (screenRecorder != null && screenRecorder.isRecording()
+                    && !(screen instanceof AbstractContainerScreen<?>)) {
+                int containerId = client.player == null ? -1 : client.player.containerMenu.containerId;
+                screenRecorder.recordScreenSnapshot(
+                        screen.getTitle().getString(), containerId, scaledWidth, scaledHeight, 0);
+            }
             if (screen instanceof AbstractContainerScreen<?>) {
-                return; // Slot-aware recorder below captures these clicks with item metadata.
+                return; // Slot-aware capture records container slots and their lore snapshots.
             }
             ScreenMouseEvents.beforeMouseClick(screen).register((clickedScreen, event) -> {
                 LocalActionRecorder recorder = actionRecorder;
@@ -155,6 +168,7 @@ public final class ScMarketClient implements ClientModInitializer {
             net.minecraft.client.multiplayer.ServerData server = client.getCurrentServer();
             updateCurrentServerAddress(server == null ? "" : server.ip);
             dataSources.automationSettings().snapshot();
+            captureVisibleContainerSnapshot(client);
             while (openGuiKey.consumeClick()) {
                 if (client.gui.screen() instanceof ClickGuiScreen) {
                     client.gui.setScreen(null);
@@ -278,6 +292,75 @@ public final class ScMarketClient implements ClientModInitializer {
         if (scanner != null) {
             scanner.updateConfiguration(scanner.configuration().withMockDataMode(true));
         }
+    }
+
+    private static void captureVisibleContainerSnapshot(Minecraft client) {
+        LocalActionRecorder recorder = actionRecorder;
+        if (recorder == null || !recorder.isRecording()) {
+            lastCapturedContainerSignature = "";
+            return;
+        }
+        if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
+            lastCapturedContainerSignature = "";
+            return;
+        }
+        // Slot contents are checked four times a second; a new page/state is recorded once when it changes.
+        if (++diagnosticCaptureTick % 5 != 0) {
+            return;
+        }
+        AbstractContainerMenu menu = screen.getMenu();
+        String title = screen.getTitle() == null ? "" : screen.getTitle().getString();
+        int screenWidth = client.getWindow().getGuiScaledWidth();
+        int screenHeight = client.getWindow().getGuiScaledHeight();
+        java.util.List<DiagnosticSlotSnapshot> slots = new java.util.ArrayList<>(menu.slots.size());
+        StringBuilder signature = new StringBuilder(512);
+        appendSignature(signature, title);
+        signature.append(menu.containerId).append(':').append(menu.slots.size()).append(':')
+                .append(screenWidth).append('x').append(screenHeight).append(';');
+        for (int index = 0; index < menu.slots.size(); index++) {
+            net.minecraft.world.inventory.Slot menuSlot = menu.slots.get(index);
+            ItemStack stack = menuSlot.getItem();
+            String itemId = stack.isEmpty() ? "" : net.minecraft.core.registries.BuiltInRegistries.ITEM
+                    .getKey(stack.getItem()).toString();
+            String displayName = stack.isEmpty() ? "" : stack.getHoverName().getString();
+            ItemLore itemLore = stack.isEmpty() ? null : stack.get(DataComponents.LORE);
+            java.util.List<String> lore = itemLore == null ? java.util.List.of() : itemLore.lines().stream()
+                    .map(net.minecraft.network.chat.Component::getString).toList();
+            DiagnosticSlotSnapshot snapshot = new DiagnosticSlotSnapshot(
+                    index, menuSlot.x, menuSlot.y, itemId, stack.getCount(), displayName, lore);
+            slots.add(snapshot);
+            signature.append(index).append(':').append(itemId.length()).append(':').append(itemId)
+                    .append(':').append(stack.getCount()).append(':');
+            appendSignature(signature, displayName);
+            for (String line : lore) {
+                appendSignature(signature, line);
+            }
+            signature.append(';');
+        }
+        String currentSignature = signature.toString();
+        if (currentSignature.equals(lastCapturedContainerSignature)) {
+            return;
+        }
+        lastCapturedContainerSignature = currentSignature;
+        recorder.recordScreenSnapshot(title, menu.containerId, screenWidth, screenHeight, slots.size());
+        for (DiagnosticSlotSnapshot slot : slots) {
+            recorder.recordSlotSnapshot(title, menu.containerId, slot.menuSlot(), slot.itemId(), slot.count(),
+                    slot.displayName(), slot.lore(), screenWidth, screenHeight, slot.slotX(), slot.slotY());
+            if (!recorder.isRecording()) {
+                break;
+            }
+        }
+    }
+
+    private static void appendSignature(StringBuilder target, String value) {
+        String safe = Objects.requireNonNullElse(value, "");
+        target.append(safe.length()).append(':').append(safe).append('|');
+    }
+
+    private record DiagnosticSlotSnapshot(
+            int menuSlot, int slotX, int slotY, String itemId, int count,
+            String displayName, java.util.List<String> lore
+    ) {
     }
 
     public static String currentServerAddress() {

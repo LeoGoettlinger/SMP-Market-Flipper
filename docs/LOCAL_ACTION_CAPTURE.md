@@ -11,7 +11,7 @@ SC-Market has an **opt-in, local-only** diagnostic recorder for inspecting priva
 3. Open the ClickGUI with **Right Shift**.
 4. Select the **Order→AH** tab.
 5. Set the action cap if desired, then toggle **LOCAL CAPTURE · OFF**. It should change to **LOCAL CAPTURE · ON** and the panel notice reports the local filename.
-6. Manually navigate the relevant Order/AH screens and click only what is safe to inspect. The recorder passively logs supported GUI clicks; it never clicks, claims, buys, or lists for you. Do not collect a partial order or submit an unapproved trade. If a screen requires a consequential confirmation, stop and capture the visible state instead.
+6. Manually navigate the relevant Order/AH screens and click only safe navigation/filter controls. While recording, each changed container view is automatically snapshotted with all menu slots, visible stack identity and item lore; the recorder never clicks, claims, buys, or lists for you. Do not collect a partial order or submit an unapproved trade. If a screen requires a consequential confirmation, stop and capture the visible state instead.
 7. When finished, toggle **LOCAL CAPTURE · ON** off. The panel should show **LOCAL CAPTURE · OFF**. If the cap is reached, recording stops automatically; toggle off before starting a fresh file.
 
 The capture is saved under:
@@ -24,21 +24,21 @@ On Windows, `.minecraft` is commonly `%APPDATA%\.minecraft`; on macOS it is `~/L
 
 ## What is recorded and what is not
 
-JSONL records include a UTC timestamp, event type, screen title, container/sync ID when available, clicked slot, item registry ID/count when available, mouse button, and screen-relative click coordinates. Only GUI clicks are recorded; world/player interactions are not recorded. Files are capped at **4 MiB** and at the selected action limit (100–10,000; default 5,000).
+JSONL records include UTC timestamps; screen/menu title, sync ID, dimensions and slot count; and, when a container's contents change, a bounded snapshot row for every menu slot with menu slot ID, slot coordinates, item registry ID, count, display name and stack lore. GUI clicks additionally record the clicked menu slot, item identity, button and coordinates. Snapshots are deduplicated by visible slot contents and checked four times per second. This captures the item lore used by AH/Order profiles, but not the rendered screenshot or tooltip text added only by hovering; take screenshots for those. Files are capped at **4 MiB** and at the selected record limit (100–10,000; each slot row counts; default 5,000).
 
-The recorder does not explicitly record chat text, typed text, key contents, credentials, player names, world coordinates, network payloads, or transaction outcome. A custom screen title or item ID can still be identifying. Review the file before sharing it. The recorder is best-effort: disk errors stop recording without interrupting gameplay. If it is stopped at the cap or by an I/O error, the toggle may still be on; turn it off and back on to create a new file.
+The recorder does not record chat text, typed text, key contents, credentials, world coordinates, network payloads, or transaction outcomes. Screen titles, custom item names and lore can contain seller names or other identifying text. Review and redact the local file before sharing it. The recorder is best-effort: disk errors stop recording without interrupting gameplay. If it is stopped at the cap or by an I/O error, the toggle may still be on; turn it off and back on to create a new file.
 
 The workflow artifact upload in GitHub Actions is only for the built mod JAR; it does **not** upload these local diagnostics. Attach the `.jsonl` file manually when sending it for analysis. Never commit captures or private server configuration to the repository.
 
 ## What to send so the Order→AH flow can be finalized
 
-A JSONL file alone does not expose tooltip/lore text or prove what the server meant by a control. Send the following together, with private identifiers removed or obscured:
+JSONL now includes item names/lore and slot IDs for changed container screens, but not hover-only rendered tooltips, screenshots, command text, or proof of a transaction outcome. Send the following together, with private identifiers removed or obscured:
 
 - the capture from manually opening the relevant Order/AH screens and hovering/clicking safe controls;
 - screenshots with the full relevant Order row and its tooltip/lore visible, showing item, order ID if exposed, unit price, requested/filled/remaining quantity, and status;
 - a screenshot of the completed-order details screen and the exact claim/collect control, with the entire screen title and visible state;
 - a screenshot of the order-creation/confirmation display showing quantity, deposit, the 1% fee, and total;
-- an AH listing screen showing the item, stack size, price and seller fields used for matching/relisting;
+- AH listing screen snapshots showing item ID, stack size, price and seller lore; plus the exact AH-open/list command templates (write the price placeholder as `{price}`, omit `/`) and the normal success-screen title if already known;
 - the Minecraft version, SC-Market JAR version or commit SHA, GUI scale/resolution, and a short numbered description of which screen/button each capture segment represents.
 
 If a full-order claim can be demonstrated only by actually claiming it, use disposable test data and do not claim a partial order. Do not create an order or list an item merely to produce a recording. When a detail is not visible, say so rather than guessing. Keep the server address, player name, chat, credentials, and unrelated inventory details out of shared material. If a screenshot needs redaction, preserve a separate private original and note which labels were redacted; exact screen titles and labels are important to parser correctness.

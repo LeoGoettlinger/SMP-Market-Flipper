@@ -5,10 +5,14 @@ import com.scmarket.diagnostics.LocalActionRecorder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemLore;
+import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
@@ -38,14 +42,22 @@ public abstract class HandledScreenActionRecorder {
         } catch (RuntimeException unavailableSlot) {
             slot = null;
         }
+        AbstractContainerScreen<?> handledScreen = (AbstractContainerScreen<?>)(Object)this;
+        AbstractContainerMenu menu = handledScreen.getMenu();
         ItemStack stack = slot == null ? ItemStack.EMPTY : slot.getItem();
         String itemId = stack.isEmpty() ? "" : BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        String displayName = stack.isEmpty() ? "" : stack.getHoverName().getString();
+        ItemLore itemLore = stack.isEmpty() ? null : stack.get(DataComponents.LORE);
+        List<String> lore = itemLore == null ? List.of() : itemLore.lines().stream()
+                .map(Component::getString).toList();
         Component title = client.gui.screen().getTitle();
         recorder.recordGuiClick(title == null ? "" : title.getString(),
-                client.player.containerMenu.containerId,
-                slot == null ? -1 : slot.index,
+                menu.containerId,
+                slot == null ? -1 : menu.slots.indexOf(slot),
                 itemId,
                 stack.getCount(),
+                displayName,
+                lore,
                 click.button(),
                 (int) Math.round(click.x()),
                 (int) Math.round(click.y()));

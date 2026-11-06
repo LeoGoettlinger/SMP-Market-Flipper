@@ -22,9 +22,9 @@ Das reicht, um sichtbare Beschriftungen und mögliche Zustände zu dokumentieren
 
 Wenn du ihn einschaltest, legt SC-Market eine lokale UTF-8-Textdatei im **JSONL-Format** an. JSONL bedeutet: ein JSON-Objekt pro Zeile.
 
-Aufgezeichnet werden — soweit die jeweilige Ansicht es bereitstellt — Zeitstempel in UTC, Ereignistyp, Fenstertitel, Container-ID, angeklickter Slot, Item-Registry-ID und Stack-Anzahl sowie Maustaste und Bildschirmkoordinaten. Es werden ausschließlich GUI-Klicks erfasst; Aktionen in der Spielwelt, gehaltene Items und Zielobjekte werden nicht aufgezeichnet.
+Aufgezeichnet werden Zeitstempel in UTC, Fenstertitel, Container-ID, Bildschirmmaße und Anzahl der Slots. Bei einer neuen/geänderten Ansicht werden außerdem alle Menü-Slots als lokale Momentaufnahme mit Menü-Slot-ID, Slot-Koordinaten, Item-ID, Stack-Anzahl, Anzeigename und begrenztem Item-Lore gespeichert. GUI-Klicks enthalten zusätzlich den angeklickten Menü-Slot, die Maustaste und Bildschirmkoordinaten. Der Recorder prüft Container-Inhalte viermal pro Sekunde und schreibt unveränderte Ansichten nicht wiederholt. Das erfasst die üblichen Preis-/Verkäufer-Lorezeilen und Order-Statusdaten direkt aus den Items.
 
-**Nicht aufgezeichnet** werden Chatnachrichten, getippter Text, Tastatureingaben, Zugangsdaten, Spielername, Weltkoordinaten, Netzwerkpakete, Hover-Bewegungen, Tooltip-/Lore-Text oder das Ergebnis einer Transaktion. Der Recorder macht auch keine Screenshots. Deshalb sind die JSONL-Datei **und** passende Screenshots/Notizen zusammen nützlicher als die Datei allein.
+**Nicht aufgezeichnet** werden Chatnachrichten, getippter Text oder Befehle, Tastatureingaben, Zugangsdaten, Weltkoordinaten, Netzwerkpakete, der tatsächliche Transaktionserfolg oder Screenshots. Tooltip-Text, der nur beim Darüberfahren gerendert wird und nicht als Item-Lore vorliegt, muss zusätzlich als Screenshot festgehalten werden. Screen-Titel, Itemnamen und Lore können Verkäufernamen oder andere identifizierende Angaben enthalten; Datei und Screenshots deshalb vor dem Teilen prüfen und private Angaben schwärzen.
 
 Die Aufzeichnung ist standardmäßig ausgeschaltet und wird nur lokal gespeichert. Sie wird nicht automatisch hochgeladen und nicht in das Git-Repository übernommen. Das Repository und der GitHub-Actions-JAR-Download sind nicht der Speicherort deiner Aufnahme.
 
@@ -42,16 +42,17 @@ Die Aufzeichnung ist standardmäßig ausgeschaltet und wird nur lokal gespeicher
 2. Öffne SC-Market mit **Rechts-Shift**.
 3. Öffne den Tab **Order→AH**.
 4. Suche im Einstellungsbereich den Schalter **LOCAL CAPTURE · OFF**. Die Schaltfläche **CAP** daneben legt die Obergrenze der aufgezeichneten Aktionen fest. Standardmäßig sind es 5.000 Aktionen; die UI bietet 100, 500, 1.000, 2.500, 5.000 und 10.000 an. Für einen kurzen Durchlauf reichen normalerweise 1.000 oder 2.500.
-5. Klicke auf **LOCAL CAPTURE · OFF**. Der Status sollte zu **LOCAL CAPTURE · ON** wechseln und die Mitteilung den lokalen Dateinamen nennen. Wenn stattdessen `CAPTURE STOPPED · TOGGLE OFF` erscheint, läuft gerade keine Aufnahme; schalte den Schalter aus und wieder ein.
-6. Navigiere die relevanten Ansichten **manuell und langsam**. Notiere dir die Reihenfolge mit kurzen Nummern, zum Beispiel:
+5. Stelle **CAP** auf 2.500 oder 5.000, weil nun jeder Slot einer geänderten Ansicht als eigener Datensatz zählt. Klicke auf **LOCAL CAPTURE · OFF**. Der Status sollte zu **LOCAL CAPTURE · ON** wechseln und die Mitteilung den lokalen Dateinamen nennen. Wenn stattdessen `CAPTURE STOPPED · TOGGLE OFF` erscheint, läuft gerade keine Aufnahme; schalte den Schalter aus und wieder ein.
+6. Navigiere die relevanten Ansichten **manuell und langsam**. Der Recorder speichert bei jedem geänderten Container-Bildschirm automatisch Titel und alle Slot-Inhalte samt Item-Lore. Notiere dir die Reihenfolge mit kurzen Nummern, zum Beispiel:
    - `1` — `ORDERS`-Liste, bevor ein Filter geöffnet wird;
    - `2` — Statusfilter `Deine Orders` geöffnet;
    - `3` — Order-Liste mit der betreffenden Order;
-   - `4` — Tooltip der Order sichtbar (Tooltip separat als Screenshot festhalten; Hover wird nicht in JSONL aufgezeichnet);
+   - `4` — Tooltip der Order sichtbar (Item-Lore steht im JSONL; nur zusätzlich gerenderter Hover-Text braucht einen Screenshot);
    - `5` — Order-Bearbeiten-Ansicht;
-   - `6` — AH-Liste/Angebot, falls die entsprechende Ansicht sicher ohne Kauf- oder Verkaufsaktion geöffnet werden kann.
+   - `6` — AH-Angebotsliste öffnen und, falls gefahrlos, mit den Seitenknöpfen durch mehrere Ergebnisseiten gehen; die JSONL-Snapshots enthalten Slot-IDs, Item-IDs, Stückzahlen, Anzeigenamen und Item-Lore mit Preis/Verkäufer;
+   - `7` — falls gefahrlos, AH-Ansicht mit Angebotsdetails und danach die normale Erfolgsmeldung eines bereits bekannten Testablaufs ansehen; den tatsächlichen Verkaufsbefehl separat als Text notieren (`{price}` anstelle des Betrags).
 7. Klicke nur auf ungefährliche Navigations-/Filterelemente. **Nicht** abholen, kaufen, erstellen, bestätigen, listen oder stornieren. Wenn ein Bildschirm eine Transaktion oder eine folgenreiche Bestätigung verlangt, dort anhalten und nur den sichtbaren Zustand als Screenshot sichern. Keine Teil-Order oder Teilmenge einsammeln.
-8. Mache Screenshots, auf denen der vollständige Fenstertitel, die betreffende Order-Zeile und der ganze Tooltip zu sehen sind. Halte den Mauszeiger über der relevanten Zeile bzw. dem Button, damit der Tooltip sichtbar ist. Das ist nötig, weil der Recorder Tooltips nicht lesen kann.
+8. Mache Screenshots, auf denen der vollständige Fenstertitel, die betreffende Order-/AH-Zeile und jeder zusätzliche Hover-Tooltip zu sehen sind. Die Slot-Lore wird erfasst; nur Text, der allein beim Darüberfahren gerendert wird, fehlt in JSONL.
 9. Wenn du fertig bist, gehe zurück zu den Order→AH-Einstellungen und klicke **LOCAL CAPTURE · ON**, damit es wieder **LOCAL CAPTURE · OFF** anzeigt. Dadurch wird die Datei geschlossen und gepuffert auf die Festplatte geschrieben.
 
 ### Wichtig zum CAP-Limit
@@ -80,8 +81,9 @@ Wenn du im Launcher ein eigenes Spielverzeichnis eingestellt hast, suche dort un
 
 Bitte hänge die `.jsonl`-Datei **als Datei** an den Chat an, nicht nur den Textauszug. Dazu reichen zunächst:
 
-- die Screenshots der relevanten Screens/Tooltips ohne Serveradresse und Spielernamen;
-- deine nummerierte Kurzbeschreibung der Aufnahme, zum Beispiel `1: Order-Liste geöffnet, 2: Filtermenü, 3: Tooltip angesehen`;
+- Screenshots der relevanten Screens/Tooltips ohne Serveradresse und Spielernamen;
+- für den AH Seller: der exakte AH-Bildschirmtitel, gefahrlos sichtbare Preis-/Verkäufer-Lore, die verwendete AH-Öffnen-/Listen-Befehlsform (ohne `/`, den Preis durch `{price}` ersetzen) sowie der Titel der normalen Erfolgsmeldung, sofern bekannt;
+- deine nummerierte Kurzbeschreibung der Aufnahme, zum Beispiel `1: Order-Liste geöffnet, 2: Filtermenü, 3: AH-Seite 1/2 angesehen`;
 - Minecraft-Version, SC-Market-JAR-Version oder den zugehörigen Commit-SHA;
 - Betriebssystem/Launcher, GUI-Skalierung und Auflösung;
 - eine kurze Notiz, welche Angaben du nur sehen konntest und welche Aktion du bewusst **nicht** ausgeführt hast.
