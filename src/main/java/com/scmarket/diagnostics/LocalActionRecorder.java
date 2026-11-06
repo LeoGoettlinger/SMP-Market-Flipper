@@ -167,7 +167,7 @@ public final class LocalActionRecorder implements AutoCloseable {
                     .append("{\"time\":\"").append(escape(Instant.now(clock).toString()))
                     .append("\",\"event\":\"").append(escape(event))
                     .append("\",\"screen\":\"").append(escape(bounded(title, 120)))
-                    .append("\",\"syncId\":\").append(syncId)
+                    .append("\",\"syncId\":").append(syncId)
                     .append(",\"slot\":").append(slot)
                     .append(",\"itemId\":\"").append(escape(bounded(itemId, 256)))
                     .append("\",\"count\":").append(Math.max(0, Math.min(count, 99_999)))
@@ -180,14 +180,14 @@ public final class LocalActionRecorder implements AutoCloseable {
                 }
                 json.append('\"').append(escape(safeLore.get(index))).append('\"');
             }
-            json.append("],\"button\":\").append(button)
-                    .append(",\"screenX\":\").append(boundedCoordinate(screenX))
-                    .append(",\"screenY\":\").append(boundedCoordinate(screenY))
-                    .append(",\"screenWidth\":\").append(boundedCoordinate(screenWidth))
-                    .append(",\"screenHeight\":\").append(boundedCoordinate(screenHeight))
-                    .append(",\"slotCount\":\").append(Math.max(-1, Math.min(slotCount, 512)))
-                    .append(",\"slotX\":\").append(boundedCoordinate(slotX))
-                    .append(",\"slotY\":\").append(boundedCoordinate(slotY))
+            json.append("],\"button\":").append(button)
+                    .append(",\"screenX\":").append(boundedCoordinate(screenX))
+                    .append(",\"screenY\":").append(boundedCoordinate(screenY))
+                    .append(",\"screenWidth\":").append(boundedCoordinate(screenWidth))
+                    .append(",\"screenHeight\":").append(boundedCoordinate(screenHeight))
+                    .append(",\"slotCount\":").append(Math.max(-1, Math.min(slotCount, 512)))
+                    .append(",\"slotX\":").append(boundedCoordinate(slotX))
+                    .append(",\"slotY\":").append(boundedCoordinate(slotY))
                     .append('}');
             String line = json.toString();
             long encodedLength = line.getBytes(StandardCharsets.UTF_8).length + 1L;
