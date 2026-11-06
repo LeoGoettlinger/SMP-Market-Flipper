@@ -1805,6 +1805,7 @@
                <also-trust value="777a0f0fc20af734b14f994152b84a515887432782cc44823a9a6e9e4e1f50cc"/>
                <also-trust value="98c625d8827b3306b0500ceb1886903dab33689a5cce7e1c87461dea3692abb5"/>
                <also-trust value="f29de2c78a79a0eeb1ab86ceabf6196fc415ef93584ab02d264d0ea27a60a46f"/>
+               <also-trust value="be15580a0b6a8b387b86eea44c3e69a86b17a45d971fe5e29ae1290fc280bf80"/>
             </sha256>
          </artifact>
          <artifact name="minecraft-clientOnly-201bed67e3-26.2.pom">
@@ -1868,6 +1869,7 @@
                <also-trust value="0ec7ef7807ce58ae6c8fe4fef2e6c2fedbf9532a99ebb656f642e4bcf6f6d7b6"/>
                <also-trust value="400d70d3cc1dffea8995fb3492b6d6d2e587925423cea0823d048e5fe55f6c14"/>
                <also-trust value="f269334117d99e1d08e843259149d80659a3a8f925380e0d5b05e596c3639ef6"/>
+               <also-trust value="4a3effad852651b49dea38a2c9ccb0c43755d844de4ffaf6346f9543fa766f41"/>
             </sha256>
          </artifact>
          <artifact name="minecraft-common-201bed67e3-26.2.pom">
